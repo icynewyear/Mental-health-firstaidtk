@@ -1,8 +1,76 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Leaf, Compass, BookOpen, Phone, ArrowLeft, ArrowRight, Heart, Save, Plus, Trash2, CheckCircle2, Smartphone, Zap, Music, CloudRain, Waves, Volume2, VolumeX, Calendar, ChevronLeft, ChevronRight, Sliders, Settings2, Play } from 'lucide-react';
+import { 
+  Leaf, 
+  Compass, 
+  BookOpen, 
+  Phone, 
+  ArrowLeft, 
+  ArrowRight, 
+  Heart, 
+  Save, 
+  Plus, 
+  Trash2, 
+  CheckCircle2, 
+  Smartphone, 
+  Zap, 
+  Music, 
+  CloudRain, 
+  Waves, 
+  Volume2, 
+  VolumeX, 
+  Calendar, 
+  ChevronLeft, 
+  ChevronRight, 
+  Sliders, 
+  Settings2, 
+  Play,
+  Star,
+  Brain,
+  Smile,
+  Sparkles,
+  Shield,
+  Eye,
+  Activity
+} from 'lucide-react';
 import { ActiveScreen, BreathingType, CopingStatement, GroundingStep, MoodLogEntry } from '../types';
-import { startAmbientSound, stopAmbientSound, setAmbientVolume, setSoundscapeChannel, stopSoundscapeChannel, setSoundscapeChannelVolume, stopAllSoundscapeChannels, setMasterSoundscapeVolume } from '../utils/audioSynth';
+import { startAmbientSound, stopAmbientSound, setAmbientVolume } from '../utils/audioSynth';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { ALL_TOOLS, getFavoriteToolIds, saveFavoriteToolIds, toggleFavoriteToolId, ToolDef } from '../utils/toolsData';
+
+// Dynamic ToolIcon renderer mapping IDs to their pre-vetted Lucide icons
+export const ToolIcon: React.FC<{ id: ActiveScreen; size?: number; className?: string }> = ({ id, size = 16, className = "" }) => {
+  switch (id) {
+    case 'breathing':
+      return <Leaf size={size} className={className} />;
+    case 'grounding':
+      return <Compass size={size} className={className} />;
+    case 'vagusHacks':
+      return <Zap size={size} className={className} />;
+    case 'somatic':
+      return <Activity size={size} className={className} />;
+    case 'emdr':
+      return <Eye size={size} className={className} />;
+    case 'reframing':
+      return <Brain size={size} className={className} />;
+    case 'worryBox':
+      return <Smile size={size} className={className} />;
+    case 'emotionWheel':
+    case 'relief':
+      return <BookOpen size={size} className={className} />;
+    case 'gratitude':
+      return <Sparkles size={size} className={className} />;
+    case 'habit':
+      return <Activity size={size} className={className} />;
+    case 'panicSOS':
+      return <Zap size={size} className={className} />;
+    case 'safetyPlan':
+      return <Shield size={size} className={className} />;
+    case 'emergency':
+      return <Phone size={size} className={className} />;
+    default:
+      return <Leaf size={size} className={className} />;
+  }
+};
 
 // Custom Tooltip for the Recharts Mood Trend Chart
 const CustomTooltip = ({ active, payload }: any) => {
@@ -209,6 +277,19 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
     setCustomEmojiSet(sliced);
     localStorage.setItem('safespace_custom_emoji_set_list', JSON.stringify(sliced));
   };
+
+  const [favoriteIds, setFavoriteIds] = useState<ActiveScreen[]>(() => getFavoriteToolIds());
+  const [showFavoritesManage, setShowFavoritesManage] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setFavoriteIds(getFavoriteToolIds());
+    };
+    window.addEventListener('safespace_favorites_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('safespace_favorites_updated', handleUpdate);
+    };
+  }, []);
 
   return (
     <div className="flex flex-col h-full bg-[#F1F5F2] p-5 overflow-y-auto relative">
@@ -593,143 +674,292 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* Sleek Ambient Soundscape Promo Card */}
-      <button
-        type="button"
-        onClick={() => onNavigate('soundscape')}
-        className="w-full bg-gradient-to-r from-[#4A6741] to-[#608271] text-white transition rounded-[24px] p-4 text-left flex items-center justify-between shadow-xs mb-4.5 hover:shadow-md active:scale-99 cursor-pointer border-0 select-none animate-fade-in shrink-0"
-      >
-        <div className="flex items-center space-x-3.5">
-          <div className="bg-white/20 p-2.5 rounded-2xl flex items-center justify-center">
-            <Music size={16} className="text-white animate-pulse" />
+      {/* Clinician Recommendation Card (prescribed based on active stress level) */}
+      <div className="bg-white/95 rounded-[22px] p-4 border border-slate-200/60 shadow-xs text-left mb-4.5">
+        <span className="text-[8.5px] font-black uppercase tracking-widest text-[#4A6741] block mb-2">Recommended For You</span>
+        {stressLevel >= 8 ? (
+          <div className="flex items-start space-x-3 bg-rose-50/50 p-3 rounded-2xl border border-rose-100">
+            <div className="bg-rose-600 text-white p-2.5 rounded-xl text-xs flex justify-center items-center font-black animate-pulse shadow-sm h-8 w-8 shrink-0">
+              🚨
+            </div>
+            <div className="text-left">
+              <h4 className="text-[11px] font-black uppercase tracking-tight text-rose-600">Calming Rescue Space</h4>
+              <p className="text-[9.5px] text-slate-500 mt-1 leading-snug">If you are feeling very overwhelmed, take a moment to rest. Let's do a simple calming exercise together.</p>
+              <button 
+                onClick={() => onNavigate('panicSOS')}
+                className="mt-2.5 bg-rose-600 hover:bg-rose-700 active:scale-95 transition text-white font-extrabold text-[9px] px-3 h-7 rounded-full cursor-pointer flex items-center space-x-1 border-0 shadow-xs"
+              >
+                <span>Go to Calm Rescue</span> <ArrowRight size={10} />
+              </button>
+            </div>
           </div>
-          <div>
-            <span className="text-[9px] font-bold uppercase tracking-wider text-white/70 block leading-none">Nervous System Audio</span>
-            <h3 className="text-xs font-black mt-1">Soundscape Mixer</h3>
-            <p className="text-[10px] text-white/80 mt-0.5 leading-tight">Mix procedural offline-first nature resonance.</p>
+        ) : stressLevel >= 4 ? (
+          <div className="flex items-start space-x-3 bg-amber-50/60 p-3 rounded-xl border border-amber-100">
+            <div className="bg-amber-500 text-white p-2 rounded-xl text-xs flex justify-center items-center font-bold h-8 w-8 shrink-0">
+              🌿
+            </div>
+            <div className="text-left">
+              <h4 className="text-[11px] font-black uppercase tracking-tight text-amber-700">Steady Body Balance</h4>
+              <p className="text-[9.5px] text-slate-500 mt-1 leading-snug">If you feel physical tension starting to build, a quick mindful pause can help you reset.</p>
+              <div className="flex space-x-2 mt-2.5">
+                <button 
+                  onClick={() => onNavigate('breathing')}
+                  className="bg-[#4A6741] hover:bg-[#3D5535] active:scale-95 cursor-pointer text-white font-extrabold text-[9px] px-3 h-7 rounded-full border-0 shadow-xs flex items-center space-x-0.5"
+                >
+                  <Leaf size={10} /> <span>Breathe</span>
+                </button>
+                <button 
+                  onClick={() => onNavigate('reframing')}
+                  className="bg-amber-600 hover:bg-amber-700 active:scale-95 cursor-pointer text-white font-extrabold text-[9px] px-3 h-7 rounded-full border-0 shadow-xs flex items-center space-x-0.5"
+                >
+                  <span>🧠 Reframe</span>
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="bg-white/15 hover:bg-white/20 p-1.5 rounded-full text-white transition flex items-center justify-center">
-          <ArrowRight size={13} />
-        </div>
-      </button>
-
-      {/* Grid Modules */}
-      <span className="text-[10px] font-bold text-slate-400 text-left uppercase tracking-widest mb-2.5">Relief Modules</span>
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        {/* Breathing */}
-        <button
-          onClick={() => onNavigate('breathing')}
-          className="bg-white/70 hover:bg-[#E1E8E3]/50 border border-white/80 text-[#4A6741] transition rounded-[24px] p-4 text-left flex flex-col justify-between h-28 shadow-sm hover:shadow-md hover:-translate-y-0.5"
-        >
-          <div className="bg-[#4A6741] text-white p-1.5 rounded-full w-fit">
-            <Leaf size={14} />
+        ) : (
+          <div className="flex items-start space-x-3 bg-emerald-50/40 p-3 rounded-xl border border-emerald-100/50">
+            <div className="bg-[#4A6741] text-white p-2 rounded-xl text-xs flex justify-center items-center font-bold h-8 w-8 shrink-0">
+              ✨
+            </div>
+            <div className="text-left">
+              <h4 className="text-[11px] font-black uppercase tracking-tight text-emerald-800">Quiet Mind Space</h4>
+              <p className="text-[9.5px] text-slate-500 mt-1 leading-snug">You are doing great. Take a couple of minutes to practice gratitude or enjoy a quiet moment of deep breathing.</p>
+              <div className="flex space-x-2 mt-2.5">
+                <button 
+                  onClick={() => onNavigate('breathing')}
+                  className="bg-[#4A6741] hover:bg-[#3D5535] active:scale-95 cursor-pointer text-white font-extrabold text-[9px] px-3 h-7 rounded-full border-0 shadow-xs flex items-center space-x-0.5"
+                >
+                  <Leaf size={10} /> <span>Breathe</span>
+                </button>
+                <button 
+                  onClick={() => onNavigate('gratitude')}
+                  className="bg-teal-600 hover:bg-teal-700 active:scale-95 cursor-pointer text-white font-extrabold text-[9px] px-3 h-7 rounded-full border-0 shadow-xs flex items-center space-x-0.5"
+                >
+                  <span>🌸 Gratitude</span>
+                </button>
+              </div>
+            </div>
           </div>
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-wide">Guided Breath</h3>
-            <p className="text-[9px] text-[#4A6741]/70 mt-0.5 leading-tight">Soothe anxiety with simple visual circles.</p>
-          </div>
-        </button>
-
-        {/* Sensory grounding */}
-        <button
-          onClick={() => onNavigate('grounding')}
-          className="bg-white/70 hover:bg-[#E1E8E3]/50 border border-white/80 text-[#608271] transition rounded-[24px] p-4 text-left flex flex-col justify-between h-28 shadow-sm hover:shadow-md hover:-translate-y-0.5"
-        >
-          <div className="bg-[#608271] text-white p-1.5 rounded-full w-fit">
-            <Compass size={14} />
-          </div>
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-wide">Sensory Grid</h3>
-            <p className="text-[9px] text-[#608271]/70 mt-0.5 leading-tight">Focus focus on physical senses.</p>
-          </div>
-        </button>
-
-        {/* Coping statements */}
-        <button
-          onClick={() => onNavigate('relief')}
-          className="bg-white/70 hover:bg-[#E1E8E3]/50 border border-white/80 text-[#4A6741]/95 transition rounded-[24px] p-4 text-left flex flex-col justify-between h-28 shadow-sm hover:shadow-md hover:-translate-y-0.5"
-        >
-          <div className="bg-[#A8C69F] text-[#4A6741] p-1.5 rounded-full w-fit">
-            <BookOpen size={14} />
-          </div>
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-wide">Coping Vault</h3>
-            <p className="text-[9px] text-[#4A6741]/70 mt-0.5 leading-tight">Reminders that you are secure.</p>
-          </div>
-        </button>
-
-        {/* Hotlines */}
-        <button
-          onClick={() => onNavigate('emergency')}
-          className="bg-[#D9534F]/5 hover:bg-[#D9534F]/10 border border-[#D9534F]/10 text-[#D9534F] transition rounded-[24px] p-4 text-left flex flex-col justify-between h-28 shadow-sm hover:shadow-md hover:-translate-y-0.5"
-        >
-          <div className="bg-[#D9534F] text-white p-1.5 rounded-full w-fit">
-            <Phone size={14} />
-          </div>
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-wide">Crisis Lines</h3>
-            <p className="text-[9px] opacity-80 mt-0.5 leading-tight font-medium">Direct dialing channels for backup.</p>
-          </div>
-        </button>
+        )}
       </div>
 
-      {/* 4 Therapeutic Toolkits (CBT, Somatic, Biology, Resilience) */}
-      <span className="text-[10px] font-bold text-slate-400 text-left uppercase tracking-widest mb-2.5">Therapeutic Toolkits</span>
-      <div className="grid grid-cols-2 gap-3 mb-4.5">
-        {/* Gratitude Jar */}
-        <button
-          onClick={() => onNavigate('gratitude')}
-          className="bg-[#608271]/5 hover:bg-[#608271]/10 border border-[#608271]/10 text-[#608271] transition rounded-[24px] p-4 text-left flex flex-col justify-between h-28 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-98 cursor-pointer select-none"
-        >
-          <div className="bg-[#608271] text-white p-1.5 rounded-full w-fit flex items-center justify-center text-[10px] h-6 w-6">
-            ✨
+      {/* Favorite Tools Section */}
+      <div className="bg-white/80 backdrop-blur-md rounded-3xl p-4 shadow-sm border border-white/60 mb-4 text-left">
+        <div className="flex justify-between items-center mb-2.5">
+          <div className="flex items-center space-x-1.5">
+            <span className="text-sm">⭐</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Favorite Tools</span>
           </div>
-          <div>
-            <h3 className="text-xs font-black uppercase tracking-wide">Gratitude Jar</h3>
-            <p className="text-[8.5px] text-[#608271]/85 mt-0.5 leading-tight">Drop and draw warm memories.</p>
+          <button
+            type="button"
+            onClick={() => setShowFavoritesManage(true)}
+            className="text-[9px] font-black tracking-wide text-[#4A6741] bg-[#E1E8E3] hover:bg-[#D1DBCF] active:scale-95 transition px-2.5 py-1 rounded-full cursor-pointer border-0 leading-none select-none flex items-center space-x-0.5"
+          >
+            <span>Edit ⚙️</span>
+          </button>
+        </div>
+
+        {/* If no favorites selected */}
+        {favoriteIds.length === 0 ? (
+          <div className="p-4 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 text-center">
+            <p className="text-[10px] text-slate-400 leading-normal mb-2">
+              No favorite tools selected yet. Curate your home screen with your primary go-to exercises!
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowFavoritesManage(true)}
+              className="bg-[#4A6741] hover:bg-[#3D5535] text-white font-bold text-[9px] px-3 h-7 rounded-full transition cursor-pointer border-0 shadow-xs"
+            >
+              Add Favorites
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col space-y-1.5">
+            {favoriteIds.map((id) => {
+              const tool = ALL_TOOLS.find(t => t.id === id);
+              if (!tool) return null;
+              return (
+                <div 
+                  key={id}
+                  className={`flex items-center justify-between p-2.5 rounded-2xl border transition duration-150 shadow-xs cursor-pointer ${tool.bg} hover:scale-[1.01] active:scale-99`}
+                  onClick={() => onNavigate(id)}
+                >
+                  <div className="flex items-center space-x-2.5 min-w-0 flex-1">
+                    <div className="bg-white p-1.5 rounded-xl shadow-xs shrink-0 flex items-center justify-center text-slate-800 border border-slate-100">
+                      <ToolIcon id={id} size={14} className={tool.iconColor} />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-[10.5px] font-extrabold text-slate-800 leading-tight truncate">{tool.name}</h4>
+                      <p className="text-[8px] text-slate-400 tracking-wide font-mono uppercase bg-white/50 px-1 py-0.5 rounded border border-slate-100 inline-block leading-none mt-0.5">{tool.tag}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Star toggle action */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const updated = favoriteIds.filter(x => x !== id);
+                      saveFavoriteToolIds(updated);
+                      setFavoriteIds(updated);
+                    }}
+                    className="p-1 px-2 hover:bg-slate-100/30 rounded-xl transition border-0 bg-transparent text-amber-500 cursor-pointer"
+                    title="Remove from favorites"
+                  >
+                    <Star size={13} className="fill-amber-400 text-amber-400" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Manage Favorites Slideup / Dial modal overlay */}
+      {showFavoritesManage && (
+        <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-xs flex items-end justify-center z-55">
+          <div className="bg-white rounded-t-[38px] w-full max-h-[85%] overflow-y-auto p-5 shadow-2x2 border-t border-slate-100 flex flex-col space-y-4 select-none pb-8 text-left animate-slide-up">
+            <div className="flex justify-between items-center pb-2.5 border-b border-slate-100 shrink-0">
+              <div>
+                <h3 className="text-sm font-black text-slate-800">Customize Favorites</h3>
+                <p className="text-[9px] text-slate-400 mt-0.5">Toggle stars to customize your Home screen</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowFavoritesManage(false)}
+                className="bg-[#4A6741] hover:bg-[#3D5535] text-white font-extrabold px-3 py-1 rounded-full text-[9px] border-0 cursor-pointer transition shadow-xs"
+              >
+                Apply
+              </button>
+            </div>
+
+            {/* List scroll container */}
+            <div className="space-y-4 overflow-y-auto pr-0.5 max-h-[320px]">
+              {(['Somatic', 'CBT', 'Safety'] as const).map((cat) => {
+                const catTools = ALL_TOOLS.filter(t => t.category === cat);
+                return (
+                  <div key={cat} className="space-y-2">
+                    <span className="text-[8.5px] font-black uppercase text-[#4A6741] tracking-wider pb-1 block border-b border-emerald-100/70">
+                      {cat} Pathway Tools
+                    </span>
+                    <div className="space-y-1.5 animate-fade-in text-slate-700">
+                      {catTools.map((tool) => {
+                        const isFav = favoriteIds.includes(tool.id);
+                        return (
+                          <div 
+                            key={tool.id} 
+                            onClick={() => {
+                              let updated: ActiveScreen[];
+                              if (isFav) {
+                                updated = favoriteIds.filter(x => x !== tool.id);
+                              } else {
+                                updated = [...favoriteIds, tool.id];
+                              }
+                              saveFavoriteToolIds(updated);
+                              setFavoriteIds(updated);
+                            }}
+                            className={`flex items-start space-x-2.5 p-2 rounded-2xl border transition cursor-pointer select-none ${
+                              isFav ? 'bg-[#E1E8E3]/35 border-[#CBD9CC]' : 'bg-slate-50/40 border-slate-150/70 hover:bg-slate-50'
+                            }`}
+                          >
+                            <div className="bg-white p-2 rounded-xl mt-0.5 shadow-xs shrink-0 flex items-center justify-center border border-slate-100">
+                              <ToolIcon id={tool.id} size={13} className={tool.iconColor} />
+                            </div>
+                            <div className="flex-1 min-w-0 pr-1 select-none">
+                              <div className="flex items-center space-x-1">
+                                <h4 className="text-[10px] font-bold text-slate-800 leading-tight truncate">{tool.name}</h4>
+                                <span className="text-[6.5px] font-bold text-slate-400 border border-slate-200 px-1 py-[1px] rounded scale-90">{tool.tag}</span>
+                              </div>
+                              <p className="text-[8px] text-slate-400 leading-normal mt-0.5 line-clamp-1">{tool.desc}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                let updated: ActiveScreen[];
+                                if (isFav) {
+                                  updated = favoriteIds.filter(x => x !== tool.id);
+                                } else {
+                                  updated = [...favoriteIds, tool.id];
+                                }
+                                saveFavoriteToolIds(updated);
+                                setFavoriteIds(updated);
+                              }}
+                              className="p-1 px-1.5 transition text-amber-500 rounded-xl hover:bg-slate-100 border-0 bg-transparent cursor-pointer shrink-0 mt-0.5"
+                            >
+                              <Star size={13} className={isFav ? "fill-amber-400 text-amber-400" : "text-slate-300"} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3 Categories Directories (Highly-categorized, low cognitive load) */}
+      <span className="text-[10px] font-bold text-slate-400 text-left uppercase tracking-widest mb-2.5 block">Support Pathways</span>
+
+      <div className="flex flex-col space-y-2.5 mb-6">
+        {/* Somatic Hub Gateway */}
+        <button
+          onClick={() => onNavigate('somaticHub')}
+          className="w-full bg-white hover:bg-emerald-50/20 border border-slate-200/80 transition rounded-[22px] p-4 text-left flex items-center justify-between shadow-xs cursor-pointer select-none active:scale-99"
+        >
+          <div className="flex items-center space-x-3">
+            <div className="bg-emerald-50 text-emerald-800 p-2.5 rounded-xl flex items-center justify-center text-xs font-bold leading-none shrink-0 border border-emerald-100">
+              🌿
+            </div>
+            <div className="text-left">
+              <h3 className="text-xs font-bold text-slate-800">Somatic & Body Hub</h3>
+              <p className="text-[9px] text-slate-400 mt-0.5 leading-snug">Mindful breathing, sensory grounding, gentle eye pacing, muscle relaxation, and more.</p>
+            </div>
+          </div>
+          <div className="bg-slate-100 p-1.5 rounded-full flex items-center justify-center text-slate-400 shrink-0">
+            <ArrowRight size={11} className="stroke-[2.5]" />
           </div>
         </button>
 
-        {/* Thought Reframer */}
+        {/* CBT Hub Gateway */}
         <button
-          onClick={() => onNavigate('reframing')}
-          className="bg-amber-600/5 hover:bg-amber-600/10 border border-amber-600/10 text-amber-700 transition rounded-[24px] p-4 text-left flex flex-col justify-between h-28 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-98 cursor-pointer select-none"
+          onClick={() => onNavigate('cbtHub')}
+          className="w-full bg-white hover:bg-[#FAF8F5] border border-slate-400/20 transition rounded-[22px] p-4 text-left flex items-center justify-between shadow-xs cursor-pointer select-none active:scale-99"
         >
-          <div className="bg-amber-600 text-white p-1.5 rounded-full w-fit flex items-center justify-center text-[10px] h-6 w-6">
-            🧠
+          <div className="flex items-center space-x-3">
+            <div className="bg-[#FAF0E6] text-amber-900 p-2.5 rounded-xl flex items-center justify-center text-xs font-bold leading-none shrink-0 border border-amber-100">
+              🧠
+            </div>
+            <div className="text-left">
+              <h3 className="text-xs font-bold text-slate-800">CBT & Mind Hub</h3>
+              <p className="text-[9px] text-slate-400 mt-0.5 leading-snug">A private space to write worries, look at thoughts gently, and count gratitude.</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-xs font-black uppercase tracking-wide">CBT Reframer</h3>
-            <p className="text-[8.5px] text-amber-700/85 mt-0.5 leading-tight">Deconstruct worrying thoughts.</p>
+          <div className="bg-slate-100 p-1.5 rounded-full flex items-center justify-center text-slate-400 shrink-0">
+            <ArrowRight size={11} className="stroke-[2.5]" />
           </div>
         </button>
 
-        {/* Somatic Release */}
+        {/* Safety & Crisis Hub Gateway */}
         <button
-          onClick={() => onNavigate('somatic')}
-          className="bg-indigo-650/5 hover:bg-indigo-650/10 border border-indigo-650/10 text-indigo-700 transition rounded-[24px] p-4 text-left flex flex-col justify-between h-28 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-98 cursor-pointer select-none"
+          onClick={() => onNavigate('safetyHub')}
+          className="w-full bg-[#1A1110] hover:bg-[#251A19] border border-rose-955 transition rounded-[22px] p-4 text-left flex items-center justify-between shadow-xs cursor-pointer select-none active:scale-99"
         >
-          <div className="bg-indigo-600 text-white p-1.5 rounded-full w-fit flex items-center justify-center text-[10px] h-6 w-6">
-            ✊
+          <div className="flex items-center space-x-3">
+            <div className="bg-rose-950 text-[#FCA5A5] p-2.5 rounded-xl flex items-center justify-center text-xs font-bold leading-none shrink-0 border border-rose-900/60">
+              🚨
+            </div>
+            <div className="text-left">
+              <h3 className="text-xs font-bold text-rose-100">Safety & Support Hub</h3>
+              <p className="text-[9px] text-red-200/60 mt-0.5 leading-snug">Supportive tools for high-distress moments, step-by-step safety guides, and quiet reassurance.</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-xs font-black uppercase tracking-wide">Somatic Lock</h3>
-            <p className="text-[8.5px] text-indigo-700/85 mt-0.5 leading-tight">Progressive muscle relaxer guide.</p>
-          </div>
-        </button>
-
-        {/* Physiological Basics */}
-        <button
-          onClick={() => onNavigate('habit')}
-          className="bg-sky-600/5 hover:bg-sky-600/10 border border-sky-600/10 text-sky-700 transition rounded-[24px] p-4 text-left flex flex-col justify-between h-28 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-98 cursor-pointer select-none"
-        >
-          <div className="bg-sky-600 text-white p-1.5 rounded-full w-fit flex items-center justify-center text-[10px] h-6 w-6">
-            💧
-          </div>
-          <div>
-            <h3 className="text-xs font-black uppercase tracking-wide">Neuro-Vitals</h3>
-            <p className="text-[8.5px] text-sky-750/85 mt-0.5 leading-tight">Verify hydration, Sunlight & rest.</p>
+          <div className="bg-rose-950 p-1.5 rounded-full flex items-center justify-center text-rose-300 shrink-0 border border-rose-900">
+            <ArrowRight size={11} className="stroke-[2.5]" />
           </div>
         </button>
       </div>
@@ -737,7 +967,7 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
       {/* Safety Footer note */}
       <div className="mt-auto pt-4 border-t border-slate-100">
         <p className="text-[9px] text-slate-400 text-center leading-relaxed font-medium">
-          🔒 Offline Shield Active. No cloud databases connected. Your data never leaves this web local storage.
+          🔒 Private Local Storage. No cloud databases connected. Your logs never leave this offline device.
         </p>
       </div>
     </div>
@@ -771,7 +1001,7 @@ const BREATHING_CONFIG = {
   },
 };
 
-export const SimulatorBreathing: React.FC = () => {
+export const SimulatorBreathing: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const [breathingMode, setBreathingMode] = useState<BreathingType>('box');
   const [isRunning, setIsRunning] = useState(false);
   const [phase, setPhase] = useState<'inhale' | 'hold1' | 'exhale' | 'hold2'>('inhale');
@@ -1086,7 +1316,17 @@ export const SimulatorBreathing: React.FC = () => {
     <div className="flex flex-col h-full bg-[#F1F5F2] overflow-y-auto">
       <div className="flex flex-col min-h-full p-3.5 justify-between">
         {/* Top Banner and Description */}
-      <div className="text-center mt-1">
+      <div className="text-center mt-1 relative">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="absolute left-1 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-slate-200 text-slate-500 bg-transparent border-0 cursor-pointer transition active:scale-95 flex items-center justify-center shrink-0"
+            title="Go Back"
+          >
+            <ArrowLeft size={13} className="stroke-[3]" />
+          </button>
+        )}
         <h2 className="text-lg font-bold text-[#4A6741] leading-tight font-sans">Guided Breathing</h2>
         <p className="text-[10px] text-slate-500 px-4 mt-0.5">Soothe anxiety by matching your lungs to the expanding circle.</p>
 
@@ -1430,15 +1670,16 @@ export const SimulatorBreathing: React.FC = () => {
 // ============================================================================
 interface GroundingProps {
   onTriggerDebug?: () => void;
+  onBack?: () => void;
 }
 
-export const SimulatorGrounding: React.FC<GroundingProps> = ({ onTriggerDebug }) => {
+export const SimulatorGrounding: React.FC<GroundingProps> = ({ onTriggerDebug, onBack }) => {
   const steps: GroundingStep[] = [
-    { step: 5, label: 'See', prompt: 'Type 5 things you can see in this room.', placeholder: 'e.g. Lamp, window, desk...', color: 'bg-[#4A6741] focus-within:ring-[#A8C69F]', items: [] },
-    { step: 4, label: 'Feel', prompt: 'Type 4 physical sensations you feel.', placeholder: 'e.g. Socks, feet on floor, soft seat...', color: 'bg-[#608271] focus-within:ring-[#A8C69F]', items: [] },
-    { step: 3, label: 'Hear', prompt: 'Type 3 ambient sounds you can hear.', placeholder: 'e.g. Hum of clock, wind, footsteps...', color: 'bg-[#8CA883] focus-within:ring-[#E1E8E3]', items: [] },
-    { step: 2, label: 'Smell', prompt: 'Type 2 aromas or odors in the room.', placeholder: 'e.g. Coffee, fresh sheet, soap...', color: 'bg-[#A8C69F] focus-within:ring-[#E1E8E3]', items: [] },
-    { step: 1, label: 'Taste', prompt: 'Type 1 flavor in your mouth right now.', placeholder: 'e.g. Hint of toothpaste, mint, sweet...', color: 'bg-[#608271] focus-within:ring-[#E1E8E3]', items: [] },
+    { step: 5, label: 'See', prompt: 'Type or say 5 things you can see in this room.', placeholder: 'Type or say item... (typing is optional: leave blank & click Add)', color: 'bg-[#4A6741] focus-within:ring-[#A8C69F]', items: [] },
+    { step: 4, label: 'Feel', prompt: 'Type or say 4 physical sensations you feel.', placeholder: 'Type or say feeling... (typing is optional: leave blank & click Add)', color: 'bg-[#608271] focus-within:ring-[#A8C69F]', items: [] },
+    { step: 3, label: 'Hear', prompt: 'Type or say 3 ambient sounds you can hear.', placeholder: 'Type or say sound... (typing is optional: leave blank & click Add)', color: 'bg-[#8CA883] focus-within:ring-[#E1E8E3]', items: [] },
+    { step: 2, label: 'Smell', prompt: 'Type or say 2 aromas or odors in the room.', placeholder: 'Type or say aroma... (typing is optional: leave blank & click Add)', color: 'bg-[#A8C69F] focus-within:ring-[#E1E8E3]', items: [] },
+    { step: 1, label: 'Taste', prompt: 'Type or say 1 flavor in your mouth right now.', placeholder: 'Type or say taste... (typing is optional: leave blank & click Add)', color: 'bg-[#608271] focus-within:ring-[#E1E8E3]', items: [] },
   ];
 
   const [activeStepIdx, setActiveStepIdx] = useState(0);
@@ -1465,12 +1706,21 @@ export const SimulatorGrounding: React.FC<GroundingProps> = ({ onTriggerDebug })
 
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputVal.trim()) return;
+    
+    const fallbackNames: { [key: string]: string } = {
+      'See': 'Noticed sight',
+      'Feel': 'Noticed physical sensation',
+      'Hear': 'Noticed ambient sound',
+      'Smell': 'Noticed physical aroma',
+      'Taste': 'Noticed taste/flavor'
+    };
+    
+    const itemText = inputVal.trim() || (fallbackNames[currentStep.label] || 'Observed item');
 
     if (list.length < currentStep.step) {
       setCompletedItems({
         ...completedItems,
-        [currentStep.step]: [...list, inputVal.trim()],
+        [currentStep.step]: [...list, itemText],
       });
       setInputVal('');
     }
@@ -1497,7 +1747,17 @@ export const SimulatorGrounding: React.FC<GroundingProps> = ({ onTriggerDebug })
   return (
     <div className="flex flex-col h-full bg-[#F1F5F2] p-5 justify-between overflow-y-auto">
       {/* Title */}
-      <div className="text-center mt-3 shrink-0 select-none">
+      <div className="text-center mt-3 shrink-0 select-none relative">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="absolute left-1 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-slate-200 text-slate-500 bg-transparent border-0 cursor-pointer transition active:scale-95 flex items-center justify-center shrink-0"
+            title="Go Back"
+          >
+            <ArrowLeft size={13} className="stroke-[3]" />
+          </button>
+        )}
         <h2 className="text-xl font-bold text-[#4A6741] leading-tight font-sans">
           5-4-<span onClick={handleThreeClick} className="cursor-pointer active:scale-95 inline-block transition-transform duration-100 hover:text-[#384F31] font-extrabold px-0.5" title="Triple tap to open Developer Sandbox">3</span>-2-1 Grounding
         </h2>
@@ -1550,7 +1810,9 @@ export const SimulatorGrounding: React.FC<GroundingProps> = ({ onTriggerDebug })
             <span className={`w-2.5 h-2.5 rounded-full ${currentStep.color.split(' ')[0]}`} />
             <span>Identify {currentStep.step} × {currentStep.label}</span>
           </h3>
-          <p className="text-[11px] text-slate-500 mt-1 italic leading-relaxed">Name or list items you observe directly.</p>
+          <p className="text-[10px] text-slate-500 mt-1 italic leading-relaxed">
+            Point them out in your mind or say them aloud! Typing is completely optional — you can write something if you like, or leave it blank and just click "Add" to record each one.
+          </p>
         </div>
 
         {/* Listed current sensory answers */}
@@ -1565,7 +1827,7 @@ export const SimulatorGrounding: React.FC<GroundingProps> = ({ onTriggerDebug })
           {/* Placeholders for remaining answers */}
           {Array.from({ length: currentStep.step - list.length }).map((_, id) => (
             <div key={id} className="bg-[#F1F5F2]/40 border border-dashed border-[#E1E8E3] px-3 py-2 rounded-xl text-[11px] text-slate-400 italic text-left">
-              Empty {currentStep.label} target slot {list.length + id + 1}...
+              Awaiting item {list.length + id + 1}...
             </div>
           ))}
         </div>
@@ -1632,10 +1894,10 @@ export const SimulatorGrounding: React.FC<GroundingProps> = ({ onTriggerDebug })
 // ============================================================================
 // 4. COPING STATEMENTS SCREEN
 // ============================================================================
-export const SimulatorRelief: React.FC = () => {
+export const SimulatorRelief: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const initialStatements: CopingStatement[] = [
     { id: '1', text: 'This feeling is uncomfortable, but it is temporary and it will pass.', category: 'Panic', saved: true },
-    { id: '2', text: 'My racing heart is just an adrenaline spike. I am physically safe.', category: 'Panic', saved: true },
+    { id: '2', text: 'My racing heart is just a natural wave of energy. I am in a safe space.', category: 'Panic', saved: true },
     { id: '3', text: 'I am doing the best I can, and that is absolutely enough.', category: 'Anxiety', saved: false },
     { id: '4', text: 'Focus on this single second. This moment is all I need to manage.', category: 'Grounding', saved: false },
     { id: '5', text: 'Deep slow breaths are signaling safety to my nervous system right now.', category: 'Stress', saved: true },
@@ -1691,9 +1953,19 @@ export const SimulatorRelief: React.FC = () => {
   return (
     <div className="flex flex-col h-full bg-[#F1F5F2] p-5 justify-between overflow-y-auto">
       {/* Title */}
-      <div className="text-center mt-3">
-        <h2 className="text-xl font-bold text-[#4A6741] leading-tight font-sans">Coping Vault</h2>
-        <p className="text-[11px] text-slate-500 mt-1">Grounding logic and reassuring affirmations to read during crisis.</p>
+      <div className="text-center mt-3 relative">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="absolute left-1 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-[#E1E8E3] text-[#4A6741] bg-transparent border-0 cursor-pointer transition active:scale-95 flex items-center justify-center shrink-0"
+            title="Go Back"
+          >
+            <ArrowLeft size={13} className="stroke-[3]" />
+          </button>
+        )}
+        <h2 className="text-xl font-bold text-[#4A6741] leading-tight font-sans">Comforting Phrases</h2>
+        <p className="text-[11px] text-slate-500 mt-1">Grounding reminders and reassuring thoughts to read whenever you need them.</p>
 
         {/* Horizontal scroll filter pills */}
         <div className="flex gap-1.5 overflow-x-auto py-3 no-scrollbar shrink-0">
@@ -1794,9 +2066,10 @@ export const SimulatorRelief: React.FC = () => {
 // ============================================================================
 interface EmergencyProps {
   onNavigate?: (route: ActiveScreen) => void;
+  onBack?: () => void;
 }
 
-export const SimulatorEmergency: React.FC<EmergencyProps> = ({ onNavigate }) => {
+export const SimulatorEmergency: React.FC<EmergencyProps> = ({ onNavigate, onBack }) => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [savedContact, setSavedContact] = useState<{ name: string; phone: string } | null>(() => {
@@ -1831,7 +2104,17 @@ export const SimulatorEmergency: React.FC<EmergencyProps> = ({ onNavigate }) => 
   return (
     <div className="flex flex-col h-full bg-[#F1F5F2] p-5 justify-between overflow-y-auto no-scrollbar">
       {/* Title */}
-      <div className="text-center mt-3 shrink-0">
+      <div className="text-center mt-3 shrink-0 relative">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="absolute left-1 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-slate-200 text-slate-500 bg-transparent border-0 cursor-pointer transition active:scale-95 flex items-center justify-center shrink-0"
+            title="Go Back"
+          >
+            <ArrowLeft size={13} className="stroke-[3]" />
+          </button>
+        )}
         <h2 className="text-xl font-bold text-[#4A6741] leading-tight font-sans">Crisis & Hotlines</h2>
         <p className="text-[11px] text-slate-500 mt-1">Instant offline lines and key local supporters to reach right away.</p>
       </div>
@@ -1851,9 +2134,9 @@ export const SimulatorEmergency: React.FC<EmergencyProps> = ({ onNavigate }) => 
                 🛡️
               </div>
               <div>
-                <span className="text-[8.5px] font-bold uppercase tracking-widest text-[#A5B4FC] block leading-none">Stanley-Brown Protocol</span>
-                <h3 className="text-xs font-black mt-1">Shield of Safety Builder</h3>
-                <p className="text-[9.5px] text-[#C7D2FE] mt-0.5 leading-tight">Create your custom crisis plan step-by-step.</p>
+                <span className="text-[8.5px] font-bold uppercase tracking-widest text-[#A5B4FC] block leading-none">Comfort & Support Guide</span>
+                <h3 className="text-xs font-black mt-1">My Safety & Comfort Plan</h3>
+                <p className="text-[9.5px] text-[#C7D2FE] mt-0.5 leading-tight">Create your step-by-step personalized plan to find comfort and support.</p>
               </div>
             </div>
             <div className="bg-white/10 hover:bg-white/15 p-1.5 rounded-full text-white transition flex items-center justify-center shrink-0">
@@ -2486,340 +2769,4 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
   );
 };
 
-// ============================================================================
-// 6. PROCEDURAL AMBIENT SOUNDSCAPE GENERATOR MIXER
-// ============================================================================
-interface SoundscapeProps {
-  onBack: () => void;
-}
 
-export const SimulatorSoundscape: React.FC<SoundscapeProps> = ({ onBack }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [masterVolume, setMasterVolume] = useState(0.7);
-
-  const [channels, setChannels] = useState<Record<string, { active: boolean; volume: number }>>(() => {
-    const saved = localStorage.getItem('safespace_sound_mix');
-    return saved ? JSON.parse(saved) : {
-      rain: { active: false, volume: 0.5 },
-      waves: { active: false, volume: 0.5 },
-      wind: { active: false, volume: 0.4 },
-      crickets: { active: false, volume: 0.3 },
-      bowl: { active: false, volume: 0.5 },
-      brownNoise: { active: false, volume: 0.4 },
-    };
-  });
-
-  const PRESETS = [
-    {
-      name: 'Forest Rain',
-      icon: '🌧️',
-      mix: {
-        rain: { active: true, volume: 0.65 },
-        waves: { active: false, volume: 0.3 },
-        wind: { active: true, volume: 0.35 },
-        crickets: { active: true, volume: 0.25 },
-        bowl: { active: false, volume: 0.3 },
-        brownNoise: { active: false, volume: 0.3 },
-      }
-    },
-    {
-      name: 'Zen Sanctum',
-      icon: '🥣',
-      mix: {
-        rain: { active: false, volume: 0.3 },
-        waves: { active: false, volume: 0.3 },
-        wind: { active: true, volume: 0.25 },
-        crickets: { active: false, volume: 0.2 },
-        bowl: { active: true, volume: 0.75 },
-        brownNoise: { active: true, volume: 0.4 },
-      }
-    },
-    {
-      name: 'Ocean Swell',
-      icon: '🌊',
-      mix: {
-        rain: { active: false, volume: 0.3 },
-        waves: { active: true, volume: 0.75 },
-        wind: { active: true, volume: 0.5 },
-        crickets: { active: false, volume: 0.2 },
-        bowl: { active: false, volume: 0.3 },
-        brownNoise: { active: false, volume: 0.3 },
-      }
-    },
-    {
-      name: 'Deep Sleep',
-      icon: '🌙',
-      mix: {
-        rain: { active: true, volume: 0.3 },
-        waves: { active: false, volume: 0.3 },
-        wind: { active: false, volume: 0.2 },
-        crickets: { active: false, volume: 0.2 },
-        bowl: { active: false, volume: 0.3 },
-        brownNoise: { active: true, volume: 0.8 },
-      }
-    },
-  ];
-
-  useEffect(() => {
-    localStorage.setItem('safespace_sound_mix', JSON.stringify(channels));
-  }, [channels]);
-
-  // Synchronise soundscape engines with play/pause and user selections
-  useEffect(() => {
-    if (isPlaying) {
-      Object.entries(channels).forEach(([chId, chState]: [string, any]) => {
-        setSoundscapeChannel(chId as any, chState.active, chState.volume);
-      });
-      setMasterSoundscapeVolume(masterVolume);
-    } else {
-      stopAllSoundscapeChannels();
-    }
-    return () => {
-      // Don't stop on regular re-render, only on full unmount
-    };
-  }, [isPlaying, channels]);
-
-  // Sync Master Volume shifts instantly
-  useEffect(() => {
-    setMasterSoundscapeVolume(masterVolume);
-  }, [masterVolume]);
-
-  const handleToggleChannel = (chId: string) => {
-    const isNowActive = !channels[chId].active;
-    setChannels(prev => ({
-      ...prev,
-      [chId]: { ...prev[chId], active: isNowActive }
-    }));
-    if (isNowActive && !isPlaying) {
-      setIsPlaying(true);
-    }
-  };
-
-  const handleChannelVolumeChange = (chId: string, value: number) => {
-    setChannels(prev => ({
-      ...prev,
-      [chId]: { ...prev[chId], volume: value }
-    }));
-    if (isPlaying && channels[chId].active) {
-      setSoundscapeChannelVolume(chId, value);
-    }
-  };
-
-  const loadPreset = (presetMix: any) => {
-    setChannels(presetMix);
-    setIsPlaying(true);
-  };
-
-  const handleStopAll = () => {
-    setIsPlaying(false);
-    stopAllSoundscapeChannels();
-    setChannels(prev => {
-      const updated = { ...prev };
-      Object.keys(updated).forEach(k => {
-        updated[k] = { ...updated[k], active: false };
-      });
-      return updated;
-    });
-  };
-
-  const anyActive = Object.values(channels).some((ch: any) => ch.active);
-
-  const CHANNEL_DETAILS = [
-    { id: 'rain', name: 'Summer Rain', icon: '🌧️', desc: 'Procedural warm pitter patter drops' },
-    { id: 'waves', name: 'Ocean Swell', icon: '🌊', desc: 'LFO swept continuous rolling tidal sweeps' },
-    { id: 'wind', name: 'Forest Wind', icon: '🌬️', desc: 'Generative air whistletones' },
-    { id: 'crickets', name: 'Night Insects', icon: '🦗', desc: 'Pulsed analog-style organic shimmer and chirp series' },
-    { id: 'bowl', name: 'Singing Bowl', icon: '🥣', desc: 'Tibetan modal sinus beating harmonics' },
-    { id: 'brownNoise', name: 'Deep Sleep Drone', icon: '🟤', desc: 'Lowpass brown noise deep background rumble' },
-  ];
-
-  return (
-    <div className="flex flex-col h-full bg-[#F1F5F2] p-5 justify-between overflow-y-auto select-none no-scrollbar">
-      
-      {/* Header bar and back button */}
-      <div className="flex items-center justify-between mt-3 mb-2 shrink-0">
-        <button
-          onClick={() => {
-            onBack();
-          }}
-          className="text-[#4A6741] hover:bg-[#E1E8E3] rounded-full p-1.5 transition border-0 bg-transparent cursor-pointer flex items-center justify-center"
-          title="Back to Dashboard"
-        >
-          <ArrowLeft size={18} />
-        </button>
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Offline Synthesizer</span>
-        <div className="w-8 h-8" />
-      </div>
-
-      {/* Main Title */}
-      <div className="text-center mb-3 shrink-0">
-        <h2 className="text-xl font-bold text-[#4A6741] leading-tight font-sans">Soundscapes</h2>
-        <p className="text-[11px] text-slate-500 mt-1">
-          Mix customized nature streams generated entirely on-device with zero network latency.
-        </p>
-      </div>
-
-      {/* Hero Sound Console Card */}
-      <div className="bg-white/80 backdrop-blur-md rounded-3xl p-4 shadow-2xs border border-white/60 flex flex-col items-center shrink-0 mb-3.5">
-        
-        {/* Breathing audio ring indicators */}
-        <div className="relative flex items-center justify-center w-20 h-20 mb-3.5 select-none">
-          <div className={`absolute inset-0 rounded-full bg-[#4A6741]/15 ${isPlaying && anyActive ? 'animate-ping opacity-25' : 'opacity-0'} transition-all`} style={{ animationDuration: '3.5s' }} />
-          <div className="absolute inset-1.5 rounded-full bg-white border border-[#A8C69F]/30 flex items-center justify-center shadow-xs">
-            <Music size={26} className={`${isPlaying && anyActive ? 'text-[#4A6741] animate-spin' : 'text-slate-300'}`} style={{ animationDuration: '10s' }} />
-          </div>
-        </div>
-
-        {/* Console buttons */}
-        <div className="w-full flex flex-col space-y-3 pb-0.5">
-          <div className="flex items-center justify-center gap-2">
-            <button
-              onClick={() => {
-                if (isPlaying) {
-                  setIsPlaying(false);
-                } else {
-                  // If none active, turn on Rain as a beautiful default
-                  const activeCount = Object.values(channels).filter((c: any) => c.active).length;
-                  if (activeCount === 0) {
-                    setChannels(prev => ({
-                      ...prev,
-                      rain: { active: true, volume: 0.5 },
-                      bowl: { active: true, volume: 0.4 },
-                    }));
-                  }
-                  setIsPlaying(true);
-                }
-              }}
-              className={`px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-wider flex items-center justify-center transition shadow-xs cursor-pointer border-0 ${
-                isPlaying && anyActive
-                  ? 'bg-amber-600 hover:bg-amber-700 text-white animate-pulse'
-                  : 'bg-[#4A6741] hover:bg-[#3D5535] text-white'
-              }`}
-            >
-              <span>{isPlaying && anyActive ? '⏸️ Mute Synthesizer' : '▶️ Play Soundscape'}</span>
-            </button>
-
-            {(isPlaying || anyActive) && (
-              <button
-                onClick={handleStopAll}
-                className="bg-red-50 hover:bg-red-100 text-red-600 text-[9px] font-black uppercase tracking-wider px-4 py-2 rounded-full transition cursor-pointer border-0"
-              >
-                Reset Mixer ✕
-              </button>
-            )}
-          </div>
-
-          {/* Master slider */}
-          <div className="bg-slate-50/50 p-2 rounded-xl border border-slate-100 flex items-center space-x-3 w-full select-none">
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider shrink-0 pl-1">Master Vol</span>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value={masterVolume}
-              onChange={(e) => setMasterVolume(parseFloat(e.target.value))}
-              className="accent-[#4A6741] h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer flex-1"
-            />
-            <span className="text-[10px] font-mono font-bold text-slate-500 w-8 text-right shrink-0 pr-1">
-              {Math.round(masterVolume * 100)}%
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Presets Grid */}
-      <div className="shrink-0 mb-3 mt-1 select-none">
-        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-left block mb-2">Soundscape Presets</span>
-        <div className="grid grid-cols-4 gap-1.5">
-          {PRESETS.map((preset) => (
-            <button
-              key={preset.name}
-              onClick={() => loadPreset(preset.mix)}
-              className="bg-white/80 hover:bg-[#E1E8E3]/60 border border-white hover:border-[#4A6741]/25 transition p-2.5 rounded-2xl flex flex-col items-center justify-center cursor-pointer text-center space-y-1 scale-100 hover:scale-102"
-            >
-              <span className="text-base">{preset.icon}</span>
-              <span className="text-[8px] font-extrabold text-slate-700 tracking-wide truncate max-w-full">
-                {preset.name}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Multi-Channel Scroll List */}
-      <div className="flex-1 flex flex-col space-y-2 overflow-y-auto mb-3 max-h-[310px] no-scrollbar">
-        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-left block mb-1">Interactive Mix Layers</span>
-        
-        {CHANNEL_DETAILS.map((ch) => {
-          const state = channels[ch.id];
-          const isActive = state ? state.active : false;
-          const userVol = state ? state.volume : 0.5;
-
-          return (
-            <div
-              key={ch.id}
-              className={`rounded-2xl p-2.5 border transition flex items-center justify-between gap-3 ${
-                isActive 
-                  ? 'bg-[#EBF2EC]/70 border-[#4A6741]/40 shadow-2xs' 
-                  : 'bg-white/80 border-slate-100/60 hover:border-slate-200/80'
-              }`}
-            >
-              <div className="flex items-center space-x-2.5 text-left min-w-0 flex-1">
-                <button
-                  type="button"
-                  onClick={() => handleToggleChannel(ch.id)}
-                  className={`text-lg w-9 h-9 rounded-xl flex items-center justify-center border transition select-none cursor-pointer shrink-0 ${
-                    isActive
-                      ? 'bg-white text-[#4A6741] border-[#4A6741] shadow-2xs scale-[1.02] font-black'
-                      : 'bg-slate-50 text-slate-400 border-slate-200/50 hover:bg-white'
-                  }`}
-                  title={isActive ? 'Deactivate layer' : 'Activate layer'}
-                >
-                  {ch.icon}
-                </button>
-                <div className="min-w-0">
-                  <h4 className="text-[10px] font-black text-slate-800 flex items-center space-x-1.5 leading-none">
-                    <span>{ch.name}</span>
-                    {isActive && (
-                      <span className="inline-flex h-1.5 w-1.5 rounded-full bg-[#4A6741] animate-pulse" />
-                    )}
-                  </h4>
-                  <p className="text-[8px] text-slate-400 truncate leading-none mt-1">{ch.desc}</p>
-                </div>
-              </div>
-
-              {/* Individual Multi-Voice Amplification strip */}
-              <div className="flex items-center space-x-2 w-24 shrink-0">
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  value={userVol}
-                  onChange={(e) => handleChannelVolumeChange(ch.id, parseFloat(e.target.value))}
-                  disabled={!isActive}
-                  className={`h-1 rounded-lg appearance-none cursor-pointer flex-1 ${
-                    isActive ? 'accent-[#4A6741] bg-slate-200' : 'bg-slate-200 cursor-not-allowed opacity-40'
-                  }`}
-                />
-                <span className={`text-[8px] font-mono font-bold w-5 text-right ${isActive ? 'text-[#4A6741]' : 'text-slate-300'}`}>
-                  {isActive ? `${Math.round(userVol * 100)}` : 'OFF'}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Safety Compliance Statement */}
-      <div className="shrink-0 pt-3 border-t border-slate-100 flex items-center justify-center gap-1">
-        <span className="text-[8px] font-black text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded uppercase tracking-wider scale-95 font-sans leading-none">Vitals Tuned</span>
-        <span className="text-[8.5px] text-slate-400 italic font-medium leading-none">
-          Custom analog wave synthesis; 0% cellular data usage
-        </span>
-      </div>
-
-    </div>
-  );
-};

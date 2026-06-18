@@ -29,12 +29,19 @@ export type ActiveScreen =
   | 'relief' 
   | 'emergency' 
   | 'history' 
-  | 'soundscape'
   | 'reframing'
   | 'habit'
   | 'gratitude'
   | 'somatic'
-  | 'safetyPlan';
+  | 'safetyPlan'
+  | 'worryBox'
+  | 'emdr'
+  | 'emotionWheel'
+  | 'vagusHacks'
+  | 'panicSOS'
+  | 'somaticHub'
+  | 'cbtHub'
+  | 'safetyHub';
 
 export type BreathingType = 'box' | 'calm'; // Box: 4-4-4-4, Calm (4-7-8)
 

@@ -130,6 +130,9 @@ export default function App() {
   useEffect(() => {
     switch (activeScreen) {
       case 'dashboard':
+      case 'somaticHub':
+      case 'cbtHub':
+      case 'safetyHub':
         setSelectedFileIndex(5); // DashboardScreen.kt
         break;
       case 'breathing':
@@ -159,16 +162,18 @@ export default function App() {
       case 'safetyPlan':
         setSelectedFileIndex(12); // StanleyBrownSafetyPlan.kt
         break;
-      case 'soundscape':
-        setSelectedFileIndex(13); // SoundscapeScreen.kt
-        break;
+
     }
   }, [activeScreen]);
 
   // Derive recommended file index for status highlight
   const getRecommendedFileIndex = (): number => {
     switch (activeScreen) {
-      case 'dashboard': return 5;
+      case 'dashboard':
+      case 'somaticHub':
+      case 'cbtHub':
+      case 'safetyHub':
+        return 5;
       case 'breathing': return 3;
       case 'grounding': return 4;
       case 'relief': return 7;
@@ -178,7 +183,7 @@ export default function App() {
       case 'gratitude': return 10;
       case 'somatic': return 11;
       case 'safetyPlan': return 12;
-      case 'soundscape': return 13;
+
       default: return 5;
     }
   };

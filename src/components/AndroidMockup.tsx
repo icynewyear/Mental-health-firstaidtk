@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, Leaf, Compass, BookOpen, Phone, Wifi, Battery, Signal } from 'lucide-react';
+import { Home, Leaf, Compass, BookOpen, Phone, Wifi, Battery, Signal, Brain, Shield } from 'lucide-react';
 import { ActiveScreen, MoodLogEntry } from '../types';
 import {
   SimulatorDashboard,
@@ -7,8 +7,7 @@ import {
   SimulatorGrounding,
   SimulatorRelief,
   SimulatorEmergency,
-  SimulatorHistory,
-  SimulatorSoundscape
+  SimulatorHistory
 } from './SimulatorScreens';
 import {
   SimulatorReframing,
@@ -17,6 +16,18 @@ import {
   SimulatorSomatic,
   SimulatorSafetyPlan
 } from './ToolkitScreens';
+import {
+  SimulatorWorryBox,
+  SimulatorEMDR,
+  SimulatorEmotionWheel,
+  SimulatorVagusHacks,
+  SimulatorPanicSOS
+} from './ExtendedToolkitScreens';
+import {
+  SimulatorSomaticHub,
+  SimulatorCbtHub,
+  SimulatorSafetyHub
+} from './HubScreens';
 
 interface AndroidMockupProps {
   activeScreen: ActiveScreen;
@@ -65,16 +76,19 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
   const getScreenTitle = () => {
     switch (activeScreen) {
       case 'dashboard': return 'Dashboard';
+      case 'somaticHub': return 'Somatic Hub';
+      case 'cbtHub': return 'CBT Mind Hub';
+      case 'safetyHub': return 'Safety SOS Hub';
       case 'breathing': return 'Breathe';
-      case 'grounding': return 'Sensory Grid';
+      case 'grounding': return 'Sensory Grounding';
       case 'relief': return 'Coping Statements';
       case 'emergency': return 'Crisis Dial';
-      case 'history': return 'Nervous System History';
+      case 'history': return 'Care History & Logs';
       case 'reframing': return 'Thought Reframer';
-      case 'habit': return 'Neuro-Basics';
+      case 'habit': return 'Everyday Basics';
       case 'gratitude': return 'Gratitude Jar';
-      case 'somatic': return 'Somatic Lock';
-      case 'safetyPlan': return 'Shield of Safety';
+      case 'somatic': return 'Muscle Release';
+      case 'safetyPlan': return 'My Safety Plan';
       default: return 'Safe Space';
     }
   };
@@ -121,17 +135,41 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
                 moodHistory={moodHistory}
               />
             )}
+            {activeScreen === 'somaticHub' && (
+              <SimulatorSomaticHub
+                onNavigate={(route) => setActiveScreen(route)}
+                onBack={() => setActiveScreen('dashboard')}
+              />
+            )}
+            {activeScreen === 'cbtHub' && (
+              <SimulatorCbtHub
+                onNavigate={(route) => setActiveScreen(route)}
+                onBack={() => setActiveScreen('dashboard')}
+              />
+            )}
+            {activeScreen === 'safetyHub' && (
+              <SimulatorSafetyHub
+                onNavigate={(route) => setActiveScreen(route)}
+                onBack={() => setActiveScreen('dashboard')}
+              />
+            )}
             {activeScreen === 'breathing' && (
-              <SimulatorBreathing />
+              <SimulatorBreathing onBack={() => setActiveScreen('somaticHub')} />
             )}
             {activeScreen === 'grounding' && (
-              <SimulatorGrounding onTriggerDebug={() => setShowDebugMenu(!showDebugMenu)} />
+              <SimulatorGrounding 
+                onTriggerDebug={() => setShowDebugMenu(!showDebugMenu)} 
+                onBack={() => setActiveScreen('somaticHub')} 
+              />
             )}
             {activeScreen === 'relief' && (
-              <SimulatorRelief />
+              <SimulatorRelief onBack={() => setActiveScreen('cbtHub')} />
             )}
             {activeScreen === 'emergency' && (
-              <SimulatorEmergency onNavigate={(route) => setActiveScreen(route)} />
+              <SimulatorEmergency 
+                onNavigate={(route) => setActiveScreen(route)} 
+                onBack={() => setActiveScreen('safetyHub')}
+              />
             )}
             {activeScreen === 'history' && (
               <SimulatorHistory
@@ -141,23 +179,36 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
                 seedRandomData={seedRandomData}
               />
             )}
-            {activeScreen === 'soundscape' && (
-              <SimulatorSoundscape onBack={() => setActiveScreen('dashboard')} />
-            )}
+
             {activeScreen === 'reframing' && (
-              <SimulatorReframing onBack={() => setActiveScreen('dashboard')} />
+              <SimulatorReframing onBack={() => setActiveScreen('cbtHub')} />
             )}
             {activeScreen === 'habit' && (
-              <SimulatorHabit onBack={() => setActiveScreen('dashboard')} />
+              <SimulatorHabit onBack={() => setActiveScreen('cbtHub')} />
             )}
             {activeScreen === 'gratitude' && (
-              <SimulatorGratitude onBack={() => setActiveScreen('dashboard')} />
+              <SimulatorGratitude onBack={() => setActiveScreen('cbtHub')} />
             )}
             {activeScreen === 'somatic' && (
-              <SimulatorSomatic onBack={() => setActiveScreen('dashboard')} />
+              <SimulatorSomatic onBack={() => setActiveScreen('somaticHub')} />
             )}
             {activeScreen === 'safetyPlan' && (
-              <SimulatorSafetyPlan onBack={() => setActiveScreen('emergency')} />
+              <SimulatorSafetyPlan onBack={() => setActiveScreen('safetyHub')} />
+            )}
+            {activeScreen === 'worryBox' && (
+              <SimulatorWorryBox onBack={() => setActiveScreen('cbtHub')} />
+            )}
+            {activeScreen === 'emdr' && (
+              <SimulatorEMDR onBack={() => setActiveScreen('somaticHub')} />
+            )}
+            {activeScreen === 'emotionWheel' && (
+              <SimulatorEmotionWheel onBack={() => setActiveScreen('cbtHub')} />
+            )}
+            {activeScreen === 'vagusHacks' && (
+              <SimulatorVagusHacks onBack={() => setActiveScreen('somaticHub')} />
+            )}
+            {activeScreen === 'panicSOS' && (
+              <SimulatorPanicSOS onBack={() => setActiveScreen('safetyHub')} />
             )}
           </div>
 
@@ -178,63 +229,54 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
               </span>
             </button>
 
-            {/* Nav: Breathing */}
+            {/* Nav: Body (Somatic) */}
             <button
-              onClick={() => setActiveScreen('breathing')}
+              onClick={() => setActiveScreen('somaticHub')}
               className="flex flex-col items-center justify-center flex-1 py-1"
             >
               <div className={`p-1.5 px-3.5 rounded-full transition duration-300 flex items-center justify-center ${
-                activeScreen === 'breathing' ? 'bg-[#E1E8E3] text-[#4A6741] scale-102' : 'text-slate-400 hover:text-slate-500'
+                ['somaticHub', 'breathing', 'grounding', 'vagusHacks', 'somatic', 'emdr'].includes(activeScreen) ? 'bg-[#E1E8E3] text-[#4A6741] scale-102' : 'text-slate-400 hover:text-slate-500'
               }`}>
                 <Leaf size={15} className="stroke-[2.5]" />
               </div>
-              <span className={`text-[8px] font-black tracking-wide mt-1 ${activeScreen === 'breathing' ? 'text-[#4A6741] font-bold' : 'text-slate-400'}`}>
-                Breathe
+              <span className={`text-[8px] font-black tracking-wide mt-1 ${
+                ['somaticHub', 'breathing', 'grounding', 'vagusHacks', 'somatic', 'emdr'].includes(activeScreen) ? 'text-[#4A6741] font-bold' : 'text-slate-400'
+              }`}>
+                Body
               </span>
             </button>
 
-            {/* Nav: Grounding */}
+            {/* Nav: Mind (CBT) */}
             <button
-              onClick={() => setActiveScreen('grounding')}
+              onClick={() => setActiveScreen('cbtHub')}
               className="flex flex-col items-center justify-center flex-1 py-1"
             >
               <div className={`p-1.5 px-3.5 rounded-full transition duration-300 flex items-center justify-center ${
-                activeScreen === 'grounding' ? 'bg-[#E1E8E3] text-[#4A6741] scale-102' : 'text-slate-400 hover:text-slate-500'
+                ['cbtHub', 'reframing', 'worryBox', 'emotionWheel', 'relief', 'gratitude', 'habit'].includes(activeScreen) ? 'bg-[#E1E8E3] text-[#4A6741] scale-102' : 'text-slate-400 hover:text-slate-500'
               }`}>
-                <Compass size={15} className="stroke-[2.5]" />
+                <Brain size={15} className="stroke-[2.5]" />
               </div>
-              <span className={`text-[8px] font-black tracking-wide mt-1 ${activeScreen === 'grounding' ? 'text-[#4A6741] font-bold' : 'text-slate-400'}`}>
-                Ground
+              <span className={`text-[8px] font-black tracking-wide mt-1 ${
+                ['cbtHub', 'reframing', 'worryBox', 'emotionWheel', 'relief', 'gratitude', 'habit'].includes(activeScreen) ? 'text-[#4A6741] font-bold' : 'text-slate-400'
+              }`}>
+                Mind
               </span>
             </button>
 
-            {/* Nav: Coping Relief */}
+            {/* Nav: Safety (SOS) */}
             <button
-              onClick={() => setActiveScreen('relief')}
+              onClick={() => setActiveScreen('safetyHub')}
               className="flex flex-col items-center justify-center flex-1 py-1"
             >
               <div className={`p-1.5 px-3.5 rounded-full transition duration-300 flex items-center justify-center ${
-                activeScreen === 'relief' ? 'bg-[#E1E8E3] text-[#4A6741] scale-102' : 'text-slate-400 hover:text-slate-500'
+                ['safetyHub', 'panicSOS', 'safetyPlan', 'emergency'].includes(activeScreen) ? 'bg-[#E1E8E3] text-[#4A6741] scale-102' : 'text-slate-400 hover:text-slate-500'
               }`}>
-                <BookOpen size={15} className="stroke-[2.5]" />
+                <Shield size={15} className="stroke-[2.5]" />
               </div>
-              <span className={`text-[8px] font-black tracking-wide mt-1 ${activeScreen === 'relief' ? 'text-[#4A6741] font-bold' : 'text-slate-400'}`}>
-                Coping
-              </span>
-            </button>
-
-            {/* Nav: Emergency Crisis */}
-            <button
-              onClick={() => setActiveScreen('emergency')}
-              className="flex flex-col items-center justify-center flex-1 py-1"
-            >
-              <div className={`p-1.5 px-3.5 rounded-full transition duration-300 flex items-center justify-center ${
-                activeScreen === 'emergency' ? 'bg-[#E1E8E3] text-[#4A6741] scale-102' : 'text-slate-400 hover:text-slate-500'
+              <span className={`text-[8px] font-black tracking-wide mt-1 ${
+                ['safetyHub', 'panicSOS', 'safetyPlan', 'emergency'].includes(activeScreen) ? 'text-[#4A6741] font-bold' : 'text-slate-400'
               }`}>
-                <Phone size={15} className="stroke-[2.5]" />
-              </div>
-              <span className={`text-[8px] font-black tracking-wide mt-1 ${activeScreen === 'emergency' ? 'text-[#4A6741] font-bold' : 'text-slate-400'}`}>
-                Crisis
+                Safety
               </span>
             </button>
           </div>

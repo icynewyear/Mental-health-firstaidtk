@@ -66,14 +66,14 @@ export const SimulatorReframing: React.FC<ReframingProps> = ({ onBack }) => {
         >
           <ArrowLeft size={18} />
         </button>
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none font-mono">Cognitive Audit</span>
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none font-mono">Finding Perspective</span>
         <div className="w-8 h-8" />
       </div>
 
       <div className="text-center mb-3.5 shrink-0">
         <h2 className="text-lg font-black text-[#4A6741] leading-tight font-sans">Thought Reframer</h2>
         <p className="text-[10px] text-slate-500 mt-0.5 max-w-[90%] mx-auto leading-tight">
-          Deconstruct anxious automatic loops of cognitive distortion into balanced, realistic perspectives.
+          Gently untangle anxious thoughts or harsh assumptions to find a kinder, more balanced point of view.
         </p>
       </div>
 
@@ -81,7 +81,7 @@ export const SimulatorReframing: React.FC<ReframingProps> = ({ onBack }) => {
       <div className="flex flex-col space-y-4 pb-6">
         <form onSubmit={handleSave} className="bg-white/90 backdrop-blur border border-[#E1E8E3] rounded-3xl p-3.5 shadow-sm space-y-3.5 text-left">
           <div className="space-y-1">
-            <label className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">1. My Automatic Negative Thought</label>
+            <label className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">1. My automatic or worrying thought</label>
             <textarea
               required
               rows={2}
@@ -93,7 +93,13 @@ export const SimulatorReframing: React.FC<ReframingProps> = ({ onBack }) => {
           </div>
 
           <div className="space-y-1">
-            <label className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">2. Identify the Distortion</label>
+            <label className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">2. Recognizing the pattern</label>
+            <textarea
+              readOnly
+              value={distortion}
+              onClick={() => {}} // dummy action
+              className="hidden" // we can keep select or just let user see select
+            />
             <select
               value={distortion}
               onChange={(e) => setDistortion(e.target.value)}
@@ -109,7 +115,7 @@ export const SimulatorReframing: React.FC<ReframingProps> = ({ onBack }) => {
           </div>
 
           <div className="space-y-1">
-            <label className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">3. Balanced Reframe (Rational Thought)</label>
+            <label className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">3. A gentler, balanced reframe</label>
             <textarea
               required
               rows={2}
@@ -125,7 +131,7 @@ export const SimulatorReframing: React.FC<ReframingProps> = ({ onBack }) => {
             className="w-full py-2.5 bg-[#4A6741] hover:bg-[#3E5536] text-white rounded-xl font-bold text-xs shadow-sm transition active:scale-98 cursor-pointer border-0 flex items-center justify-center space-x-1.5"
           >
             <Sparkles size={11.5} className="text-white animate-pulse" />
-            <span>Store Reframed Thought</span>
+            <span>Save Reframed Thought</span>
           </button>
         </form>
 
@@ -135,7 +141,7 @@ export const SimulatorReframing: React.FC<ReframingProps> = ({ onBack }) => {
           
           {logs.length === 0 ? (
             <div className="bg-white/40 border border-[#E1E8E3]/50 rounded-2xl p-4 text-center">
-              <p className="text-[10px] text-slate-400 italic font-medium">No reframes saved yet today. Break the cycle above!</p>
+              <p className="text-[10px] text-slate-400 italic font-medium">No saved reframes yet. Add one above to start exploring gentler views!</p>
             </div>
           ) : (
             logs.map(log => (
@@ -167,7 +173,7 @@ export const SimulatorReframing: React.FC<ReframingProps> = ({ onBack }) => {
 
       <div className="shrink-0 pt-2 border-t border-slate-100/80 text-center flex items-center justify-center gap-1">
         <Info size={10} className="text-[#4A6741]" />
-        <span className="text-[8.5px] text-slate-400 italic">CBT practices build brand new automatic neural responses.</span>
+        <span className="text-[8.5px] text-slate-400 italic">Taking time to find alternative views helps our minds feel calmer over time.</span>
       </div>
     </div>
   );
@@ -175,7 +181,7 @@ export const SimulatorReframing: React.FC<ReframingProps> = ({ onBack }) => {
 
 
 // ============================================================================
-// 2. NEURO-BASICS HABIT CHECKLIST (BIOLOGICAL WELLNESS RESILIENCE)
+// 2. EVERYDAY BASICS SELF-CARE CHECKLIST
 // ============================================================================
 interface HabitProps {
   onBack: () => void;
@@ -184,15 +190,27 @@ interface HabitProps {
 export const SimulatorHabit: React.FC<HabitProps> = ({ onBack }) => {
   const [habits, setHabits] = useState<HabitItem[]>(() => {
     const saved = localStorage.getItem('safespace_daily_habits');
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // If they have old clinical ones, let's migrate them to new clean ones.
+        if (parsed.length > 0 && (parsed[0].name.includes('Circadian') || parsed[0].name.includes('Biological') || parsed[0].name.includes('Compliance'))) {
+          localStorage.removeItem('safespace_daily_habits');
+        } else {
+          return parsed;
+        }
+      } catch (e) {
+        // Safe play
+      }
+    }
     return [
-      { id: '1', name: 'Circadian Sunlight (10m in AM)', completed: false, category: 'Circadian', icon: '☀️' },
-      { id: '2', name: 'Biological Hydration (8 glasses)', completed: false, category: 'Hydration', icon: '💧' },
-      { id: '3', name: 'Endorphin Walk (15m body move)', completed: false, category: 'Movement', icon: '🚶' },
-      { id: '4', name: 'Vagus Resonant Deep Breathing', completed: false, category: 'Vagus', icon: '🍃' },
-      { id: '5', name: 'Microbiome Balance Nutrient Meal', completed: false, category: 'Nourishment', icon: '🥗' },
-      { id: '6', name: 'Oxytocin Support Check-in', completed: false, category: 'Social Connection', icon: '🗣️' },
-      { id: '7', name: 'Screen-Free Chill Period (30m)', completed: false, category: 'Melatonin', icon: '📴' },
+      { id: '1', name: 'Catch some morning sunlight (10-15m)', completed: false, category: 'Light & Air', icon: '☀️' },
+      { id: '2', name: 'Drink a glass of cooling fresh water', completed: false, category: 'Hydration', icon: '💧' },
+      { id: '3', name: 'Go for a gentle, easy walk outside', completed: false, category: 'Movement', icon: '🚶' },
+      { id: '4', name: 'Take a slow, deep calming breath', completed: false, category: 'Mindfulness', icon: '🍃' },
+      { id: '5', name: 'Enjoy a warm or nourishing meal', completed: false, category: 'Nourishment', icon: '🥗' },
+      { id: '6', name: 'Reach out or check in with a friend', completed: false, category: 'Connection', icon: '🗣️' },
+      { id: '7', name: 'Enjoy some screen-free quiet time', completed: false, category: 'Rest', icon: '📴' },
     ];
   });
 
@@ -221,7 +239,7 @@ export const SimulatorHabit: React.FC<HabitProps> = ({ onBack }) => {
         >
           <ArrowLeft size={18} />
         </button>
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none font-mono">Resilience Audit</span>
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none font-mono">Everyday Care</span>
         <button
           onClick={handleReset}
           className="text-slate-400 hover:text-[#4A6741] text-[9px] font-black uppercase tracking-wider bg-white rounded-lg px-2 py-1 border border-slate-100 transition cursor-pointer"
@@ -231,16 +249,16 @@ export const SimulatorHabit: React.FC<HabitProps> = ({ onBack }) => {
       </div>
 
       <div className="text-center mb-3 shrink-0">
-        <h2 className="text-lg font-black text-[#4A6741] leading-tight font-sans">Neuro-Vitals Tracker</h2>
+        <h2 className="text-lg font-black text-[#4A6741] leading-tight font-sans font-sans">Everyday Basics</h2>
         <p className="text-[10px] text-slate-500 mt-0.5 leading-tight">
-          Verify neurotransmitter essentials before concluding distress is mental. Fix biology first.
+          Sometimes, caring for our physical needs is the gentlest way to help support a peaceful mind. Let's check in on the basics.
         </p>
       </div>
 
-      {/* Progress Compliance Box */}
+      {/* Progress Box */}
       <div className="bg-white border border-[#E1E8E3] rounded-3xl p-3.5 shadow-2xs mb-3 flex flex-col items-center shrink-0">
         <div className="flex justify-between items-center w-full mb-1.5 text-[10.5px]">
-          <span className="font-extrabold text-slate-700">Daily Compliance Index</span>
+          <span className="font-extrabold text-slate-700">My Self-Care Basics</span>
           <span className="font-black text-[#4A6741] font-mono">{completedCount}/{habits.length} Done</span>
         </div>
         {/* Animated Bar */}
@@ -251,10 +269,10 @@ export const SimulatorHabit: React.FC<HabitProps> = ({ onBack }) => {
           />
         </div>
         <p className="text-[9px] text-center font-bold text-slate-500 leading-tight">
-          {completedCount === 0 && '🧬 Activate neurochemistry! Tap elements below.'}
-          {completedCount > 0 && completedCount < 4 && '💡 Incremental steps stabilize nervous response.'}
-          {completedCount >= 4 && completedCount < habits.length && '🌟 Brain resilience active. Good dopamine support!'}
-          {completedCount === habits.length && '👑 Complete biological balance! System optimized.'}
+          {completedCount === 0 && '🌱 Take a gentle step. Tap any item below when you\'ve done it.'}
+          {completedCount > 0 && completedCount < 4 && '💡 Step by step. Each little bit of support helps your mind rest.'}
+          {completedCount >= 4 && completedCount < habits.length && '🌟 Beautiful. You are treating yourself with wonderful kindness today!'}
+          {completedCount === habits.length && '🌿 How wonderful. All the simple basics are attended to!'}
         </p>
       </div>
 
@@ -293,7 +311,7 @@ export const SimulatorHabit: React.FC<HabitProps> = ({ onBack }) => {
 
       <div className="shrink-0 pt-2 border-t border-slate-100/80 text-center flex items-center justify-center gap-1">
         <Activity size={10} className="text-[#4A6741]" />
-        <span className="text-[8.5px] text-slate-400">Sleep, light, hydration are physiological stress counterweights.</span>
+        <span className="text-[8.5px] text-slate-400">Sleep, fresh air, and drinking water are simple ways to help support your mind and body.</span>
       </div>
     </div>
   );
@@ -476,20 +494,36 @@ export const SimulatorGratitude: React.FC<GratitudeProps> = ({ onBack }) => {
               </p>
             </div>
 
-            <button
-              onClick={() => setDrawnSlip(null)}
-              className="mt-4 px-6 py-2 rounded-full font-extrabold text-[10px] uppercase tracking-wider text-white border-0 transition active:scale-95 cursor-pointer shadow-sm"
-              style={{ backgroundColor: `hsl(${drawnSlip.hue}, 60%, 32%)` }}
-            >
-              Put Back in Jar ✕
-            </button>
+            <div className="mt-4 flex flex-col xs:flex-row gap-2.5 w-full justify-center">
+              <button
+                onClick={() => setDrawnSlip(null)}
+                className="px-4 py-2 rounded-full font-extrabold text-[10.5px] uppercase tracking-wider text-white border-0 transition active:scale-95 cursor-pointer shadow-xs flex-1"
+                style={{ backgroundColor: `hsl(${drawnSlip.hue}, 60%, 32%)` }}
+              >
+                Put Back in Jar 🔄
+              </button>
+              <button
+                onClick={() => {
+                  setSlips(slips.filter(s => s.id !== drawnSlip.id));
+                  setDrawnSlip(null);
+                }}
+                className="px-4 py-2 rounded-full font-extrabold text-[10.5px] uppercase tracking-wider bg-white/70 hover:bg-white/90 border transition active:scale-95 cursor-pointer shadow-xs flex-1"
+                style={{ 
+                  color: `hsl(${drawnSlip.hue}, 70%, 24%)`,
+                  borderColor: `hsla(${drawnSlip.hue}, 80%, 45%, 0.25)`
+                }}
+                title="Permanently remove this memory from the jar"
+              >
+                Discard Memory 🗑️
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       <div className="shrink-0 pt-2 border-t border-slate-100/80 text-center flex items-center justify-center gap-1">
         <Sparkles size={10} className="text-[#4A6741]" />
-        <span className="text-[8.5px] text-slate-400">Gratitude retrains brains to notice resource abundances.</span>
+        <span className="text-[8.5px] text-slate-400">Taking time to note small bits of joy helps us appreciate the beauty in each day.</span>
       </div>
     </div>
   );
@@ -621,14 +655,14 @@ export const SimulatorSomatic: React.FC<SomaticProps> = ({ onBack }) => {
         >
           <ArrowLeft size={18} />
         </button>
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none font-mono">Somatic Vagus</span>
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none font-mono">Gentle Somatic Release</span>
         <div className="w-8 h-8" />
       </div>
 
       <div className="text-center mb-3 shrink-0">
-        <h2 className="text-lg font-black text-[#4A6741] leading-tight font-sans font-sans">Somatic Lock-Release</h2>
+        <h2 className="text-lg font-black text-[#4A6741] leading-tight font-sans font-sans">Muscle Tension Release</h2>
         <p className="text-[10px] text-slate-500 mt-0.5 leading-tight">
-          Physical anxiety locks into muscle fibers. Squeeze tight then melt to cheat heart rate spikes.
+          Tightening and then fully releasing your muscles is a beautiful way to gently signal safety and ease to your body.
         </p>
       </div>
 
@@ -659,7 +693,7 @@ export const SimulatorSomatic: React.FC<SomaticProps> = ({ onBack }) => {
             {exerciseActive ? (
               <div className="text-center leading-none">
                 <span className={`text-[10px] font-black uppercase tracking-wider block ${phase === 'tense' ? 'text-amber-750' : 'text-emerald-700'}`}>
-                  {phase}
+                  {phase === 'tense' ? 'Squeeze' : 'Let Go'}
                 </span>
                 <span className="text-2xl font-black text-slate-850 block font-mono mt-1">{timerLeft}s</span>
               </div>
@@ -675,7 +709,7 @@ export const SimulatorSomatic: React.FC<SomaticProps> = ({ onBack }) => {
         }`}>
           {exerciseActive 
             ? phase === 'tense' ? currentRegion.action : currentRegion.release
-            : 'Press "Begin Somatic Protocol" below, then lock each muscle group specified.'
+            : 'Press "Begin Gentle Tension Release" below, then gently follow along muscle group by muscle group.'
           }
         </p>
 
@@ -686,7 +720,7 @@ export const SimulatorSomatic: React.FC<SomaticProps> = ({ onBack }) => {
               onClick={handleToggleActive}
               className="px-5 py-2.5 bg-[#4A6741] hover:bg-[#3D5535] text-white font-extrabold text-[10px] uppercase tracking-wider rounded-full transition active:scale-95 cursor-pointer border-0 shadow-xs"
             >
-              Begin Somatic Protocol
+              Begin Gentle Tension Release
             </button>
           ) : (
             <button
@@ -731,7 +765,7 @@ export const SimulatorSomatic: React.FC<SomaticProps> = ({ onBack }) => {
 
       <div className="shrink-0 pt-2 border-t border-slate-100/80 text-center flex items-center justify-center gap-1">
         <Activity size={10} className="text-[#4A6741]" />
-        <span className="text-[8.5px] text-slate-400">PMR resets neurological alarm loops by exhausting somatic fibers.</span>
+        <span className="text-[8.5px] text-slate-400">Releasing physical tension is a gentle way to remind your body that it is safe to rest.</span>
       </div>
     </div>
   );
@@ -739,7 +773,7 @@ export const SimulatorSomatic: React.FC<SomaticProps> = ({ onBack }) => {
 
 
 // ============================================================================
-// 5. INTERACTIVE STANLEY-BROWN CLINICAL-GRADE SAFETY PLAN BUILDER
+// 5. GENTLE PERSONAL SAFETY PLAN BUILDER
 // ============================================================================
 interface SafetyProps {
   onBack: () => void;
@@ -752,11 +786,11 @@ export const SimulatorSafetyPlan: React.FC<SafetyProps> = ({ onBack }) => {
   const [plan, setPlan] = useState<SafetyPlanData>(() => {
     const saved = localStorage.getItem('safespace_safety_plan');
     return saved ? JSON.parse(saved) : {
-      warningSigns: ['Racing thoughts in the evenings', 'Isolating from family texts'],
-      copingStrategies: ['Resonant box breathing for 5 minutes', 'Tibetan Singing bowl ambient mixer preset'],
-      socialOutlets: ['A busy local green neighborhood coffee house', 'Sisters phone line'],
-      keySupporters: ['My main roommate (John): 555-0129', 'Primary guardian (Mom)'],
-      safeEnvironments: ['Quiet bathroom with the lock on', 'A local nature park bench'],
+      warningSigns: ['Feeling tense or restless in the evenings', 'Not wanting to reply to texts'],
+      copingStrategies: ['Mindful box breathing for a few minutes', 'Listening to calming ambient sounds'],
+      socialOutlets: ['A cozy local neighborhood cafe', 'A walk in the nearest botanical garden'],
+      keySupporters: ['My close friend (Anna): 555-0129', 'My sister or brother'],
+      safeEnvironments: ['A cozy spot on my bedroom rug', 'A peaceful park bench'],
     };
   });
 
@@ -792,11 +826,11 @@ export const SimulatorSafetyPlan: React.FC<SafetyProps> = ({ onBack }) => {
 
   // Steps definition array
   const STEPS_REF = [
-    { id: 1, title: 'Warning Signs', key: 'warningSigns' as const, sub: 'Recognize your somatic tell-tales & emotional ticks that predict distress.' },
-    { id: 2, title: 'Internal Coping', key: 'copingStrategies' as const, sub: 'Actions you do entirely by yourself without talking to anyone.' },
-    { id: 3, title: 'Social Venues / Outlets', key: 'socialOutlets' as const, sub: 'Locations, cafes, parks or forums that naturally distract your focus.' },
-    { id: 4, title: 'Key Supporter Contacts', key: 'keySupporters' as const, sub: 'Dearest, trusted friends or family members to call in severe crisis.' },
-    { id: 5, title: 'Safe Environments', key: 'safeEnvironments' as const, sub: 'Physically secure rooms or spots where you can shelter temporarily.' },
+    { id: 1, title: 'My Signs of Tension', key: 'warningSigns' as const, sub: 'Notice how you feel physically or emotionally when stress starts to rise.' },
+    { id: 2, title: 'What Helps Me Calm Down', key: 'copingStrategies' as const, sub: 'Simple practices you can do by yourself to feel comfortable.' },
+    { id: 3, title: 'My Comforting Places', key: 'socialOutlets' as const, sub: 'Locations, parks, or cozy spots that help you feel naturally peaceful.' },
+    { id: 4, title: 'People I Can Reach Out To', key: 'keySupporters' as const, sub: 'Dearest, trusted friends, supportive family, or lines to contact.' },
+    { id: 5, title: 'My Peaceful Spaces', key: 'safeEnvironments' as const, sub: 'Spaces where you feel completely comfortable and able to rest.' },
   ];
 
   const currStep = STEPS_REF[activeStep - 1];
@@ -812,14 +846,14 @@ export const SimulatorSafetyPlan: React.FC<SafetyProps> = ({ onBack }) => {
         >
           <ArrowLeft size={18} />
         </button>
-        <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest leading-none font-mono">Stanley-Brown Plan</span>
+        <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest leading-none font-mono">My Safety Plan</span>
         <div className="w-8 h-8" />
       </div>
 
       <div className="text-center mb-3 shrink-0">
-        <h2 className="text-lg font-black text-[#4A6741] leading-tight font-sans">Shield of Safety</h2>
+        <h2 className="text-lg font-black text-[#4A6741] leading-tight font-sans">Safety & Comfort Plan</h2>
         <p className="text-[10px] text-slate-500 mt-0.5 leading-tight">
-          Establish clinical-grade contingency steps on-device to navigate high-risk emotional spikes.
+          Create a personalized, gentle step-by-step plan to guide you toward peace and support whenever things feel tough.
         </p>
       </div>
 
@@ -853,7 +887,7 @@ export const SimulatorSafetyPlan: React.FC<SafetyProps> = ({ onBack }) => {
             <input
               type="text"
               required
-              placeholder="e.g. Add actionable item..."
+              placeholder="e.g. Add comforting step..."
               value={tempText}
               onChange={(e) => setTempText(e.target.value)}
               className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 text-[10.5px] rounded-xl focus:outline-none focus:bg-white text-slate-800"
@@ -869,7 +903,7 @@ export const SimulatorSafetyPlan: React.FC<SafetyProps> = ({ onBack }) => {
           {/* Active List of custom step records */}
           <div className="space-y-1.5 max-h-36 overflow-y-auto no-scrollbar pl-0.5">
             {itemsList.length === 0 ? (
-              <p className="text-[9.5px] italic text-slate-350 pr-2 leading-none py-2 text-center font-bold">No custom plans filed under this step. Compose some!</p>
+              <p className="text-[9.5px] italic text-slate-350 pr-2 leading-none py-2 text-center font-bold">Your list is currently empty. Click above to add an item!</p>
             ) : (
               itemsList.map((item, idx) => (
                 <div key={idx} className="flex justify-between items-center bg-[#F1F5F2]/50 hover:bg-[#F1F5F2] border border-slate-100 rounded-xl p-2 select-none">
@@ -896,7 +930,7 @@ export const SimulatorSafetyPlan: React.FC<SafetyProps> = ({ onBack }) => {
           <Shield size={65} className="absolute right-[-15px] bottom-[-15px] text-slate-800/60 pointer-events-none select-none" />
           <div className="flex items-center space-x-1 mb-2">
             <Shield size={12} className="text-emerald-400" />
-            <span className="text-[8px] font-black tracking-wider uppercase text-slate-400 font-mono">My Consolidated Shield of Safety</span>
+            <span className="text-[8px] font-black tracking-wider uppercase text-slate-400 font-mono">My Saved Safety Plan</span>
           </div>
 
           <div className="space-y-2 relative z-10">
@@ -906,7 +940,7 @@ export const SimulatorSafetyPlan: React.FC<SafetyProps> = ({ onBack }) => {
                 <div key={s.id} className="text-[9.5px]">
                   <span className="font-extrabold text-indigo-400">{s.id}. {s.title}:</span>{' '}
                   <span className="text-slate-200">
-                    {currentList.length > 0 ? currentList.join(' • ') : <span className="text-slate-600 italic">None logged</span>}
+                    {currentList.length > 0 ? currentList.join(' • ') : <span className="text-slate-600 italic">None logged yet</span>}
                   </span>
                 </div>
               );
@@ -917,7 +951,7 @@ export const SimulatorSafetyPlan: React.FC<SafetyProps> = ({ onBack }) => {
 
       <div className="shrink-0 pt-2 border-t border-slate-100/80 text-center flex items-center justify-center gap-1">
         <Shield size={10} className="text-[#4A6741]" />
-        <span className="text-[8.5px] text-slate-400">The Stanley-Brown blueprint is used globally to secure crisis defense.</span>
+        <span className="text-[8.5px] text-slate-400">A personalized plan is a warm and helpful way to care for yourself.</span>
       </div>
     </div>
   );
