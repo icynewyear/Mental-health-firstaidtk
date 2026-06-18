@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Home, Leaf, Compass, BookOpen, Phone, Wifi, Battery, Signal } from 'lucide-react';
-import { ActiveScreen } from '../types';
+import { ActiveScreen, MoodLogEntry } from '../types';
 import {
   SimulatorDashboard,
   SimulatorBreathing,
   SimulatorGrounding,
   SimulatorRelief,
-  SimulatorEmergency
+  SimulatorEmergency,
+  SimulatorHistory,
+  SimulatorSoundscape
 } from './SimulatorScreens';
+import {
+  SimulatorReframing,
+  SimulatorHabit,
+  SimulatorGratitude,
+  SimulatorSomatic,
+  SimulatorSafetyPlan
+} from './ToolkitScreens';
 
 interface AndroidMockupProps {
   activeScreen: ActiveScreen;
@@ -16,6 +25,11 @@ interface AndroidMockupProps {
   setStressLevel: (level: number) => void;
   loggedMood: string | null;
   setLoggedMood: (mood: string | null) => void;
+  moodHistory: MoodLogEntry[];
+  showDebugMenu: boolean;
+  setShowDebugMenu: (show: boolean) => void;
+  resetMoodData: () => void;
+  seedRandomData: () => void;
 }
 
 export const AndroidMockup: React.FC<AndroidMockupProps> = ({
@@ -25,8 +39,14 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
   setStressLevel,
   loggedMood,
   setLoggedMood,
+  moodHistory,
+  showDebugMenu,
+  setShowDebugMenu,
+  resetMoodData,
+  seedRandomData,
 }) => {
   const [timeState, setTimeState] = useState('14:05');
+  const [offlinePillClicks, setOfflinePillClicks] = useState(0);
 
   // Sync virtual clock with actual system time
   useEffect(() => {
@@ -49,6 +69,13 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
       case 'grounding': return 'Sensory Grid';
       case 'relief': return 'Coping Statements';
       case 'emergency': return 'Crisis Dial';
+      case 'history': return 'Nervous System History';
+      case 'reframing': return 'Thought Reframer';
+      case 'habit': return 'Neuro-Basics';
+      case 'gratitude': return 'Gratitude Jar';
+      case 'somatic': return 'Somatic Lock';
+      case 'safetyPlan': return 'Shield of Safety';
+      default: return 'Safe Space';
     }
   };
 
@@ -83,7 +110,7 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
           </div>
 
           {/* Active View Router */}
-          <div className="flex-1 w-full overflow-hidden relative">
+          <div className="flex-1 w-full overflow-hidden relative font-sans">
             {activeScreen === 'dashboard' && (
               <SimulatorDashboard
                 onNavigate={(route) => setActiveScreen(route)}
@@ -91,19 +118,46 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
                 setStressLevel={setStressLevel}
                 loggedMood={loggedMood}
                 setLoggedMood={setLoggedMood}
+                moodHistory={moodHistory}
               />
             )}
             {activeScreen === 'breathing' && (
               <SimulatorBreathing />
             )}
             {activeScreen === 'grounding' && (
-              <SimulatorGrounding />
+              <SimulatorGrounding onTriggerDebug={() => setShowDebugMenu(!showDebugMenu)} />
             )}
             {activeScreen === 'relief' && (
               <SimulatorRelief />
             )}
             {activeScreen === 'emergency' && (
-              <SimulatorEmergency />
+              <SimulatorEmergency onNavigate={(route) => setActiveScreen(route)} />
+            )}
+            {activeScreen === 'history' && (
+              <SimulatorHistory
+                moodHistory={moodHistory}
+                onNavigate={(route) => setActiveScreen(route)}
+                resetMoodData={resetMoodData}
+                seedRandomData={seedRandomData}
+              />
+            )}
+            {activeScreen === 'soundscape' && (
+              <SimulatorSoundscape onBack={() => setActiveScreen('dashboard')} />
+            )}
+            {activeScreen === 'reframing' && (
+              <SimulatorReframing onBack={() => setActiveScreen('dashboard')} />
+            )}
+            {activeScreen === 'habit' && (
+              <SimulatorHabit onBack={() => setActiveScreen('dashboard')} />
+            )}
+            {activeScreen === 'gratitude' && (
+              <SimulatorGratitude onBack={() => setActiveScreen('dashboard')} />
+            )}
+            {activeScreen === 'somatic' && (
+              <SimulatorSomatic onBack={() => setActiveScreen('dashboard')} />
+            )}
+            {activeScreen === 'safetyPlan' && (
+              <SimulatorSafetyPlan onBack={() => setActiveScreen('emergency')} />
             )}
           </div>
 
@@ -184,6 +238,76 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
               </span>
             </button>
           </div>
+
+          {/* Android M3 Style Developer Bottom Sheet Overlay */}
+          {showDebugMenu && (
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex flex-col justify-end z-50 animate-fade-in">
+              {/* Back-Dismiss click area */}
+              <div className="flex-1" onClick={() => setShowDebugMenu(false)} />
+              
+              <div className="bg-white rounded-t-[32px] p-5 shadow-2xl flex flex-col pb-8 border-t border-[#E1E8E3]/85 animate-slide-up select-none">
+                {/* Grab handle */}
+                <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-4 animate-pulse" />
+                
+                <div className="text-left mb-4">
+                  <div className="flex items-center space-x-1.5">
+                    <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded font-mono">DEBUG MODE</span>
+                    <span className="text-[10px] font-black tracking-widest text-[#4A6741] uppercase">Sandbox Controls</span>
+                  </div>
+                  <h3 className="text-sm font-bold text-[#4A6741] mt-1 font-sans leading-none">Developer Controls</h3>
+                  <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed">
+                    Instantly simulate physical tracking states or wipe database records cleanly.
+                  </p>
+                </div>
+                
+                {/* Actions Row/Grid */}
+                <div className="flex flex-col space-y-2.5">
+                  <button
+                    onClick={() => {
+                      seedRandomData();
+                    }}
+                    className="w-full flex items-center justify-between bg-[#E1E8E3] hover:bg-[#D1DBCF] active:scale-98 transition rounded-2xl p-3 text-left cursor-pointer border-0"
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-bold text-[#4A6741] leading-tight">
+                        🎲 Seed Random 7-Day Data
+                      </span>
+                      <span className="text-[9px] text-slate-500 mt-0.5 font-sans leading-none">Mocks random mood & stress trends</span>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      resetMoodData();
+                    }}
+                    className="w-full flex items-center justify-between bg-red-50 hover:bg-red-100 active:scale-98 transition rounded-2xl p-3 text-left cursor-pointer border border-red-100"
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-bold text-red-600 leading-tight">
+                        🗑️ Reset Tracking Data
+                      </span>
+                      <span className="text-[9px] text-red-400 mt-0.5 font-sans leading-none">Wipes check-ins and sets default log history</span>
+                    </div>
+                  </button>
+
+                  <div className="bg-slate-50 rounded-2xl p-3 text-left border border-slate-100">
+                    <span className="text-[9px] uppercase font-extrabold tracking-wider text-slate-400 leading-none block mb-1">Active State Insights</span>
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-slate-500">Stress Value: <span className="font-bold text-slate-700">{stressLevel}/10</span></span>
+                      <span className="text-slate-500">Today's Mood: <span className="font-bold text-[#4A6741]">{loggedMood || 'Steady (Default)'}</span></span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowDebugMenu(false)}
+                  className="mt-5 w-full bg-[#4A6741] hover:bg-[#3D5535] active:scale-95 text-white text-[11px] font-black py-2.5 rounded-2xl transition cursor-pointer shadow-md leading-none border-0"
+                >
+                  Close Developer Panel
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Android Gesture Pill handle */}
           <div className="absolute bottom-1.5 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-slate-950/60 rounded-full z-50 pointer-events-none" />

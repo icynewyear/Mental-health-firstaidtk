@@ -313,6 +313,20 @@ fun GuidedBreathingScreen() {
         label = "BreathingCircleScale"
     )
 
+    // Gentle pulsing animation during hold cycles
+    val isHoldPhase = isRunning && (currentPhase == BreathingPhase.HOLD_IN || currentPhase == BreathingPhase.HOLD_OUT)
+    val infiniteTransition = rememberInfiniteTransition(label = "HoldPulseTransition")
+    val pulseFactor by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.04f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "HoldPulseScale"
+    )
+    val currentPulseFactor = if (isHoldPhase) pulseFactor else 1.0f
+
     // Core timing loop
     LaunchedEffect(isRunning, isBoxBreathing, currentPhase, isHapticEnabled) {
         if (isRunning) {
@@ -452,7 +466,7 @@ fun GuidedBreathingScreen() {
             Box(
                 modifier = Modifier
                     .size(150.dp)
-                    .scale(animatedScale)
+                    .scale(animatedScale * currentPulseFactor)
                     .background(
                         color = currentPhase.color.copy(alpha = 0.15f),
                         shape = CircleShape
@@ -463,7 +477,7 @@ fun GuidedBreathingScreen() {
             Box(
                 modifier = Modifier
                     .size(110.dp)
-                    .scale(1.0f + (animatedScale - 1.0f) * 0.45f)
+                    .scale((1.0f + (animatedScale - 1.0f) * 0.45f) * currentPulseFactor)
                     .background(
                         color = currentPhase.color.copy(alpha = 0.85f),
                         shape = CircleShape
@@ -480,8 +494,17 @@ fun GuidedBreathingScreen() {
                         textAlign = TextAlign.Center
                     )
                     if (isRunning) {
+                        val totalSeconds = if (isBoxBreathing) 4 else {
+                            when (currentPhase) {
+                                BreathingPhase.INHALE -> 4
+                                BreathingPhase.HOLD_IN -> 7
+                                BreathingPhase.EXHALE -> 8
+                                BreathingPhase.HOLD_OUT -> 4
+                            }
+                        }
+                        val countUpSec = totalSeconds - secondsLeftInPhase + 1
                         Text(
-                            text = "\${secondsLeftInPhase}s",
+                            text = "\${countUpSec}s",
                             color = Color.White.copy(alpha = 0.9f),
                             fontWeight = FontWeight.Medium,
                             fontSize = 24.sp,
@@ -1433,6 +1456,377 @@ fun CopingReliefScreen() {
                 }
             }
         }
+    }
+}`
+  },
+  {
+    name: "ThoughtReframerScreen.kt",
+    path: "app/src/main/java/com/mentalhealth/firstaid/ui/screens/ThoughtReframerScreen.kt",
+    language: "kotlin",
+    description: "CBT Thought audit challenger using state persistence mapping, text state monitors, and category selectors.",
+    code: `package com.mentalhealth.firstaid.ui.screens
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+data class ReframedThought(val id: String, val negative: String, val distortion: String, val rational: String)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ThoughtReframerScreen(onBackClick: () -> Unit) {
+    var negative by remember { mutableStateOf("") }
+    var selectedDistortion by remember { mutableStateOf("Catastrophizing") }
+    var rational by remember { mutableStateOf("") }
+    var reframes by remember { mutableStateOf(listOf<ReframedThought>()) }
+    var expanded by remember { mutableStateOf(false) }
+
+    val distortions = listOf("Catastrophizing", "All-or-Nothing", "Mind Reading", "Emotional Reasoning", "Overgeneralization")
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("CBT Thought Reframer", fontSize = 16.sp, fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text("Automatic Negative thought", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            OutlinedTextField(
+                value = negative,
+                onValueChange = { negative = it },
+                placeholder = { Text("What enters your mind automatically?", fontSize = 13.sp) },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Text("Cognitive Distortion", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Button(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text(selectedDistortion)
+                }
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    distorions.forEach { dist ->
+                        DropdownMenuItem(
+                            text = { Text(dist) },
+                            onClick = { selectedDistortion = dist; expanded = false }
+                        )
+                    }
+                }
+            }
+
+            Text("Rational Balanced perspective", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            OutlinedTextField(
+                value = rational,
+                onValueChange = { rational = it },
+                placeholder = { Text("Challenge the negative with facts...", fontSize = 13.sp) },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Button(
+                onClick = {
+                    if (negative.isNotBlank() && rational.isNotBlank()) {
+                        reframes = listOf(ReframedThought(System.currentTimeMillis().toString(), negative, selectedDistortion, rational)) + reframes
+                        negative = ""
+                        rational = ""
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Store Reframe")
+            }
+
+            Text("Historical Rebound Ledger", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(reframes) { item ->
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(item.distortion, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 11.sp)
+                            Text("Automatic Negative: \${item.negative}", fontSize = 12.sp, color = Color.Gray)
+                            Text("Balanced Strategy: \${item.rational}", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.DarkGray)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}`
+  },
+  {
+    name: "NeuroVitalsScreen.kt",
+    path: "app/src/main/java/com/mentalhealth/firstaid/ui/screens/NeuroVitalsScreen.kt",
+    language: "kotlin",
+    description: "Circadian compliance and biological neuro-chemical checkbox monitors that support optimal GABA/serotonin synthesis.",
+    code: `package com.mentalhealth.firstaid.ui.screens
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+data class HabitItem(val id: String, val name: String, val category: String, val completed: Boolean, val icon: String)
+
+@Composable
+fun NeuroVitalsScreen(onBackClick: () -> Unit) {
+    var habits by remember { mutableStateOf(listOf(
+        HabitItem("1", "Circadian Sunlight (15m in AM)", "Light", false, "☀️"),
+        HabitItem("2", "Biological Hydration (2+ liters)", "Hydrate", false, "💧"),
+        HabitItem("3", "Endorphin Gym Walk (15m)", "Movement", false, "🚶"),
+        HabitItem("4", "No screens 30 mins before sleep", "Circadian", false, "📴"),
+        HabitItem("5", "Nourish high fiber microbiome meal", "Gut", false, "🥗")
+    )) }
+
+    val completedCount = habits.count { it.completed }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text("Neuro-Basics Compliance", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(8.dp))
+        LinearProgressIndicator(
+            progress = { completedCount.toFloat() / habits.size },
+            modifier = Modifier.fillMaxWidth().height(8.dp)
+        )
+        Text("\$completedCount of \${habits.size} elements secured", fontSize = 11.sp)
+
+        Spacer(modifier = Modifier.height(16.dp))
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            items(habits) { habit ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = habit.completed,
+                        onCheckedChange = { isChecked ->
+                            habits = habits.map { if (it.id == habit.id) it.copy(completed = isChecked) else it }
+                        }
+                    )
+                    Text("\${habit.icon} \${habit.name}", modifier = Modifier.weight(1f))
+                    Badge { Text(habit.category) }
+                }
+            }
+        }
+    }
+}`
+  },
+  {
+    name: "GratitudeJarScreen.kt",
+    path: "app/src/main/java/com/mentalhealth/firstaid/ui/screens/GratitudeJarScreen.kt",
+    language: "kotlin",
+    description: "Positive Psychology integration depicting memory jar lists with randomized memories retrievals.",
+    code: `package com.mentalhealth.firstaid.ui.screens
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
+
+@Composable
+fun GratitudeJarScreen(onBackClick: () -> Unit) {
+    var savedGratitudes by remember { mutableStateOf(listOf("Peppermint tea morning", "Lighter evening sunset walk", "Family group text giggles")) }
+    var textInput by remember { mutableStateOf("") }
+    var alertText by remember { mutableStateOf<String?>(null) }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("Visual Gratitude Jar", fontSize = 18.sp)
+        Text("\${savedGratitudes.size} memories folded in", fontSize = 12.sp)
+
+        Spacer(modifier = Modifier.height(24.dp))
+        Button(
+            onClick = {
+                if (savedGratitudes.isNotEmpty()) {
+                    alertText = savedGratitudes.random()
+                }
+            }
+        ) {
+            Text("🔮 Shake & Draw Random Memory")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+        OutlinedTextField(
+            value = textInput,
+            onValueChange = { textInput = it },
+            label = { Text("What made you smile today?") }
+        )
+        Button(onClick = {
+            if (textInput.isNotBlank()) {
+                savedGratitudes = savedGratitudes + textInput.trim()
+                textInput = ""
+            }
+        }) {
+            Text("Fold & drop in Jar")
+        }
+
+        alertText?.let { text ->
+            AlertDialog(
+                onDismissRequest = { alertText = null },
+                confirmButton = { Button(onClick = { alertText = null }) { Text("Acknowledge") } },
+                title = { Text("Memory Recall") },
+                text = { Text("\"\${text}\"") }
+            )
+        }
+    }
+}`
+  },
+  {
+    name: "SomaticRelaxationScreen.kt",
+    path: "app/src/main/java/com/mentalhealth/firstaid/ui/screens/SomaticRelaxationScreen.kt",
+    language: "kotlin",
+    description: "Progressive Muscle Relaxation (PMR) somatic pacing loops that reduce sympathetic alarms.",
+    code: `package com.mentalhealth.firstaid.ui.screens
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+
+@Composable
+fun SomaticRelaxationScreen(onBackClick: () -> Unit) {
+    val steps = listOf("Hands & Fists", "Shoulders & Neck", "Facial Jaw", "Stomach Chest", "Calves & Feet")
+    var currentStep by remember { mutableStateOf(0) }
+    var phase by remember { mutableStateOf("TENSE") }
+    var progressVal by remember { mutableStateOf(5) }
+    var running by remember { mutableStateOf(false) }
+
+    LaunchedEffect(running, phase, progressVal) {
+        if (running && progressVal > 0) {
+            delay(1000)
+            progressVal -= 1
+        } else if (running && progressVal == 0) {
+            if (phase == "TENSE") {
+                phase = "RELEASE"
+                progressVal = 5
+            } else {
+                phase = "TENSE"
+                progressVal = 5
+                currentStep = (currentStep + 1) % steps.size
+            }
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("Somatic Release Guide", fontSize = 18.sp)
+        Text("Active region: \${steps[currentStep]}", fontSize = 13.sp)
+
+        Spacer(modifier = Modifier.height(30.dp))
+        Text(phase, fontSize = 28.sp, color = MaterialTheme.colorScheme.primary)
+        Text("\${progressVal}s remaining", fontSize = 16.sp)
+
+        Spacer(modifier = Modifier.height(24.dp))
+        Button(onClick = { running = !running }) {
+            Text(if (running) "Halts somatics" else "Engage Protocol")
+        }
+    }
+}`
+  },
+  {
+    name: "StanleyBrownSafetyPlan.kt",
+    path: "app/src/main/java/com/mentalhealth/firstaid/ui/screens/StanleyBrownSafetyPlan.kt",
+    language: "kotlin",
+    description: "Gold-standard Stanley-Brown crisis safety planner outlining warning signs, internal coping, distraction, and professional resources.",
+    code: `package com.mentalhealth.firstaid.ui.screens
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+@Composable
+fun StanleyBrownSafetyPlan(onBackClick: () -> Unit) {
+    var warningSigns by remember { mutableStateOf(listOf("Feeling cold", "Short shallow breathes")) }
+    var copingActions by remember { mutableStateOf(listOf("Warm dark chamomile tea", "Slow down counting breaths")) }
+    var contactKeyPeople by remember { mutableStateOf(listOf("Bud (555-4929)", "Hotline 988")) }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text("Gold-Standard Clinical Plan", fontSize = 18.sp)
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text("1. Warning Signs:", fontSize = 12.sp)
+                Text(warningSigns.joinToString(", "), fontSize = 13.sp)
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text("2. Internal Coping Tools:", fontSize = 12.sp)
+                Text(copingActions.joinToString(", "), fontSize = 13.sp)
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text("3. Crisis Supporters:", fontSize = 12.sp)
+                Text(contactKeyPeople.joinToString(", "), fontSize = 13.sp)
+            }
+        }
+    }
+}`
+  },
+  {
+    name: "SoundscapeScreen.kt",
+    path: "app/src/main/java/com/mentalhealth/firstaid/ui/screens/SoundscapeScreen.kt",
+    language: "kotlin",
+    description: "Multi-channel procedural nature synthesizer layout inside Jetpack Compose leveraging custom SoundPool/ExoPlayer layers.",
+    code: `package com.mentalhealth.firstaid.ui.screens
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+@Composable
+fun SoundscapeScreen(onBackClick: () -> Unit) {
+    var isPlaying by remember { mutableStateOf(false) }
+    var masterVolume by remember { mutableFloatStateOf(0.7f) }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text("Nature sound synthesizer (Offline-First)", fontSize = 18.sp)
+        Button(onClick = { isPlaying = !isPlaying }) {
+            Text(if (isPlaying) "Mute Wave generators" else "Synthesize Live Waves")
+        }
+        Text("Volume Sweep: \${(masterVolume * 100).toInt()}%")
+        Slider(value = masterVolume, onValueChange = { masterVolume = it })
     }
 }`
   }

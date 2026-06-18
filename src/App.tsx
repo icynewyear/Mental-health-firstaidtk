@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AndroidMockup } from './components/AndroidMockup';
 import { CodeViewer } from './components/CodeViewer';
 import { androidProjectFiles } from './androidCode';
-import { ActiveScreen } from './types';
+import { ActiveScreen, MoodLogEntry } from './types';
 import { Leaf, Compass, BookOpen, Phone, Terminal, Heart, Settings, Milestone } from 'lucide-react';
 
 export default function App() {
@@ -10,8 +10,121 @@ export default function App() {
   const [selectedFileIndex, setSelectedFileIndex] = useState<number>(5); // Defaults to DashboardScreen.kt (index 5)
   
   // Simulated State to persist across tab switches in the phone
-  const [stressLevel, setStressLevel] = useState<number>(3);
-  const [loggedMood, setLoggedMood] = useState<string | null>(null);
+  const [showDebugMenu, setShowDebugMenu] = useState<boolean>(false);
+  const [stressLevel, setStressLevel] = useState<number>(() => {
+    const saved = localStorage.getItem('safespace_stress_level');
+    return saved ? parseInt(saved, 10) : 3;
+  });
+  const [loggedMood, setLoggedMood] = useState<string | null>(() => {
+    return localStorage.getItem('safespace_logged_mood');
+  });
+
+  const [moodHistory, setMoodHistory] = useState<MoodLogEntry[]>(() => {
+    const saved = localStorage.getItem('safespace_mood_history');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        // Fallback to defaults
+      }
+    }
+    return [
+      { day: 'Mon', moodValue: 1, moodLabel: '🌊', stress: 4, hasData: true },
+      { day: 'Tue', moodValue: 1, moodLabel: '⛈️', stress: 6, hasData: true },
+      { day: 'Wed', moodValue: 0, moodLabel: 'No Data', stress: 5, hasData: false },
+      { day: 'Thu', moodValue: 1, moodLabel: '🍃', stress: 3, hasData: true },
+      { day: 'Fri', moodValue: 0, moodLabel: 'No Data', stress: 5, hasData: false },
+      { day: 'Sat', moodValue: 1, moodLabel: '🌊', stress: 4, hasData: true },
+      { day: 'Today', moodValue: 0, moodLabel: 'No Data', stress: 5, hasData: false },
+    ];
+  });
+
+  const resetMoodData = () => {
+    setLoggedMood(null);
+    setStressLevel(5);
+    const defaults = [
+      { day: 'Mon', moodValue: 1, moodLabel: '🌊', stress: 3, hasData: true },
+      { day: 'Tue', moodValue: 0, moodLabel: 'No Data', stress: 5, hasData: false },
+      { day: 'Wed', moodValue: 1, moodLabel: '🌊', stress: 3, hasData: true },
+      { day: 'Thu', moodValue: 0, moodLabel: 'No Data', stress: 5, hasData: false },
+      { day: 'Fri', moodValue: 1, moodLabel: '🌊', stress: 3, hasData: true },
+      { day: 'Sat', moodValue: 0, moodLabel: 'No Data', stress: 5, hasData: false },
+      { day: 'Today', moodValue: 0, moodLabel: 'No Data', stress: 5, hasData: false },
+    ];
+    setMoodHistory(defaults);
+  };
+
+  const seedRandomData = () => {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Today'];
+    const availableEmojis = ['🍃', '🌊', '⛈️', '😰', '🧘', '🪴', '🍵', '✨', '☕'];
+    const randomHistory = days.map((day) => {
+      const hasData = Math.random() > 0.3; // 70% data, 30% no data
+      if (!hasData) {
+        return {
+          day,
+          moodValue: 0,
+          moodLabel: 'No Data',
+          stress: 5,
+          hasData: false,
+        };
+      }
+      const emoji = availableEmojis[Math.floor(Math.random() * availableEmojis.length)];
+      const stress = Math.floor(Math.random() * 10) + 1; // 1 to 10
+      return {
+        day,
+        moodValue: 1,
+        moodLabel: emoji,
+        stress,
+        hasData: true,
+      };
+    });
+
+    const todayVal = randomHistory[6];
+    if (todayVal.hasData) {
+      setLoggedMood(todayVal.moodLabel);
+      setStressLevel(todayVal.stress);
+    } else {
+      setLoggedMood(null);
+      setStressLevel(5);
+    }
+    setMoodHistory(randomHistory);
+  };
+
+  // Persist stressLevel to local storage on change
+  useEffect(() => {
+    localStorage.setItem('safespace_stress_level', stressLevel.toString());
+  }, [stressLevel]);
+
+  // Persist loggedMood to local storage on change
+  useEffect(() => {
+    if (loggedMood !== null) {
+      localStorage.setItem('safespace_logged_mood', loggedMood);
+    } else {
+      localStorage.removeItem('safespace_logged_mood');
+    }
+  }, [loggedMood]);
+
+  // Persist moodHistory to local storage on change
+  useEffect(() => {
+    localStorage.setItem('safespace_mood_history', JSON.stringify(moodHistory));
+  }, [moodHistory]);
+
+  // Sync today's active values directly from loggedMood & stressLevel
+  useEffect(() => {
+    setMoodHistory(prev => prev.map(entry => {
+      if (entry.day === 'Today') {
+        const hasData = loggedMood !== null;
+        return {
+          ...entry,
+          hasData,
+          moodValue: hasData ? 1 : 0,
+          moodLabel: loggedMood || 'No Data',
+          stress: hasData ? stressLevel : 5
+        };
+      }
+      return entry;
+    }));
+  }, [loggedMood, stressLevel]);
 
   // Sync simulator screens to active Kotlin Files
   useEffect(() => {
@@ -31,6 +144,24 @@ export default function App() {
       case 'emergency':
         setSelectedFileIndex(6); // EmergencyContactsScreen.kt
         break;
+      case 'reframing':
+        setSelectedFileIndex(8); // ThoughtReframerScreen.kt
+        break;
+      case 'habit':
+        setSelectedFileIndex(9); // NeuroVitalsScreen.kt
+        break;
+      case 'gratitude':
+        setSelectedFileIndex(10); // GratitudeJarScreen.kt
+        break;
+      case 'somatic':
+        setSelectedFileIndex(11); // SomaticRelaxationScreen.kt
+        break;
+      case 'safetyPlan':
+        setSelectedFileIndex(12); // StanleyBrownSafetyPlan.kt
+        break;
+      case 'soundscape':
+        setSelectedFileIndex(13); // SoundscapeScreen.kt
+        break;
     }
   }, [activeScreen]);
 
@@ -42,6 +173,12 @@ export default function App() {
       case 'grounding': return 4;
       case 'relief': return 7;
       case 'emergency': return 6;
+      case 'reframing': return 8;
+      case 'habit': return 9;
+      case 'gratitude': return 10;
+      case 'somatic': return 11;
+      case 'safetyPlan': return 12;
+      case 'soundscape': return 13;
       default: return 5;
     }
   };
@@ -72,14 +209,22 @@ export default function App() {
 
           {/* Quick Stats / Info Row */}
           <div className="flex items-center space-x-6 text-[10px] font-mono shrink-0 select-none">
-            <div className="flex items-center space-x-1.5 text-slate-600 bg-[#E1E8E3]/60 px-3 py-1.5 rounded-2xl border border-white/40">
+            <button 
+              onClick={() => setShowDebugMenu(!showDebugMenu)}
+              className="flex items-center space-x-1.5 text-slate-600 bg-[#E1E8E3]/60 hover:bg-[#E1E8E3] active:scale-95 transition px-3 py-1.5 rounded-2xl border border-white/40 cursor-pointer"
+              title="Click to open Developer Sandbox debug menu"
+            >
               <Milestone size={13} className="text-[#4A6741]" />
-              <span>Compose 2.0 (Compiler plugin)</span>
-            </div>
-            <div className="flex items-center space-x-1.5 text-slate-600 bg-[#E1E8E3]/60 px-3 py-1.5 rounded-2xl border border-white/40">
+              <span>Compose 2.0 (Compiler plugin) ⚙️</span>
+            </button>
+            <button 
+              onClick={() => setShowDebugMenu(!showDebugMenu)}
+              className="flex items-center space-x-1.5 text-slate-600 bg-[#E1E8E3]/60 hover:bg-[#E1E8E3] active:scale-95 transition px-3 py-1.5 rounded-2xl border border-white/40 cursor-pointer"
+              title="Click to open Developer Sandbox debug menu"
+            >
               <Settings size={13} className="text-[#608271]" />
               <span>Offline M3 UI Architecture</span>
-            </div>
+            </button>
           </div>
         </div>
       </header>
@@ -118,6 +263,11 @@ export default function App() {
                 setStressLevel={setStressLevel}
                 loggedMood={loggedMood}
                 setLoggedMood={setLoggedMood}
+                moodHistory={moodHistory}
+                showDebugMenu={showDebugMenu}
+                setShowDebugMenu={setShowDebugMenu}
+                resetMoodData={resetMoodData}
+                seedRandomData={seedRandomData}
               />
             </div>
           </div>

@@ -1,8 +1,15 @@
-// offline-first nature sound audio synthesizers using Web Audio API
+// Offline-first procedural nature sound audio synthesizers using Web Audio API
 let audioCtx: AudioContext | null = null;
-let noiseSource: AudioBufferSourceNode | null = null;
-let waveLfo: OscillatorNode | null = null;
-let mainGainNode: GainNode | null = null;
+let masterGain: GainNode | null = null;
+
+interface SoundChannel {
+  nodes: any[];
+  gainNode: GainNode;
+  userVolume: number;
+  status: 'playing' | 'stopped';
+}
+
+const activeChannels: Record<string, SoundChannel> = {};
 
 export function getAudioContext(): AudioContext {
   if (!audioCtx) {
@@ -11,126 +18,358 @@ export function getAudioContext(): AudioContext {
   return audioCtx;
 }
 
-export function startAmbientSound(type: 'rain' | 'waves', volume: number = 0.4) {
+function getMasterGain(): GainNode {
+  const ctx = getAudioContext();
+  if (!masterGain) {
+    masterGain = ctx.createGain();
+    masterGain.gain.setValueAtTime(0.7, ctx.currentTime); // High-comfort default volume
+    masterGain.connect(ctx.destination);
+  }
+  return masterGain;
+}
+
+// Procedural brown noise buffer builder (2-second loop)
+function getBrownNoiseBuffer(ctx: AudioContext): AudioBuffer {
+  const bufferSize = 2 * ctx.sampleRate;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  let lastOut = 0.0;
+  for (let i = 0; i < bufferSize; i++) {
+    const white = Math.random() * 2 - 1;
+    // Lowpass filtration loop to create deep fractal Brownian rumble
+    data[i] = (lastOut + (0.025 * white)) / 1.025;
+    lastOut = data[i];
+    data[i] *= 3.8; // Gain compensation
+  }
+  return buffer;
+}
+
+// Procedural white noise buffer builder (2-second loop)
+function getWhiteNoiseBuffer(ctx: AudioContext): AudioBuffer {
+  const bufferSize = 2 * ctx.sampleRate;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = Math.random() * 2 - 1;
+  }
+  return buffer;
+}
+
+// Start helper for individual soundscape channels
+export function setSoundscapeChannel(
+  channel: 'rain' | 'waves' | 'wind' | 'crickets' | 'bowl' | 'brownNoise',
+  active: boolean,
+  volume: number = 0.4
+) {
   try {
     const ctx = getAudioContext();
     if (ctx.state === 'suspended') {
       ctx.resume();
     }
 
-    // Always stop current sound before starting a new one
-    stopAmbientSound();
+    const master = getMasterGain();
 
-    // Create main gain node for user volume slider
-    mainGainNode = ctx.createGain();
-    mainGainNode.gain.setValueAtTime(volume, ctx.currentTime);
-    mainGainNode.connect(ctx.destination);
+    // 1. If currently playing, stop it first
+    stopSoundscapeChannel(channel);
 
-    // Create a 2-second looped noise buffer
-    const bufferSize = 2 * ctx.sampleRate;
-    const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const channelData = noiseBuffer.getChannelData(0);
-
-    // Fill buffer with brownian-like noise (softer for nature relaxation)
-    let lastOut = 0.0;
-    for (let i = 0; i < bufferSize; i++) {
-      const white = Math.random() * 2 - 1;
-      channelData[i] = (lastOut + (0.05 * white)) / 1.05;
-      lastOut = channelData[i];
-      channelData[i] *= 3.5; // Compensate for loss of level
+    if (!active) {
+      return;
     }
 
-    noiseSource = ctx.createBufferSource();
-    noiseSource.buffer = noiseBuffer;
-    noiseSource.loop = true;
+    // 2. Setup channel volume gain node
+    const channelGain = ctx.createGain();
+    channelGain.gain.setValueAtTime(volume, ctx.currentTime);
+    channelGain.connect(master);
 
-    if (type === 'rain') {
-      // Gentle forest rain: highpass filter to cut rumble, bandpass/lowpass for rain droplets pitter patter
+    const nodesToStop: any[] = [];
+
+    if (channel === 'rain') {
+      // Gentle Rain
+      const buffer = getBrownNoiseBuffer(ctx);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.loop = true;
+
       const lpFilter = ctx.createBiquadFilter();
       lpFilter.type = 'lowpass';
       lpFilter.frequency.setValueAtTime(2200, ctx.currentTime);
 
       const hpFilter = ctx.createBiquadFilter();
       hpFilter.type = 'highpass';
-      hpFilter.frequency.setValueAtTime(350, ctx.currentTime);
+      hpFilter.frequency.setValueAtTime(320, ctx.currentTime);
 
       const peakFilter = ctx.createBiquadFilter();
       peakFilter.type = 'peaking';
       peakFilter.frequency.setValueAtTime(1200, ctx.currentTime);
       peakFilter.Q.setValueAtTime(1.5, ctx.currentTime);
-      peakFilter.gain.setValueAtTime(3, ctx.currentTime);
+      peakFilter.gain.setValueAtTime(4.0, ctx.currentTime);
 
-      // Connections: source -> hp -> lp -> peak -> mainGain
-      noiseSource.connect(hpFilter);
+      // Low frequency droplet flutter (0.35 Hz oscillation)
+      const rainLfo = ctx.createOscillator();
+      rainLfo.type = 'sine';
+      rainLfo.frequency.setValueAtTime(0.35, ctx.currentTime);
+
+      const rainLfoGain = ctx.createGain();
+      rainLfoGain.gain.setValueAtTime(0.15, ctx.currentTime); // Up to 15% rain rustling amplitude shift
+
+      rainLfo.connect(rainLfoGain);
+      rainLfoGain.connect(channelGain.gain);
+
+      // Connect source -> hp -> lp -> peak -> channelGain
+      source.connect(hpFilter);
       hpFilter.connect(lpFilter);
       lpFilter.connect(peakFilter);
-      peakFilter.connect(mainGainNode);
+      peakFilter.connect(channelGain);
 
-      noiseSource.start(0);
-    } else if (type === 'waves') {
-      // Distant rolling waves: lowpass filter swept periodically by a slow LFO
+      source.start(0);
+      rainLfo.start(0);
+
+      nodesToStop.push(source, rainLfo);
+
+    } else if (channel === 'waves') {
+      // Rolling Ocean Waves (Swell swept by LFO modulation)
+      const buffer = getBrownNoiseBuffer(ctx);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.loop = true;
+
       const lpFilter = ctx.createBiquadFilter();
       lpFilter.type = 'lowpass';
-      lpFilter.frequency.setValueAtTime(350, ctx.currentTime);
+      lpFilter.frequency.setValueAtTime(320, ctx.currentTime);
 
-      // Local waves internal volume swell gain
-      const waveVolumeNode = ctx.createGain();
-      waveVolumeNode.gain.setValueAtTime(0.12, ctx.currentTime);
+      const dynamicVolume = ctx.createGain();
+      dynamicVolume.gain.setValueAtTime(0.02, ctx.currentTime); // Inward swell level starts quiet
 
-      // Low frequency oscillator for wave timing (6-second frequency cycle)
-      waveLfo = ctx.createOscillator();
+      const waveLfo = ctx.createOscillator();
       waveLfo.type = 'sine';
-      waveLfo.frequency.setValueAtTime(0.16, ctx.currentTime); // ~6.2s period
+      waveLfo.frequency.setValueAtTime(0.14, ctx.currentTime); // ~7.1s swell period
 
-      const lfoGainVolume = ctx.createGain();
-      lfoGainVolume.gain.setValueAtTime(0.18, ctx.currentTime); // modulate volume by up to 18%
+      const lfoVolGain = ctx.createGain();
+      lfoVolGain.gain.setValueAtTime(0.24, ctx.currentTime); // Wave swell amplitude depth
 
-      const lfoGainFilter = ctx.createGain();
-      lfoGainFilter.gain.setValueAtTime(220, ctx.currentTime); // sweep filter cutoff by up to 220Hz
+      const lfoFiltGain = ctx.createGain();
+      lfoFiltGain.gain.setValueAtTime(230, ctx.currentTime); // Wave sweep filter amplitude
 
-      // Connect LFO modulator
-      waveLfo.connect(lfoGainVolume);
-      lfoGainVolume.connect(waveVolumeNode.gain);
+      waveLfo.connect(lfoVolGain);
+      lfoVolGain.connect(dynamicVolume.gain);
 
-      waveLfo.connect(lfoGainFilter);
-      lfoGainFilter.connect(lpFilter.frequency);
+      waveLfo.connect(lfoFiltGain);
+      lfoFiltGain.connect(lpFilter.frequency);
 
-      // Connections: source -> lp -> waveVolumeNode -> mainGain
-      noiseSource.connect(lpFilter);
-      lpFilter.connect(waveVolumeNode);
-      waveVolumeNode.connect(mainGainNode);
+      source.connect(lpFilter);
+      lpFilter.connect(dynamicVolume);
+      dynamicVolume.connect(channelGain);
 
+      source.start(0);
       waveLfo.start(0);
-      noiseSource.start(0);
+
+      nodesToStop.push(source, waveLfo);
+
+    } else if (channel === 'wind') {
+      // Whispering Forest Breeze
+      const buffer = getWhiteNoiseBuffer(ctx);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.loop = true;
+
+      const bandpass = ctx.createBiquadFilter();
+      bandpass.type = 'bandpass';
+      bandpass.Q.setValueAtTime(8.5, ctx.currentTime); // High-Q focus sweeps for airy whistletones
+      bandpass.frequency.setValueAtTime(450, ctx.currentTime);
+
+      const windLfo = ctx.createOscillator();
+      windLfo.type = 'sine';
+      windLfo.frequency.setValueAtTime(0.045, ctx.currentTime); // ~22s wind-gust period
+
+      const windLfoGain = ctx.createGain();
+      windLfoGain.gain.setValueAtTime(340, ctx.currentTime); // Sweeps between 110Hz and 790Hz
+
+      windLfo.connect(windLfoGain);
+      windLfoGain.connect(bandpass.frequency);
+
+      source.connect(bandpass);
+      bandpass.connect(channelGain);
+
+      source.start(0);
+      windLfo.start(0);
+
+      nodesToStop.push(source, windLfo);
+
+    } else if (channel === 'crickets') {
+      // Night Insects & Crickets (Pulsed High-Freq shimmering pitch carrier)
+      const carrier = ctx.createOscillator();
+      carrier.type = 'sine';
+      carrier.frequency.setValueAtTime(3920, ctx.currentTime); // Shrill high-frequency trill
+
+      // Rapid tremble shaker
+      const Shudder = ctx.createOscillator();
+      Shudder.type = 'sine';
+      Shudder.frequency.setValueAtTime(50, ctx.currentTime);
+
+      const ShudderGain = ctx.createGain();
+      ShudderGain.gain.setValueAtTime(0.45, ctx.currentTime);
+      Shudder.connect(ShudderGain);
+
+      const voiceGain = ctx.createGain();
+      voiceGain.gain.setValueAtTime(0.015, ctx.currentTime); // Very quiet base level so it is subtle background
+
+      // Slow periodic chirping gating LFO
+      const pulseGate = ctx.createOscillator();
+      pulseGate.type = 'sine';
+      pulseGate.frequency.setValueAtTime(0.9, ctx.currentTime); // approx 1 chirp frame per 1.1s
+
+      const gateGain = ctx.createGain();
+      gateGain.gain.setValueAtTime(10.0, ctx.currentTime); // Overdrive clipping simulator
+
+      const gateOffset = ctx.createGain();
+      gateOffset.gain.setValueAtTime(0.2, ctx.currentTime);
+
+      pulseGate.connect(gateGain);
+
+      // Connecting shimmer and gate together directly to the voice volume control
+      ShudderGain.connect(voiceGain.gain);
+      gateGain.connect(voiceGain.gain);
+
+      carrier.connect(voiceGain);
+      voiceGain.connect(channelGain);
+
+      carrier.start(0);
+      Shudder.start(0);
+      pulseGate.start(0);
+
+      nodesToStop.push(carrier, Shudder, pulseGate);
+
+    } else if (channel === 'bowl') {
+      // Tibetan Meditation Resonance Singing Bowl Chords
+      const freqs = [172.0, 258.4, 387.2, 580.8, 871.2]; // Clean perfect harmonized partials
+      const partialGains = [0.4, 0.32, 0.22, 0.12, 0.06];
+
+      freqs.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+        const tremor = ctx.createOscillator();
+        tremor.type = 'sine';
+        tremor.frequency.setValueAtTime(0.08 + idx * 0.03, ctx.currentTime); // Separate vibration tremolo phase
+
+        const tremorGain = ctx.createGain();
+        tremorGain.gain.setValueAtTime(partialGains[idx] * 0.32, ctx.currentTime);
+
+        const partialGain = ctx.createGain();
+        partialGain.gain.setValueAtTime(partialGains[idx], ctx.currentTime);
+
+        tremor.connect(tremorGain);
+        tremorGain.connect(partialGain.gain);
+
+        osc.connect(partialGain);
+        partialGain.connect(channelGain);
+
+        osc.start(0);
+        tremor.start(0);
+
+        nodesToStop.push(osc, tremor);
+      });
+
+    } else if (channel === 'brownNoise') {
+      // Deep Sleep Brownian Warm Static
+      const buffer = getBrownNoiseBuffer(ctx);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.loop = true;
+
+      const lpFilter = ctx.createBiquadFilter();
+      lpFilter.type = 'lowpass';
+      lpFilter.frequency.setValueAtTime(160, ctx.currentTime); // Extreme warm filtration: chops highs completely
+
+      source.connect(lpFilter);
+      lpFilter.connect(channelGain);
+
+      source.start(0);
+
+      nodesToStop.push(source);
     }
+
+    activeChannels[channel] = {
+      nodes: nodesToStop,
+      gainNode: channelGain,
+      userVolume: volume,
+      status: 'playing',
+    };
+
   } catch (e) {
-    console.warn('Web Audio API nature sound synthesis failed:', e);
+    console.warn(`Web Audio API compilation failed for channel ${channel}:`, e);
   }
 }
 
-export function stopAmbientSound() {
+// Stop a single soundscape channel
+export function stopSoundscapeChannel(channel: string) {
   try {
-    if (noiseSource) {
-      noiseSource.stop();
-      noiseSource.disconnect();
-      noiseSource = null;
-    }
-    if (waveLfo) {
-      waveLfo.stop();
-      waveLfo.disconnect();
-      waveLfo = null;
-    }
-    if (mainGainNode) {
-      mainGainNode.disconnect();
-      mainGainNode = null;
+    const activeCh = activeChannels[channel];
+    if (activeCh) {
+      activeCh.nodes.forEach((node) => {
+        try {
+          node.stop();
+          node.disconnect();
+        } catch (err) {
+          // Suppress already stopped or detached node signals
+        }
+      });
+      activeCh.nodes = [];
+      try {
+        activeCh.gainNode.disconnect();
+      } catch (err) {
+        // Suppress detaching errors
+      }
+      activeCh.status = 'stopped';
+      delete activeChannels[channel];
     }
   } catch (e) {
     // Suppress clean closure errors
   }
 }
 
-export function setAmbientVolume(volume: number) {
-  if (mainGainNode && audioCtx) {
-    mainGainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+// Set volume slider for a single channel
+export function setSoundscapeChannelVolume(channel: string, volume: number) {
+  const activeCh = activeChannels[channel];
+  if (activeCh && audioCtx) {
+    activeCh.userVolume = volume;
+    activeCh.gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
   }
+}
+
+// Master Soundscape Shutdown
+export function stopAllSoundscapeChannels() {
+  Object.keys(activeChannels).forEach((channel) => {
+    stopSoundscapeChannel(channel);
+  });
+}
+
+// Master Soundscape Volume adjustment
+export function setMasterSoundscapeVolume(volume: number) {
+  const master = getMasterGain();
+  if (audioCtx) {
+    master.gain.setValueAtTime(volume, audioCtx.currentTime);
+  }
+}
+
+// ============================================================================
+// BACKWARD-COMPATIBILITY LAYER FOR Guidest Breathing Screen Triggers:
+// ============================================================================
+export function startAmbientSound(type: 'rain' | 'waves', volume: number = 0.4) {
+  // Gracefully stop everything on soundscapes, start requested node
+  stopAllSoundscapeChannels();
+  setSoundscapeChannel(type, true, volume);
+}
+
+export function stopAmbientSound() {
+  stopAllSoundscapeChannels();
+}
+
+export function setAmbientVolume(volume: number) {
+  setMasterSoundscapeVolume(volume);
+  // Also sync existing active channel gains if active
+  Object.keys(activeChannels).forEach((channel) => {
+    setSoundscapeChannelVolume(channel, volume);
+  });
 }

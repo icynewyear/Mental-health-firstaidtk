@@ -22,5 +22,58 @@ export interface GroundingStep {
   items: string[];
 }
 
-export type ActiveScreen = 'dashboard' | 'breathing' | 'grounding' | 'relief' | 'emergency';
+export type ActiveScreen = 
+  | 'dashboard' 
+  | 'breathing' 
+  | 'grounding' 
+  | 'relief' 
+  | 'emergency' 
+  | 'history' 
+  | 'soundscape'
+  | 'reframing'
+  | 'habit'
+  | 'gratitude'
+  | 'somatic'
+  | 'safetyPlan';
+
 export type BreathingType = 'box' | 'calm'; // Box: 4-4-4-4, Calm (4-7-8)
+
+export interface MoodLogEntry {
+  day: string;
+  moodValue: number; // 4: Calm, 3: Steady, 2: Anxious, 1: Panic
+  moodLabel: string;
+  stress: number;
+  hasData?: boolean;
+}
+
+export interface ReframedThought {
+  id: string;
+  negative: string;
+  distortion: string;
+  rational: string;
+  timestamp: string;
+}
+
+export interface HabitItem {
+  id: string;
+  name: string;
+  completed: boolean;
+  category: string;
+  icon: string;
+}
+
+export interface GratitudeSlip {
+  id: string;
+  text: string;
+  timestamp: string;
+  hue: number;
+}
+
+export interface SafetyPlanData {
+  warningSigns: string[];
+  copingStrategies: string[];
+  socialOutlets: string[];
+  keySupporters: string[];
+  safeEnvironments: string[];
+}
+
