@@ -43,7 +43,7 @@ export type ActiveScreen =
   | 'cbtHub'
   | 'safetyHub';
 
-export type BreathingType = 'box' | 'calm'; // Box: 4-4-4-4, Calm (4-7-8)
+export type BreathingType = 'box' | 'calm' | 'coherent'; // Box: 4-4-4-4, Calm (4-7-8), Coherent (5-5)
 
 export interface MoodLogEntry {
   day: string;

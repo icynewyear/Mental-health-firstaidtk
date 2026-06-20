@@ -40,7 +40,9 @@ interface AndroidMockupProps {
   showDebugMenu: boolean;
   setShowDebugMenu: (show: boolean) => void;
   resetMoodData: () => void;
+  restoreAllToDefaults: () => void;
   seedRandomData: () => void;
+  isDarkMode: boolean;
 }
 
 export const AndroidMockup: React.FC<AndroidMockupProps> = ({
@@ -54,7 +56,9 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
   showDebugMenu,
   setShowDebugMenu,
   resetMoodData,
+  restoreAllToDefaults,
   seedRandomData,
+  isDarkMode,
 }) => {
   const [timeState, setTimeState] = useState('14:05');
   const [offlinePillClicks, setOfflinePillClicks] = useState(0);
@@ -109,17 +113,19 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
         </div>
 
         {/* Screen inner content area */}
-        <div className="w-full h-full bg-[#F1F5F2] rounded-[38px] overflow-hidden flex flex-col relative">
+        <div className={`w-full h-full bg-[#F1F5F2] rounded-[38px] overflow-hidden flex flex-col relative transform-gpu transition-colors duration-300 ${isDarkMode ? 'simulator-dark-mode' : ''}`}>
           
           {/* Status Bar */}
-          <div className="h-9 bg-[#F1F5F2] px-5 flex items-center justify-between text-slate-700 font-bold text-[10px] select-none shrink-0 pt-1 z-35">
-            <span className="font-sans font-extrabold tracking-tight text-slate-600">{timeState}</span>
+          <div className="h-9 bg-[#F1F5F2] px-5 flex items-center justify-between text-slate-700 font-bold text-[10px] select-none shrink-0 pt-1 z-35 relative">
+            <div className="flex items-center space-x-2 relative z-50">
+              <span className="font-sans font-extrabold tracking-tight text-slate-600">{timeState}</span>
+            </div>
             
-            <div className="flex items-center space-x-1 text-slate-600">
+            <div className="flex items-center space-x-1.5 text-slate-600">
               <span className="text-[8px] font-bold text-[#4A6741] tracking-wider bg-[#E1E8E3] px-1.5 py-0.5 rounded mr-1">Offline</span>
               <Signal size={10} className="stroke-[2.5]" />
               <Wifi size={10} className="stroke-[2.5]" />
-              <Battery size={11} className="stroke-[2.5] fill-slate-600" />
+              <Battery size={11} className="stroke-[2.5] fill-slate-600 ml-0.5" />
             </div>
           </div>
 
@@ -329,6 +335,20 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
                         🗑️ Reset Tracking Data
                       </span>
                       <span className="text-[9px] text-red-400 mt-0.5 font-sans leading-none">Wipes check-ins and sets default log history</span>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      restoreAllToDefaults();
+                    }}
+                    className="w-full flex items-center justify-between bg-[#f8fafc] hover:bg-slate-100 active:scale-98 transition rounded-2xl p-3 text-left cursor-pointer border border-slate-200"
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-bold text-slate-700 leading-tight">
+                        🔄 Restore All to Defaults
+                      </span>
+                      <span className="text-[9px] text-slate-500 mt-0.5 font-sans leading-none">Wipes all custom logs, entries, and settings</span>
                     </div>
                   </button>
 

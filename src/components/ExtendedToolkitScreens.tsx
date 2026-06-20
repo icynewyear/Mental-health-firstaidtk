@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Lock, Trash2, Key, Play, Pause, Sparkles, Smile, RefreshCw, Volume2, ShieldAlert, HeartHandshake, Eye, AlertCircle, Info, Activity } from 'lucide-react';
+import { ArrowLeft, Lock, Trash2, Key, Play, Pause, Sparkles, Smile, RefreshCw, Volume2, ShieldAlert, HeartHandshake, Eye, AlertCircle, Info, Activity, Wind } from 'lucide-react';
 
 // ============================================================================
 // HELPERS FOR EXPLAINABILITY
@@ -63,10 +63,10 @@ export const SimulatorWorryBox: React.FC<{ onBack: () => void }> = ({ onBack }) 
   };
 
   const handleUnlockEarly = (id: string) => {
-    if (window.confirm('CBT guidance: Are you sure you are ready to examine this worry now, or can it wait for scheduled Worry Time?')) {
-      setWorries(worries.filter(w => w.id !== id));
+    setWorries(worries.filter(w => w.id !== id));
+    try {
       playFrequencySound(330, 'sine', 0.4, 0.06);
-    }
+    } catch (e) {}
   };
 
   const getRemainingTimeText = (worry: WorryItem) => {
@@ -199,6 +199,7 @@ export const SimulatorEMDR: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [speedSec, setSpeedSec] = useState(2.5); // Animation cycle speed
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0); // 0 = left, 1 = right
+  const [hapticsEnabled, setHapticsEnabled] = useState(false);
   const timerRef = useRef<any>(null);
 
   useEffect(() => {
@@ -210,6 +211,14 @@ export const SimulatorEMDR: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           const next = prev === 0 ? 1 : 0;
           // Soft sound on bouncing target limits
           playFrequencySound(next === 0 ? 280 : 360, 'sine', 0.15, 0.04);
+          
+          // Optional haptic vibration pulse
+          if (hapticsEnabled && typeof navigator !== 'undefined' && navigator.vibrate) {
+            try {
+              navigator.vibrate(60);
+            } catch (err) {}
+          }
+          
           return next;
         });
       }, ms);
@@ -220,91 +229,135 @@ export const SimulatorEMDR: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isPlaying, speedSec]);
+  }, [isPlaying, speedSec, hapticsEnabled]);
 
   const handleToggle = () => {
     setIsPlaying(p => !p);
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#F1F5F2] p-5 justify-between">
-      {/* Header */}
-      <div className="flex items-center justify-between mt-3 mb-2 shrink-0">
-        <button
-          onClick={onBack}
-          className="text-[#4A6741] hover:bg-[#E1E8E3] rounded-full p-1.5 transition border-0 bg-transparent cursor-pointer flex items-center justify-center"
-        >
-          <ArrowLeft size={18} />
-        </button>
-        <span className="text-[10px] font-bold text-[#4A6741] uppercase tracking-widest leading-none font-mono">Bilateral Focus</span>
-        <div className="w-8 h-8" />
-      </div>
-
-      <div className="text-center mb-4 shrink-0">
-        <h2 className="text-lg font-black text-[#4A6741] leading-tight font-sans">Gentle Flow Eye Pacer</h2>
-        <p className="text-[10px] text-slate-500 mt-0.5 leading-tight">
-          Keep your head steady and comfortable. Let your eyes follow the moving icon. Gentle, slow side-to-side tracking is a simple way to help calm your thoughts.
-        </p>
-      </div>
-
-      {/* The Visual Track */}
-      <div className="bg-white/95 rounded-3xl p-5 border border-slate-100 shadow-sm flex flex-col items-center justify-center space-y-6 flex-1 select-none max-h-[300px] mb-4">
-        {/* Track slot */}
-        <div className="w-full h-12 bg-slate-100 rounded-full border border-slate-200.5 relative flex items-center px-2 select-none overflow-hidden">
-          {/* Moving bead */}
-          <div
-            className="w-8 h-8 rounded-full bg-indigo-600 shadow-md transition-all ease-in-out duration-500 absolute select-none flex items-center justify-center text-[10px] text-white font-black"
-            style={{
-              left: position === 0 ? '0.5rem' : 'calc(100% - 2.5rem)',
-              transitionDuration: `${(speedSec * 1000) / 2}ms`
-            }}
+    <div className="flex flex-col h-full bg-[#F1F5F2] overflow-y-auto select-none">
+      <div className="flex flex-col min-h-full p-3.5 justify-between space-y-4">
+        {/* Header */}
+        <div className="text-center mt-1 relative shrink-0">
+          <button
+            onClick={onBack}
+            className="absolute left-1 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-slate-200 text-slate-500 bg-transparent border-0 cursor-pointer transition active:scale-95 flex items-center justify-center shrink-0"
+            title="Go Back"
           >
-            👁️
+            <ArrowLeft size={13} className="stroke-[3]" />
+          </button>
+          <h2 className="text-lg font-bold text-[#4A6741] leading-tight font-sans">Gentle Flow Eye Pacer</h2>
+          <p className="text-[10px] text-slate-500 px-4 mt-0.5 font-sans">Let your eyes gently trace the moving icon to help soothe and settle busy thoughts.</p>
+        </div>
+
+        {/* The Visual Track Stage */}
+        <div className="bg-white/95 rounded-3xl p-6 border border-slate-100 shadow-sm flex flex-col items-center justify-center flex-1 select-none min-h-[140px] max-h-[300px]">
+          {/* Track slot */}
+          <div className="w-full h-12 bg-slate-100 rounded-full border border-slate-200.5 relative flex items-center px-1.5 select-none overflow-hidden">
+            {/* Moving bead */}
+            <div
+              className="w-8 h-8 rounded-full bg-[#4A6741] shadow-md transition-all ease-in-out absolute select-none flex items-center justify-center text-[11px] text-white font-black"
+              style={{
+                left: position === 0 ? '0.5rem' : 'calc(100% - 2.5rem)',
+                transitionDuration: `${(speedSec * 1000) / 2}ms`
+              }}
+            >
+              👁️
+            </div>
+          </div>
+          
+          <div className="text-center mt-4">
+            {isPlaying ? (
+              <p className="text-[10px] text-slate-400 italic animate-pulse font-sans">Follow the gaze-pacer left and right...</p>
+            ) : (
+              <p className="text-[10px] text-slate-400 italic font-sans">Tap "Begin Gentle Movement" below to start.</p>
+            )}
           </div>
         </div>
 
-        {/* Adjusters */}
-        <div className="w-full flex justify-between items-center text-[10.5px] select-none">
-          <span className="font-extrabold text-slate-600 font-mono">Pacer Cycle Speed</span>
-          <div className="flex items-center space-x-1.5 select-none font-mono font-bold">
-            {[1.5, 2.5, 3.8].map(s => (
-              <button
-                key={s}
-                onClick={() => setSpeedSec(s)}
-                className={`px-2 py-1 rounded-lg border text-[9.5px] cursor-pointer transition ${
-                  speedSec === s ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-slate-50 border-slate-200 text-slate-650'
+        {/* Controller Options matching breathing config */}
+        <div className="w-full text-center flex flex-col space-y-1.5 shrink-0 animate-fade-in">
+          {/* Eye Pacer Speed option card */}
+          <div className="bg-white/70 backdrop-blur-md rounded-2xl p-2 px-3 border border-white flex flex-col space-y-1.5 text-[#4A6741] text-left">
+            <div className="flex items-center space-x-1.5">
+              <Eye size={12} />
+              <span className="text-[11px] font-bold font-sans">Pacer Speed</span>
+            </div>
+            <div className="flex w-full bg-[#E1E8E3] rounded-2xl p-1">
+              {[
+                { val: 3.8, label: 'Slow (3.8s)' },
+                { val: 2.5, label: 'Medium (2.5s)' },
+                { val: 1.5, label: 'Fast (1.5s)' }
+              ].map(s => (
+                <button
+                  key={s.val}
+                  type="button"
+                  onClick={() => setSpeedSec(s.val)}
+                  className={`flex-1 text-[10px] font-bold py-1.5 rounded-xl transition cursor-pointer border-0 ${
+                    speedSec === s.val ? 'bg-white shadow-xs text-[#4A6741]' : 'text-[#4A6741]/60 hover:text-[#4A6741]/85'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Gentle Haptics Toggle Option Card */}
+          <div className="flex items-center justify-between bg-white/70 backdrop-blur-md rounded-2xl p-2 px-3 border border-white text-left">
+            <div className="flex items-center space-x-2 text-[#4A6741]">
+              <Activity size={13} className={isPlaying && hapticsEnabled ? "animate-pulse" : ""} />
+              <span className="text-[11px] font-bold font-sans">Gentle Haptics</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const nextVal = !hapticsEnabled;
+                setHapticsEnabled(nextVal);
+                if (nextVal && typeof navigator !== 'undefined' && navigator.vibrate) {
+                  try {
+                    navigator.vibrate(35);
+                  } catch (e) {}
+                }
+              }}
+              className={`w-8 h-4 rounded-full transition-colors relative flex items-center p-0.5 cursor-pointer border-0 ${
+                hapticsEnabled ? 'bg-[#4A6741]' : 'bg-slate-300'
+              }`}
+            >
+              <div
+                className={`w-3 h-3 bg-white rounded-full shadow-xs transition-transform ${
+                  hapticsEnabled ? 'translate-x-4' : 'translate-x-0'
                 }`}
-              >
-                {s === 1.5 ? 'Fast' : s === 2.5 ? 'Medium' : 'Slow'}
-              </button>
-            ))}
+              />
+            </button>
           </div>
+
+          {/* Start/Pause Control Button */}
+          <button
+            onClick={handleToggle}
+            className={`w-full py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-wider transition border-0 cursor-pointer flex items-center justify-center space-x-2 shadow-xs ${
+              isPlaying ? 'bg-amber-600 text-white hover:bg-amber-700' : 'bg-[#4A6741] text-white hover:bg-[#3D5535]'
+            }`}
+          >
+            {isPlaying ? (
+              <>
+                <Pause size={13} className="fill-white" />
+                <span className="font-sans">Pause Eye Pacer</span>
+              </>
+            ) : (
+              <>
+                <Play size={13} className="fill-white" />
+                <span className="font-sans">Begin Gentle Movement</span>
+              </>
+            )}
+          </button>
         </div>
 
-        {/* Start button */}
-        <button
-          onClick={handleToggle}
-          className={`w-full py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition border-0 cursor-pointer flex items-center justify-center space-x-2 shadow-xs ${
-            isPlaying ? 'bg-amber-600 text-white hover:bg-amber-700' : 'bg-[#4A6741] text-white hover:bg-[#3D5535]'
-          }`}
-        >
-          {isPlaying ? (
-            <>
-              <Pause size={13} className="fill-white" />
-              <span>Pause Eye Pacer</span>
-            </>
-          ) : (
-            <>
-              <Play size={13} className="fill-white" />
-              <span>Begin Gentle Movement</span>
-            </>
-          )}
-        </button>
-      </div>
-
-      <div className="shrink-0 pt-2 border-t border-slate-100/80 text-center flex items-center justify-center gap-1.5">
-        <Sparkles size={11.5} className="text-[#4A6741]" />
-        <span className="text-[8.5px] text-slate-400">A simple focus point that encourages your mind to settle.</span>
+        <div className="shrink-0 pt-2 border-t border-slate-100/80 text-center flex items-center justify-center gap-1.5">
+          <Sparkles size={11.5} className="text-[#4A6741]" />
+          <span className="text-[8.5px] text-slate-400">A simple focus point that encourages your mind to settle.</span>
+        </div>
       </div>
     </div>
   );
@@ -314,11 +367,116 @@ export const SimulatorEMDR: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 // 3. INTERACTIVE EMOTION WHEEL & FOCUS PROMPTS
 // ============================================================================
 const CORE_EMOTIONS = [
-  { name: 'Sadness', hue: 210, icon: '😢', prompts: ['Describe what feels lost or unfinished.', 'If tears had words, what would they say?'] },
-  { name: 'Anger', hue: 0, icon: '🔥', prompts: ['What boundary of yours was crossed?', 'Write down your raw frustration with zero filter.'] },
-  { name: 'Fear / Panic', hue: 280, icon: '🫨', prompts: ['What is the core threat your brain is predicting?', 'How can we assure your body it is physically safe?'] },
-  { name: 'Numbing', hue: 130, icon: '😶‍🌫️', prompts: ['Pinpoint where the emotional weight sits in your torso.', 'What are you avoiding feeling right now?'] },
-  { name: 'Worthy', hue: 45, icon: '✨', prompts: ['Describe a small choice you handled gracefully today.', 'Who makes you feel secure being yourself?'] },
+  {
+    name: 'Sadness',
+    hue: 210,
+    icon: '😢',
+    prompts: [
+      'Describe what feels lost or unfinished.',
+      'If tears had words, what would they say?',
+      'Where in your body do you feel this sadness most heavily?',
+      'What is a gentle way you can offer yourself comfort right now?',
+      'Write about a time you felt sad but eventually found peace again.',
+      'What does this sadness want you to pay attention to or protect?',
+      'If you could hug your younger self right now, what would you tell them?',
+      'Describe a place, real or imaginary, where you feel completely safe to cry.',
+      'What is a small, easy thing that brought you comfort in the past?',
+      'Write a letter to your sadness, acknowledging its presence without judgment.',
+      'What is something you need to let go of to lighten your emotional load?',
+      'Name three small things you are grateful for even in this heavy moment.',
+      'How can you practice self-compassion today without trying to "fix" anything?',
+      'Write down the kindest words a friend could say to you right now.',
+      'Describe a quiet moment of beauty or stillness you noticed recently.'
+    ]
+  },
+  {
+    name: 'Anger',
+    hue: 0,
+    icon: '🔥',
+    prompts: [
+      'What boundary of yours was crossed?',
+      'Write down your raw frustration with zero filter.',
+      'Underneath your anger, is there any sadness, fear, or hurt hiding?',
+      'If your anger was a physical object, what would it look like and what is it made of?',
+      'Describe a healthy way you can physically channel or release this building energy.',
+      'What is a constructive action you can take to protect your boundaries?',
+      'If you could speak to the person or situation causing this without consequences, what would you say?',
+      'What are three things in this situation that you have absolute control over?',
+      'What does this anger reveal about what you deeply care about or value?',
+      'Write about a time you successfully negotiated a difficult boundary.',
+      'How does your body feel when anger rises, and how can you help it relax?',
+      'What is a gentle boundary script you can use to communicate your needs clearly?',
+      'If this anger had a message of self-protection, what is it trying to warn you about?',
+      'Write down all the unfair parts of this situation without censoring yourself.',
+      'What is one small step toward resolution or peace that you can take today.'
+    ]
+  },
+  {
+    name: 'Fear / Panic',
+    hue: 280,
+    icon: '🫨',
+    prompts: [
+      'What is the core threat your brain is predicting?',
+      'How can we assure your body it is physically safe?',
+      'Look around you. What are three physical objects that remind you that you are safe in this room?',
+      'If your fear was a small, scared child, how would you comfort them?',
+      'Write down the absolute worst-case scenario, and then write the most likely realistic scenario.',
+      'Describe how your body feels right now and focus on slowing down your breathing.',
+      'What has helped you get through moments of high anxiety or panic in the past?',
+      'What is a peaceful memory or place that you can visualize in detail right now?',
+      'Write down three reassuring coping statements (e.g., "This feeling will pass").',
+      'How can you gently bring your awareness back to the present moment?',
+      'What is a physical sensation you can focus on (like feet on the floor) to anchor yourself?',
+      'If this panic had a voice, what is it trying to protect you from?',
+      'Write a short message to your fearful thoughts telling them it is okay to rest now.',
+      'Describe a time you faced a fear and survived, proving your own resilience.',
+      'What is one tiny action you can do in the next five minutes to feel more grounded.'
+    ]
+  },
+  {
+    name: 'Numbing',
+    hue: 130,
+    icon: '😶‍🌫️',
+    prompts: [
+      'Pinpoint where the emotional weight sits in your torso.',
+      'What are you avoiding feeling right now?',
+      'Touch three different textures around you and write down how they feel.',
+      'If your numbness was a protective shield, what is it shielding you from?',
+      'Describe the temperature of your body right now (hands, feet, face).',
+      'What is one tiny spark of feeling (even if slight or uncomfortable) you can detect?',
+      'Write down whatever random, nonsense words come to mind to start waking up your expression.',
+      'How does your chest feel when you take a deep, slow, intentional breath?',
+      'If you allowed yourself to feel just 5% more of your environment, what would you notice?',
+      'Describe a sound you can hear right now as if you were hearing it for the first time.',
+      'What is one basic physical need (hunger, thirst, sleep, stretch) your body has right now?',
+      'Write down what you would say to yourself if it was safe to let your guard down.',
+      'Describe an activity or hobby that usually makes you feel alive or connected.',
+      'If this numbness had a shape and weight, what would it look like?',
+      'Write a gentle thank-you to your mind for trying to protect you by shutting down.'
+    ]
+  },
+  {
+    name: 'Worthy',
+    hue: 45,
+    icon: '✨',
+    prompts: [
+      'Describe a small choice you handled gracefully today.',
+      'Who makes you feel secure being yourself?',
+      'Write down three things you genuinely appreciate about your personality or character.',
+      'Describe a difficult moment you got through in the past year and how you did it.',
+      'What is a compliment you received recently that you can allow yourself to fully believe?',
+      'Write about a time you helped someone or made someone feel happy.',
+      'What are some unique strengths or skills you bring to your daily life?',
+      'Describe a space where you feel completely accomplished and satisfied with yourself.',
+      'What is a promise you made to yourself and successfully kept?',
+      'Write down a list of three simple things that make you a valuable friend.',
+      'Describe a hobby or interest that makes you feel excited and fulfilled.',
+      'Write about a time you stood up for yourself or spoke your truth.',
+      'What are three aspects of your growth that you are most proud of?',
+      'How can you reward or treat yourself today as a celebration of who you are?',
+      'Write a self-compassion letter to yourself celebrating your mistakes as part of learning.'
+    ]
+  },
 ];
 
 export const SimulatorEmotionWheel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
@@ -424,7 +582,7 @@ export const SimulatorEmotionWheel: React.FC<{ onBack: () => void }> = ({ onBack
                 onClick={() => setPromptIdx((promptIdx + 1) % CORE_EMOTIONS[selectedIdx].prompts.length)}
                 className="text-[#4A6741] font-bold cursor-pointer hover:underline bg-transparent border-0"
               >
-                🔄 Shift prompt
+                🔄 New prompt
               </button>
             </div>
 
@@ -667,125 +825,561 @@ export const SimulatorVagusHacks: React.FC<{ onBack: () => void }> = ({ onBack }
 // 5. 1-TAP ACUTE PANIC SOS AUTO-PACED GROUNDING ANCHOR
 // ============================================================================
 export const SimulatorPanicSOS: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const [tab, setTab] = useState<'sos' | 'breath'>('sos');
   const [phaseIdx, setPhaseIdx] = useState(0);
   const [secLeft, setSecLeft] = useState(5);
   const [active, setActive] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Custom Breathing State within SOS
+  const [breathType, setBreathType] = useState<'box' | 'calm' | 'coherent'>('calm');
+  const [breathActive, setBreathActive] = useState(false);
+  const [breathPhase, setBreathPhase] = useState<'inhale' | 'hold1' | 'exhale' | 'hold2'>('inhale');
+  const [breathSecLeft, setBreathSecLeft] = useState(4);
+  const [breathCycles, setBreathCycles] = useState(0);
 
   const SOS_STEPS = [
     { text: 'Acknowledge this wave of feeling. You are in a safe place. This is just a temporary surge of energy. Let it wash past you gently.', tone: 220, duration: 6, label: 'GENTLE WAVE' },
-    { text: 'Look around you. Find 3 cozy or comforting blue/green items in your local room right now. Feel your breath slow down.', tone: 290, duration: 8, label: 'SENSORY REFocus' },
-    { text: 'Breathe in slowly and comfortably for 4 seconds... hold for 4 seconds... breathe out softly for 5 seconds.', tone: 320, duration: 11, label: 'SLOW CHEST BREATH' },
-    { text: 'Place your feet flat and solid on the floor. Feel the ground beneath you supporting you. You are held safe.', tone: 200, duration: 7, label: 'FEEL THE GROUND' },
-    { text: 'You did wonderfully. The surge is settling down, and you have survived the peak. Take a quiet, gentle breath.', tone: 440, duration: 6, label: 'GENTLE RECOVERY' }
+    { text: 'Look around you. Find 3 cozy or comforting blue/green items in your local room right now. Feel your breath slow down.', tone: 277.18, duration: 15, label: 'SENSORY REFocus' },
+    { text: 'Breathe in slowly and comfortably for 4 seconds... hold for 4 seconds... breathe out softly for 5 seconds.', tone: 329.63, duration: 13, label: 'SLOW CHEST BREATH' },
+    { text: 'Place your feet flat and solid on the floor. Feel the ground beneath you supporting you. You are held safe.', tone: 220, duration: 15, label: 'FEEL THE GROUND' },
+    { text: 'You did wonderfully. You are safe, secure, and grounded. If you need further grounding, feel free to restart this SOS guide or try one of our calming breathing exercises.', tone: 440, duration: 8, label: 'GENTLE RECOVERY' }
   ];
 
+  const BREATH_CONFIGS = {
+    box: { inhale: 4, hold1: 4, exhale: 4, hold2: 4, name: 'Box (4-4-4-4)' },
+    calm: { inhale: 4, hold1: 7, exhale: 8, hold2: 0, name: 'Calm (4-7-8)' },
+    coherent: { inhale: 5, hold1: 0, exhale: 5, hold2: 0, name: 'Coherent (5-5)' }
+  };
+
+  // Sound triggering helper
+  const triggerPhaseChime = (phaseName: 'inhale' | 'hold1' | 'exhale' | 'hold2') => {
+    try {
+      if (phaseName === 'inhale') {
+        playFrequencySound(360, 'sine', 0.5, 0.04);
+        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([40, 100, 40]);
+      } else if (phaseName === 'exhale') {
+        playFrequencySound(240, 'sine', 0.6, 0.04);
+        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(60);
+      } else {
+        playFrequencySound(440, 'sine', 0.25, 0.03);
+        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(25);
+      }
+    } catch (e) {}
+  };
+
+  // SOS Grounding timer effects
   useEffect(() => {
+    if (tab !== 'sos') return;
+
     if (!active) {
       setPhaseIdx(0);
       setSecLeft(5);
       return;
     }
 
-    setSecLeft(SOS_STEPS[phaseIdx].duration);
-    try {
-      // Direct heavy resonant grounding sound
-      playFrequencySound(SOS_STEPS[phaseIdx].tone, 'triangle', 0.8, 0.1);
-    } catch (e) {}
+    if (isPaused) {
+      return;
+    }
 
-  }, [active, phaseIdx]);
-
-  useEffect(() => {
-    let timerID: any = null;
-    if (active && secLeft > 0) {
-      timerID = setInterval(() => {
-        setSecLeft(s => s - 1);
-      }, 1000);
-    } else if (active && secLeft === 0) {
+    if (secLeft <= 0) {
       if (phaseIdx < SOS_STEPS.length - 1) {
-        setPhaseIdx(p => p + 1);
+        const nextPhase = phaseIdx + 1;
+        setPhaseIdx(nextPhase);
+        setSecLeft(SOS_STEPS[nextPhase].duration);
+        try {
+          playFrequencySound(SOS_STEPS[nextPhase].tone, 'sine', 1.0, 0.05);
+        } catch (e) {}
       } else {
-        // Loop back or finish
-        setActive(false);
+        // Do not move off step 5 when the timer ends
+      }
+      return;
+    }
+
+    const timerID = setInterval(() => {
+      setSecLeft((s) => s - 1);
+    }, 1000);
+
+    return () => clearInterval(timerID);
+  }, [active, isPaused, phaseIdx, secLeft, tab]);
+
+  // Trigger sub-phase chimes for SOS breathing steps to match guided breathing behavior
+  useEffect(() => {
+    if (tab !== 'sos' || !active || isPaused) return;
+
+    if (phaseIdx === 2) {
+      if (secLeft === 13) {
+        triggerPhaseChime('inhale');
+      } else if (secLeft === 9) {
+        triggerPhaseChime('hold1');
+      } else if (secLeft === 5) {
+        triggerPhaseChime('exhale');
+      }
+    } else if (phaseIdx === 3) {
+      if (secLeft === 15) {
+        triggerPhaseChime('inhale');
+      } else if (secLeft === 11) {
+        triggerPhaseChime('hold1');
+      } else if (secLeft === 7) {
+        triggerPhaseChime('exhale');
       }
     }
+  }, [secLeft, phaseIdx, active, tab, isPaused]);
+
+  // Breathing Pacer timer effect
+  useEffect(() => {
+    if (tab !== 'breath') return;
+    if (!breathActive) {
+      setBreathPhase('inhale');
+      setBreathSecLeft(BREATH_CONFIGS[breathType].inhale);
+      return;
+    }
+
+    let timerID = setInterval(() => {
+      setBreathSecLeft(s => {
+        if (s > 1) {
+          return s - 1;
+        } else {
+          const config = BREATH_CONFIGS[breathType];
+          let nextPhase: 'inhale' | 'hold1' | 'exhale' | 'hold2' = 'inhale';
+
+          if (breathPhase === 'inhale') {
+            if (config.hold1 > 0) {
+              nextPhase = 'hold1';
+              triggerPhaseChime('hold1');
+              setBreathSecLeft(config.hold1);
+            } else {
+              nextPhase = 'exhale';
+              triggerPhaseChime('exhale');
+              setBreathSecLeft(config.exhale);
+            }
+          } else if (breathPhase === 'hold1') {
+            nextPhase = 'exhale';
+            triggerPhaseChime('exhale');
+            setBreathSecLeft(config.exhale);
+          } else if (breathPhase === 'exhale') {
+            if (config.hold2 > 0) {
+              nextPhase = 'hold2';
+              triggerPhaseChime('hold2');
+              setBreathSecLeft(config.hold2);
+            } else {
+              nextPhase = 'inhale';
+              triggerPhaseChime('inhale');
+              setBreathSecLeft(config.inhale);
+              setBreathCycles(c => c + 1);
+            }
+          } else if (breathPhase === 'hold2') {
+            nextPhase = 'inhale';
+            triggerPhaseChime('inhale');
+            setBreathSecLeft(config.inhale);
+            setBreathCycles(c => c + 1);
+          }
+
+          setBreathPhase(nextPhase);
+          return 0;
+        }
+      });
+    }, 1000);
+
     return () => clearInterval(timerID);
-  }, [active, secLeft, phaseIdx]);
+  }, [breathActive, breathPhase, breathType, tab]);
 
   const handleStartPanicShield = () => {
     setPhaseIdx(0);
+    setSecLeft(SOS_STEPS[0].duration);
     setActive(true);
+    setIsPaused(false);
+    try {
+      playFrequencySound(SOS_STEPS[0].tone, 'sine', 1.0, 0.05);
+    } catch (e) {}
+  };
+
+  const handleStartBreathe = () => {
+    setBreathPhase('inhale');
+    setBreathSecLeft(BREATH_CONFIGS[breathType].inhale);
+    setBreathActive(true);
+    triggerPhaseChime('inhale');
   };
 
   const currentStepInfo = SOS_STEPS[phaseIdx];
 
+  // Map Breathe phase properties
+  const getBreathePhaseStyle = () => {
+    switch (breathPhase) {
+      case 'inhale':
+        return { label: 'Breathe In... 🌬️', desc: 'Expand your lungs gently', bg: 'bg-emerald-900/30 border-emerald-500/80', scale: 'scale-125' };
+      case 'hold1':
+        return { label: 'Hold Breath... 🌸', desc: 'Settle into the moment', bg: 'bg-indigo-900/30 border-indigo-500/80', scale: 'scale-125' };
+      case 'exhale':
+        return { label: 'Breathe Out... 🍃', desc: 'Let out all physical tension', bg: 'bg-blue-900/40 border-blue-500/80', scale: 'scale-90' };
+      case 'hold2':
+        return { label: 'Pause & Rest... ⭐️', desc: 'Enjoy the quiet stillness', bg: 'bg-slate-900/60 border-slate-700/80', scale: 'scale-90' };
+    }
+  };
+
+  const breathDetails = getBreathePhaseStyle();
+
+  // Active sub-breathing mapping for the SOS screen third step
+  const getSubPhaseOfSosBreath = (secRemaining: number) => {
+    const elapsed = 13 - secRemaining;
+    if (elapsed < 4) {
+      return { stepLabel: 'Breathe In... 🌬️', scale: 'scale-125', color: 'text-emerald-300 animate-pulse', phaseShort: 'Inhale', subSecLeft: 4 - elapsed };
+    } else if (elapsed < 8) {
+      return { stepLabel: 'Hold Softly... 🌸', scale: 'scale-125', color: 'text-indigo-300', phaseShort: 'Hold', subSecLeft: 8 - elapsed };
+    } else {
+      return { stepLabel: 'Sigh Out... 🍃', scale: 'scale-90', color: 'text-blue-300', phaseShort: 'Exhale', subSecLeft: 13 - elapsed };
+    }
+  };
+
+  // Active sub-breathing mapping for the SOS screen fourth step
+  const getSubPhaseOfSosBreathStep4 = (secRemaining: number) => {
+    const elapsed = 15 - secRemaining;
+    if (elapsed < 4) {
+      return { stepLabel: 'Breathe In... 🌬️', scale: 'scale-125', color: 'text-emerald-300 animate-pulse', phaseShort: 'Inhale', subSecLeft: 4 - elapsed };
+    } else if (elapsed < 8) {
+      return { stepLabel: 'Hold Softly... 🌸', scale: 'scale-125', color: 'text-indigo-300', phaseShort: 'Hold', subSecLeft: 8 - elapsed };
+    } else {
+      return { stepLabel: 'Sigh Out... 🍃', scale: 'scale-90', color: 'text-blue-300', phaseShort: 'Exhale', subSecLeft: 15 - elapsed };
+    }
+  };
+
+  const activeSubBreathStyle = active
+    ? (phaseIdx === 2
+      ? getSubPhaseOfSosBreath(secLeft)
+      : phaseIdx === 3
+      ? getSubPhaseOfSosBreathStep4(secLeft)
+      : null)
+    : null;
+
   return (
-    <div className="flex flex-col h-full bg-[#1A1110] p-5 justify-between relative text-amber-50">
-      {/* Red Ambient Alarm Background */}
-      <div className="absolute inset-0 bg-red-950/10 pointer-events-none mix-blend-overlay z-0" />
+    <div className="flex flex-col h-full bg-[#0f172a] overflow-y-auto relative text-blue-50 select-none">
+      <div className="flex flex-col min-h-full p-4 justify-between space-y-4">
+        {/* Soft Ambient Calming Background */}
+        <div className="absolute inset-0 bg-blue-900/10 pointer-events-none mix-blend-overlay z-0" />
 
-      {/* Close button top corner */}
-      <div className="flex justify-between items-center mt-3 z-10 shrink-0">
-        <button
-          onClick={onBack}
-          className="text-amber-50 hover:bg-white/10 rounded-full p-1.5 transition border-0 bg-transparent cursor-pointer flex items-center justify-center"
-        >
-          <ArrowLeft size={18} />
-        </button>
-        <span className="text-[10px] font-black uppercase tracking-widest text-[#FCA5A5] font-mono leading-none">Comfort Rescue Space</span>
-        <div className="w-8 h-8" />
-      </div>
-
-      <div className="text-center z-10 mt-2.5 mb-1 select-none shrink-0">
-        <div className="text-xl mb-1 select-none">⭐️</div>
-        <h2 className="text-lg font-black text-rose-300 leading-tight">Calm Rescue Space</h2>
-        <p className="text-[9.5px] text-red-150 max-w-[85%] mx-auto leading-normal">
-          A soft helper for high-stress moments. Tap the heart below, and let the paced step-by-step guidance support you.
-        </p>
-      </div>
-
-      {/* Central Visual somatic reactor */}
-      <div className="flex-1 flex flex-col justify-center items-center z-10 space-y-4 my-2 shrink-0">
-        {!active ? (
+        {/* Header toolbar */}
+        <div className="flex justify-between items-center mt-1 z-10 shrink-0">
           <button
-            onClick={handleStartPanicShield}
-            className="w-32 h-32 bg-rose-950 hover:bg-rose-900 border-[3px] border-rose-500 rounded-full flex flex-col justify-center items-center cursor-pointer transition-all duration-300 hover:scale-[1.04] active:scale-97 select-none shadow-lg shadow-rose-950/40 relative group"
+            onClick={onBack}
+            className="text-blue-50 hover:bg-white/10 rounded-full p-1.5 transition border-0 bg-transparent cursor-pointer flex items-center justify-center"
+            title="Go Back"
           >
-            <div className="absolute inset-0 bg-rose-500/10 rounded-full animate-ping pointer-events-none" />
-            <ShieldAlert size={36} className="text-rose-400 group-hover:animate-pulse" />
-            <span className="text-[10px] text-rose-200 mt-2 font-black uppercase tracking-widest leading-none font-sans">TAP TO START</span>
+            <ArrowLeft size={16} />
           </button>
-        ) : (
-          <div className="w-full text-center space-y-4 px-2 max-w-[280px]">
-            {/* Pulsing breathing expansion circles strictly proportional with stage duration */}
-            <div className="relative w-24 h-24 mx-auto flex items-center justify-center select-none">
-              <div className="absolute inset-0 bg-rose-500/10 rounded-full animate-ping duration-1500" />
-              <div className="absolute inset-2.5 bg-rose-950/90 rounded-full border border-rose-550 flex flex-col items-center justify-center">
-                <span className="text-xl font-bold font-mono text-rose-300 leading-none">{secLeft}s</span>
-              </div>
-            </div>
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#93c5fd] font-mono leading-none">Comfort Rescue Space</span>
+          <div className="w-8 h-8" />
+        </div>
 
-            <div className="space-y-1 mt-1">
-              <span className="text-[8.5px] font-black tracking-widest text-[#F87171] bg-rose-950/80 border border-rose-900 px-3 py-1 rounded-full uppercase leading-none inline-block">
-                {currentStepInfo.label}
-              </span>
-              <p className="text-[11.5px] font-bold text-rose-50 border-l border-rose-500 pl-3 leading-relaxed py-1.5 text-left bg-rose-950/30 rounded-r-xl">
-                {currentStepInfo.text}
+        {/* Tab switchers */}
+        <div className="flex bg-[#1e293b] p-1 rounded-2xl border border-slate-700/50 shrink-0 z-10 w-full">
+          <button
+            type="button"
+            onClick={() => { setTab('sos'); setBreathActive(false); }}
+            className={`flex-1 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition border-0 cursor-pointer ${
+              tab === 'sos' ? 'bg-[#3b5b7b] text-white shadow-sm' : 'text-blue-200/85 hover:text-white bg-transparent'
+            }`}
+          >
+            Grounding SOS
+          </button>
+          <button
+            type="button"
+            onClick={() => { setTab('breath'); setActive(false); }}
+            className={`flex-1 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition border-0 cursor-pointer ${
+              tab === 'breath' ? 'bg-[#3b5b7b] text-white shadow-sm' : 'text-blue-200/85 hover:text-white bg-transparent'
+            }`}
+          >
+            Interactive Breath
+          </button>
+        </div>
+
+        {tab === 'sos' ? (
+          <>
+            {/* SOS MODE INTRO */}
+            <div className="text-center z-10 select-none shrink-0">
+              <h2 className="text-lg font-black text-blue-300 leading-tight font-sans">Calm Rescue Space</h2>
+              <p className="text-[9.5px] text-blue-100 max-w-[90%] mx-auto font-sans">
+                A paced 5-step audio-somatic grounding guide for high overload moments.
               </p>
             </div>
 
-            <button
-              onClick={() => setActive(false)}
-              className="py-1 px-4 text-[9px] font-extrabold uppercase bg-red-900 hover:bg-red-800 text-white rounded-full transition cursor-pointer border-0 mt-3"
-            >
-              Pause Exercise
-            </button>
-          </div>
-        )}
-      </div>
+            {/* Central visual Grounding box */}
+            <div className="flex-1 flex flex-col justify-center items-center z-10 py-1 shrink-0 w-full">
+              {!active ? (
+                <div className="flex flex-col items-center w-full max-w-[280px] space-y-4">
+                  <button
+                    onClick={handleStartPanicShield}
+                    className="w-24 h-24 bg-[#1e293b] hover:bg-[#334155] border-[3px] border-blue-500/50 rounded-full flex flex-col justify-center items-center cursor-pointer transition-all duration-300 hover:scale-[1.04] active:scale-97 select-none shadow-lg shadow-slate-900/40 relative group border-0 shrink-0"
+                  >
+                    <div className="absolute inset-0 bg-blue-500/10 rounded-full animate-ping pointer-events-none" />
+                    <ShieldAlert size={28} className="text-blue-400 group-hover:animate-pulse" />
+                    <span className="text-[8px] text-blue-200 mt-1 font-black uppercase tracking-widest leading-none font-sans">TAP TO START</span>
+                  </button>
 
-      <div className="shrink-0 pt-2 border-t border-rose-950/70 text-center flex items-center justify-center gap-1.5 z-10">
-        <HeartHandshake size={11} className="text-rose-400" />
-        <span className="text-[8px] text-red-200 uppercase font-mono tracking-widest">You are safe. Please take all the time you need to reset.</span>
+                  {/* Explicit 5-step checklist preview */}
+                  <div className="w-full bg-slate-900/40 p-3 rounded-2xl border border-slate-800/60 text-left space-y-1.5 shrink-0">
+                    <span className="text-[8px] uppercase font-black tracking-widest text-blue-300 block border-b border-slate-800 pb-1">
+                      🗺️ The 5-Step Somatic Pathway
+                    </span>
+                    <div className="space-y-1 text-[9.5px] leading-tight">
+                      <div className="flex items-center space-x-1.5 text-slate-200">
+                        <span className="text-blue-400 font-black">1.</span>
+                        <span><strong className="text-blue-200">Gentle Wave</strong> - Soft emotional containment</span>
+                      </div>
+                      <div className="flex items-center space-x-1.5 text-slate-200">
+                        <span className="text-blue-400 font-black">2.</span>
+                        <span><strong className="text-blue-200">Sensory Refocus</strong> - Calm blue/green focus finder</span>
+                      </div>
+                      <div className="flex items-center space-x-1.5 text-slate-200">
+                        <span className="text-blue-400 font-black">3.</span>
+                        <span><strong className="text-blue-200">Slow Chest Breath</strong> - Respiratory vagus reset</span>
+                      </div>
+                      <div className="flex items-center space-x-1.5 text-slate-200">
+                        <span className="text-blue-400 font-black">4.</span>
+                        <span><strong className="text-blue-200">Feel Grounded</strong> - Weight down sensory anchors</span>
+                      </div>
+                      <div className="flex items-center space-x-1.5 text-slate-200">
+                        <span className="text-blue-400 font-black">5.</span>
+                        <span><strong className="text-blue-200">Gentle Recovery</strong> - Safe, loving consolidation</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full text-center space-y-3 px-2 max-w-[280px]">
+                  {/* Dynamic pulsing breathe expansion ring on step 3 */}
+                  {activeSubBreathStyle ? (
+                    <div className="relative w-20 h-20 mx-auto flex items-center justify-center select-none">
+                      {/* Outer transition ring mirroring main breathing module */}
+                      <div className={`absolute inset-0 rounded-full transition-all duration-1000 ease-in-out border-2 border-blue-400 ${activeSubBreathStyle.scale}`} />
+                      
+                      {/* Inner ambient pulsing guide ring */}
+                      {secLeft > 0 && !isPaused && (
+                        <div className="absolute inset-1.5 border border-blue-500/20 rounded-full animate-pulse pointer-events-none" />
+                      )}
+                      
+                      {/* Solid container holding state numbers */}
+                      <div className="absolute inset-3 bg-slate-900 rounded-full border border-blue-500/40 flex flex-col items-center justify-center">
+                        <span className="text-[8px] uppercase font-black tracking-wider text-blue-300 leading-none">{activeSubBreathStyle.phaseShort}</span>
+                        <span className="text-base font-bold font-mono text-blue-200 leading-none mt-0.5">{activeSubBreathStyle.subSecLeft}s</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative w-20 h-20 mx-auto flex items-center justify-center select-none">
+                      {secLeft > 0 && !isPaused && (
+                        <div className="absolute inset-0 bg-blue-500/15 rounded-full animate-ping duration-1500" />
+                      )}
+                      <div className="absolute inset-1.5 bg-slate-900 rounded-full border border-blue-500/40 flex flex-col items-center justify-center">
+                        <span className="text-lg font-bold font-mono text-blue-300 leading-none">{secLeft}s</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5 mt-0.5">
+                    {/* Clear Step progress status & Interactive Indicator dots */}
+                    <div className="flex justify-between items-center px-1">
+                      <span className="text-[9px] font-black text-blue-300 font-mono tracking-wider">
+                        STEP {phaseIdx + 1} OF 5
+                      </span>
+                      <div className="flex space-x-1">
+                        {SOS_STEPS.map((_, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              setPhaseIdx(idx);
+                              setSecLeft(SOS_STEPS[idx].duration);
+                            }}
+                            className={`w-1.5 h-1.5 rounded-full transition-all duration-300 border-0 p-0 cursor-pointer ${
+                              idx === phaseIdx
+                                ? 'bg-blue-400 scale-125'
+                                : idx < phaseIdx
+                                ? 'bg-blue-600/60'
+                                : 'bg-slate-700'
+                            }`}
+                            title={`Jump to step ${idx + 1}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <span className="text-[8px] font-black tracking-widest text-blue-300 bg-slate-800 border border-slate-700 px-3 py-1 rounded-full uppercase leading-none inline-block">
+                      {currentStepInfo.label}
+                    </span>
+                    
+                    {activeSubBreathStyle && (
+                      <p className={`text-[10px] font-black tracking-wide text-blue-200 mt-0.5 leading-none ${secLeft > 0 && !isPaused ? 'animate-pulse' : ''}`}>
+                        {activeSubBreathStyle.stepLabel}
+                      </p>
+                    )}
+
+                    <p className="text-[11px] font-bold text-blue-50 border-l-[3px] border-blue-500 pl-3 leading-relaxed py-1.5 text-left bg-slate-800/30 rounded-r-xl font-sans min-h-[52px]">
+                      {currentStepInfo.text}
+                    </p>
+                  </div>
+
+                  {/* Interactive manual navigation buttons */}
+                  <div className="flex gap-1.5 w-full pt-1">
+                    <button
+                      onClick={() => {
+                        const prev = Math.max(0, phaseIdx - 1);
+                        setPhaseIdx(prev);
+                        setSecLeft(SOS_STEPS[prev].duration);
+                        setIsPaused(false);
+                        try {
+                          playFrequencySound(SOS_STEPS[prev].tone, 'sine', 1.0, 0.05);
+                        } catch (e) {}
+                      }}
+                      disabled={phaseIdx === 0}
+                      className="flex-1 py-1 px-2 text-[8.5px] font-black uppercase bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800 text-blue-200 rounded-full transition cursor-pointer border border-slate-755"
+                    >
+                      ◀ Prev
+                    </button>
+                    <button
+                      onClick={() => setIsPaused(!isPaused)}
+                      className={`flex-1 py-1 px-2 text-[8.5px] font-black uppercase rounded-full transition cursor-pointer border-0 ${
+                        isPaused
+                          ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                          : 'bg-amber-600 hover:bg-amber-500 text-white'
+                      }`}
+                    >
+                      {isPaused ? '▶ Resume' : '⏸ Pause'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (phaseIdx < SOS_STEPS.length - 1) {
+                          const nextIdx = phaseIdx + 1;
+                          setPhaseIdx(nextIdx);
+                          setSecLeft(SOS_STEPS[nextIdx].duration);
+                          setIsPaused(false);
+                          try {
+                            playFrequencySound(SOS_STEPS[nextIdx].tone, 'sine', 1.0, 0.05);
+                          } catch (e) {}
+                        } else {
+                          // Restart from first step for step 5
+                          setPhaseIdx(0);
+                          setSecLeft(SOS_STEPS[0].duration);
+                          setIsPaused(false);
+                          try {
+                            playFrequencySound(SOS_STEPS[0].tone, 'sine', 1.0, 0.05);
+                          } catch (e) {}
+                        }
+                      }}
+                      className="flex-1 py-1 px-2 text-[8.5px] font-black uppercase bg-[#3b5b7b] hover:bg-blue-600 text-white rounded-full transition cursor-pointer border-0"
+                    >
+                      {phaseIdx === SOS_STEPS.length - 1 ? '🔄 Restart' : 'Next ▶'}
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => setActive(false)}
+                    className="py-1 px-4 text-[8px] font-semibold uppercase bg-slate-800/60 hover:bg-slate-700 text-slate-400 hover:text-white rounded-full transition cursor-pointer border border-slate-700/40"
+                  >
+                    Cancel SOS Guide
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* BREATH PACER MODE */}
+            <div className="text-center z-10 select-none shrink-0 space-y-1">
+              <h2 className="text-lg font-black text-blue-300 leading-tight font-sans">Rescue Breathing Pacer</h2>
+              <p className="text-[9.5px] text-blue-100 max-w-[90%] mx-auto font-sans">
+                Concentrate strictly on matching your inhalation and exhalation. This physically interrupts the hyperventilation responses.
+              </p>
+            </div>
+
+            {/* Central Animated Breathing concentric rings */}
+            <div className="flex-1 flex flex-col justify-center items-center z-10 py-1 shrink-0">
+              {!breathActive ? (
+                <div className="flex flex-col items-center space-y-5">
+                  {/* Select breath formula */}
+                  <div className="flex flex-col space-y-1.5 w-64 text-center">
+                    <span className="text-[10px] text-blue-300 font-bold uppercase tracking-widest leading-none">Choose Breath Pattern</span>
+                    <div className="flex flex-col space-y-1 bg-slate-800/65 rounded-2xl p-1.5 border border-slate-700/30">
+                      {(Object.keys(BREATH_CONFIGS) as Array<keyof typeof BREATH_CONFIGS>).map(key => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setBreathType(key)}
+                          className={`w-full py-2 px-3 rounded-xl text-left border-0 cursor-pointer font-bold transition ${
+                            breathType === key
+                              ? 'bg-[#3b5b7b] text-white shadow-xs'
+                              : 'text-blue-200/80 hover:bg-white/5 hover:text-white'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10.5px] font-sans">{BREATH_CONFIGS[key].name}</span>
+                            <span className="text-[8.5px] uppercase font-mono tracking-widest text-blue-300 italic">
+                              {key === 'box' ? 'stabilize' : key === 'calm' ? 'down-regulate' : 'balance'}
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleStartBreathe}
+                    className="w-24 h-24 bg-[#3b5b7b] hover:bg-[#2c445c] border-2 border-blue-400/30 rounded-full flex flex-col justify-center items-center cursor-pointer transition-all duration-300 hover:scale-[1.04] active:scale-97 select-none shadow-lg outline-none"
+                  >
+                    <Wind size={24} className="text-blue-200 animate-pulse" />
+                    <span className="text-[8px] text-white mt-1 font-black uppercase tracking-widest">START</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="w-full text-center space-y-4 px-2 max-w-[280px]">
+                  {/* Active Breathing ring */}
+                  <div className="relative w-28 h-28 mx-auto flex items-center justify-center select-none">
+                    <div className={`absolute inset-0 rounded-full transition-all duration-1000 ease-in-out border-2 border-blue-400 ${breathDetails.scale}`} />
+                    <div className="absolute inset-2 border border-blue-500/20 rounded-full animate-pulse pointer-events-none" />
+                    <div className="absolute inset-4 bg-slate-900/80 rounded-full border border-blue-500/35 flex flex-col items-center justify-center p-2">
+                      <span className="text-xl font-bold font-mono text-blue-300 leading-none">{breathSecLeft}s</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[9px] font-black tracking-widest text-blue-300 bg-slate-800/70 border border-slate-700 px-3 py-1 rounded-full uppercase leading-none inline-block">
+                      {breathDetails.label}
+                    </span>
+                    <p className="text-[11px] text-blue-100 font-medium italic select-none">
+                      {breathDetails.desc}
+                    </p>
+                  </div>
+
+                  {breathCycles > 0 && (
+                    <div className="text-[9px] text-blue-300 font-mono">
+                      Cycles Completed: <span className="font-bold text-blue-200">{breathCycles}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-center space-x-2 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setBreathType(breathType === 'box' ? 'calm' : breathType === 'calm' ? 'coherent' : 'box')}
+                      className="px-3 py-1 rounded-full text-[8.5px] uppercase font-bold text-blue-300/80 border border-slate-700 bg-slate-800/50 hover:bg-white/5 cursor-pointer"
+                    >
+                      Cycle Technique
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBreathActive(false)}
+                      className="px-3 py-1 rounded-full text-[8.5px] uppercase font-bold text-white bg-red-900 hover:bg-red-850 border-0 cursor-pointer"
+                    >
+                      Pause
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        <div className="shrink-0 pt-2 border-t border-rose-950/70 text-center flex items-center justify-center gap-1.5 z-10">
+          <HeartHandshake size={11} className="text-rose-400" />
+          <span className="text-[8px] text-red-200 uppercase font-mono tracking-widest">You are safe. Please take all the time you need to reset.</span>
+        </div>
       </div>
     </div>
   );

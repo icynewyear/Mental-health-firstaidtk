@@ -32,3 +32,57 @@
 .animate-slide-up {
   animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Dark Mode Overrides for Simulator Screens */
+.simulator-dark-mode.bg-\[\#F1F5F2\], .simulator-dark-mode .bg-\[\#F1F5F2\] { background-color: #0c121e !important; }
+.simulator-dark-mode.bg-white, .simulator-dark-mode .bg-white { background-color: #1e293b !important; border-color: #334155 !important; }
+.simulator-dark-mode.bg-white\/80, .simulator-dark-mode .bg-white\/80 { background-color: rgba(30, 41, 59, 0.8) !important; border-color: rgba(51, 65, 85, 0.4) !important; }
+.simulator-dark-mode.bg-white\/90, .simulator-dark-mode .bg-white\/90 { background-color: rgba(15, 23, 42, 0.95) !important; border-color: #334155 !important; }
+.simulator-dark-mode.bg-white\/50, .simulator-dark-mode .bg-white\/50 { background-color: rgba(30, 41, 59, 0.5) !important; }
+
+.simulator-dark-mode.text-slate-800, .simulator-dark-mode .text-slate-800,
+.simulator-dark-mode.text-slate-700, .simulator-dark-mode .text-slate-700 { color: #f1f5f9 !important; }
+.simulator-dark-mode.text-slate-600, .simulator-dark-mode .text-slate-600,
+.simulator-dark-mode.text-slate-500, .simulator-dark-mode .text-slate-500 { color: #cbd5e1 !important; }
+.simulator-dark-mode.text-slate-400, .simulator-dark-mode .text-slate-400 { color: #94a3b8 !important; }
+
+.simulator-dark-mode.bg-slate-50, .simulator-dark-mode .bg-slate-50,
+.simulator-dark-mode.bg-slate-100, .simulator-dark-mode .bg-slate-100,
+.simulator-dark-mode.bg-slate-50\/40, .simulator-dark-mode .bg-slate-50\/40,
+.simulator-dark-mode.bg-slate-50\/50, .simulator-dark-mode .bg-slate-50\/50 { background-color: #0f172a !important; border-color: #334155 !important; color: #cbd5e1 !important; }
+
+.simulator-dark-mode.border-slate-100, .simulator-dark-mode .border-slate-100,
+.simulator-dark-mode.border-slate-200, .simulator-dark-mode .border-slate-200,
+.simulator-dark-mode.border-white, .simulator-dark-mode .border-white { border-color: #334155 !important; }
+
+.simulator-dark-mode.bg-\[\#E1E8E3\], .simulator-dark-mode .bg-\[\#E1E8E3\] { background-color: #243527 !important; color: #a8c69f !important; border-color: #3a5c40 !important; }
+.simulator-dark-mode.bg-\[\#E1E8E3\]\/35, .simulator-dark-mode .bg-\[\#E1E8E3\]\/35 { background-color: rgba(36, 53, 39, 0.6) !important; color: #a8c69f !important; border-color: #3a5c40 !important;}
+.simulator-dark-mode.bg-\[\#E1E8E3\]\/80, .simulator-dark-mode .bg-\[\#E1E8E3\]\/80 { background-color: rgba(36, 53, 39, 0.8) !important; color: #a8c69f !important; border-color: #3a5c40 !important;}
+.simulator-dark-mode.bg-\[\#D1DBCF\], .simulator-dark-mode .bg-\[\#D1DBCF\] { background-color: #2e4432 !important; color: #a8c69f !important; }
+.simulator-dark-mode.bg-\[\#EBF2EC\], .simulator-dark-mode .bg-\[\#EBF2EC\] { background-color: #1e2e21 !important; border-color: #3a5c40 !important; }
+.simulator-dark-mode.text-\[\#4A6741\], .simulator-dark-mode .text-\[\#4A6741\] { color: #a8c69f !important; }
+.simulator-dark-mode.bg-\[\#4A6741\], .simulator-dark-mode .bg-\[\#4A6741\] { background-color: #38563a !important; color: #f1f5f9 !important; }
+
+.simulator-dark-mode.bg-\[\#f0f4f8\], .simulator-dark-mode .bg-\[\#f0f4f8\] { background-color: #0f172a !important; border-color: #1e293b !important; }
+.simulator-dark-mode.bg-\[\#e1e8f0\], .simulator-dark-mode .bg-\[\#e1e8f0\] { background-color: #1e293b !important; }
+.simulator-dark-mode.bg-\[\#d1dee8\], .simulator-dark-mode .bg-\[\#d1dee8\] { background-color: #1e293b !important; color: #7dd3fc !important; border-color: #334155 !important;}
+.simulator-dark-mode.text-\[\#3b5b7b\], .simulator-dark-mode .text-\[\#3b5b7b\] { color: #bae6fd !important; }
+.simulator-dark-mode.bg-\[\#3b5b7b\], .simulator-dark-mode .bg-\[\#3b5b7b\] { background-color: #0c4a6e !important; color: #f1f5f9 !important; border-color: #075985 !important; }
+.simulator-dark-mode.text-\[\#4a7298\], .simulator-dark-mode .text-\[\#4a7298\] { color: #7dd3fc !important; }
+
+.simulator-dark-mode.bg-red-50, .simulator-dark-mode .bg-red-50,
+.simulator-dark-mode.bg-rose-50, .simulator-dark-mode .bg-rose-50 { background-color: #4c0519 !important; border-color: #881337 !important; color: #fda4af !important; }
+.simulator-dark-mode.text-red-500, .simulator-dark-mode .text-red-500 { color: #f43f5e !important; }
+.simulator-dark-mode.text-red-600, .simulator-dark-mode .text-red-600 { color: #fb7185 !important; }
+.simulator-dark-mode.bg-amber-50, .simulator-dark-mode .bg-amber-50 { background-color: #451a03 !important; }
+.simulator-dark-mode.bg-blue-50, .simulator-dark-mode .bg-blue-50 { background-color: #1e3a8a !important; border-color: #1e40af !important;}
+.simulator-dark-mode.bg-emerald-50, .simulator-dark-mode .bg-emerald-50 { background-color: #064e3b !important; border-color: #065f46 !important;}
+.simulator-dark-mode.bg-purple-50, .simulator-dark-mode .bg-purple-50 { background-color: #4c1d95 !important; border-color: #5b21b6 !important;}
+
+.simulator-dark-mode.from-white\/0, .simulator-dark-mode .from-white\/0 { --tw-gradient-from: rgba(15, 23, 42, 0) !important; --tw-gradient-from-position:  !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
+.simulator-dark-mode.via-white, .simulator-dark-mode .via-white { --tw-gradient-via: rgba(15, 23, 42, 1) !important; --tw-gradient-via-position:  !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-via), var(--tw-gradient-to) !important; }
+.simulator-dark-mode.to-white, .simulator-dark-mode .to-white { --tw-gradient-to: rgba(15, 23, 42, 1) !important; --tw-gradient-to-position:  !important; }
+
+/* Invert shadows slightly for dark mode contrast */
+.simulator-dark-mode.shadow-sm, .simulator-dark-mode .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.5) !important; }
+.simulator-dark-mode.shadow-md, .simulator-dark-mode .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5) !important; }

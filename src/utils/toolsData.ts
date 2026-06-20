@@ -152,7 +152,7 @@ export const ALL_TOOLS: ToolDef[] = [
 ];
 
 // Helper to load favorites from localStorage.
-// Fallback: Default to a couple of useful tools (e.g. Guided Breathing, Thought Reframer, Grounding)
+// Fallback: Default to a couple of useful tools (e.g. Guided Breathing, Thought Reframer, Everyday Basics)
 export const getFavoriteToolIds = (): ActiveScreen[] => {
   const saved = localStorage.getItem('safespace_favorite_tool_ids_list');
   if (saved) {
@@ -162,7 +162,7 @@ export const getFavoriteToolIds = (): ActiveScreen[] => {
       // fallback
     }
   }
-  return ['breathing', 'reframing', 'grounding'];
+  return ['breathing', 'reframing', 'habit'];
 };
 
 // Helper to save favorites list

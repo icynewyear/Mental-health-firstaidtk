@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Trash2, Check, Sparkles, Smile, RotateCcw, Shield, Heart, HelpCircle, Activity, Info } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Check, Sparkles, Smile, RotateCcw, Shield, Heart, HelpCircle, Activity, Info, Edit2 } from 'lucide-react';
 import { ReframedThought, HabitItem, GratitudeSlip, SafetyPlanData } from '../types';
 
 // ============================================================================
@@ -329,11 +329,7 @@ export const SimulatorGratitude: React.FC<GratitudeProps> = ({ onBack }) => {
   const [gratitudeText, setGratitudeText] = useState('');
   const [slips, setSlips] = useState<GratitudeSlip[]>(() => {
     const saved = localStorage.getItem('safespace_gratitude_jar');
-    return saved ? JSON.parse(saved) : [
-      { id: '1', text: 'Quiet morning sitting with sweet warm peppermint tea', timestamp: 'Jun 10', hue: 145 },
-      { id: '2', text: 'Friend text me an silly inside joke out of nowhere', timestamp: 'Jun 12', hue: 35 },
-      { id: '3', text: 'Sound of heavy rain pattering on the window glass', timestamp: 'Today', hue: 200 }
-    ];
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [drawnSlip, setDrawnSlip] = useState<GratitudeSlip | null>(null);
@@ -570,10 +566,17 @@ const MUSCLE_REGIONS = [
   },
 ];
 
+const PMR_SPEEDS = {
+  fast: { name: 'Fast', tense: 5, release: 6 },
+  normal: { name: 'Normal', tense: 10, release: 12 },
+  slow: { name: 'Slow', tense: 15, release: 18 }
+};
+
 export const SimulatorSomatic: React.FC<SomaticProps> = ({ onBack }) => {
   const [activeIdx, setActiveIdx] = useState(0);
   const [phase, setPhase] = useState<'tense' | 'release'>('tense');
-  const [timerLeft, setTimerLeft] = useState(5);
+  const [pmrSpeed, setPmrSpeed] = useState<'fast' | 'normal' | 'slow'>('fast');
+  const [timerLeft, setTimerLeft] = useState(PMR_SPEEDS.fast.tense);
   const [exerciseActive, setExerciseActive] = useState(false);
 
   useEffect(() => {
@@ -583,10 +586,11 @@ export const SimulatorSomatic: React.FC<SomaticProps> = ({ onBack }) => {
         setTimerLeft(t => t - 1);
       }, 1000);
     } else if (exerciseActive && timerLeft === 0) {
+      const config = PMR_SPEEDS[pmrSpeed];
       // Toggle phase automatically
       if (phase === 'tense') {
         setPhase('release');
-        setTimerLeft(6); // Release stage gets 6 seconds to relax
+        setTimerLeft(config.release); // Release stage gets release seconds to relax
         try {
           // Play comforting bell release frequency
           playSomaticPulse(587.33); // D5 pitch chime
@@ -596,29 +600,41 @@ export const SimulatorSomatic: React.FC<SomaticProps> = ({ onBack }) => {
         if (activeIdx < MUSCLE_REGIONS.length - 1) {
           setActiveIdx(a => a + 1);
           setPhase('tense');
-          setTimerLeft(5);
+          setTimerLeft(config.tense);
         } else {
           // End of cycle
           setExerciseActive(false);
           setPhase('tense');
-          setTimerLeft(5);
+          setTimerLeft(config.tense);
         }
       }
     }
     return () => clearInterval(interval);
-  }, [exerciseActive, timerLeft, phase]);
+  }, [exerciseActive, timerLeft, phase, pmrSpeed, activeIdx]);
 
   const handleToggleActive = () => {
+    const config = PMR_SPEEDS[pmrSpeed];
     if (!exerciseActive) {
       setExerciseActive(true);
-      setTimerLeft(5);
-      setPhase('tense');
+      setTimerLeft(phase === 'tense' ? config.tense : config.release);
       try {
         playSomaticPulse(220); // Deep focal base frequency
       } catch (e) {}
     } else {
       setExerciseActive(false);
     }
+  };
+
+  const handleSpeedChange = (speed: 'fast' | 'normal' | 'slow') => {
+    setPmrSpeed(speed);
+    const config = PMR_SPEEDS[speed];
+    setTimerLeft(phase === 'tense' ? config.tense : config.release);
+  };
+
+  const handleNavRegion = (newIdx: number) => {
+    setActiveIdx(newIdx);
+    setPhase('tense');
+    setTimerLeft(PMR_SPEEDS[pmrSpeed].tense);
   };
 
   const playSomaticPulse = (freq: number) => {
@@ -733,9 +749,8 @@ export const SimulatorSomatic: React.FC<SomaticProps> = ({ onBack }) => {
 
           <button
             onClick={() => {
-              setActiveIdx(prev => (prev + 1) % MUSCLE_REGIONS.length);
-              setPhase('tense');
-              if (exerciseActive) setTimerLeft(5);
+              const nextIdx = (activeIdx + 1) % MUSCLE_REGIONS.length;
+              handleNavRegion(nextIdx);
             }}
             className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full transition cursor-pointer border-0 flex items-center justify-center"
             title="Next Step"
@@ -746,21 +761,43 @@ export const SimulatorSomatic: React.FC<SomaticProps> = ({ onBack }) => {
       </div>
 
       {/* Regions navigation bar dots */}
-      <div className="flex justify-center space-x-1.5 shrink-0 mb-4 select-none">
+      <div className="flex justify-center space-x-1.5 shrink-0 mb-3 select-none">
         {MUSCLE_REGIONS.map((_, idx) => (
           <button
             key={idx}
             type="button"
-            onClick={() => {
-              setActiveIdx(idx);
-              setPhase('tense');
-              if (exerciseActive) setTimerLeft(5);
-            }}
+            onClick={() => handleNavRegion(idx)}
             className={`w-2 h-2 rounded-full cursor-pointer transition border-0 ${
               activeIdx === idx ? 'bg-[#4A6741] scale-110' : 'bg-slate-250 hover:bg-slate-350'
             }`}
           />
         ))}
+      </div>
+
+      {/* PMR Pace Options Card */}
+      <div className="bg-white/70 backdrop-blur-md rounded-2xl p-2.5 px-3 border border-white flex flex-col space-y-1.5 text-[#4A6741] text-left shrink-0 mb-4 animate-fade-in select-none">
+        <div className="flex items-center space-x-1.5">
+          <Activity size={12} />
+          <span className="text-[11px] font-bold font-sans">Relaxation Pace</span>
+        </div>
+        <div className="flex w-full bg-[#E1E8E3] rounded-2xl p-1">
+          {[
+            { val: 'fast' as const, label: 'Fast (5s)' },
+            { val: 'normal' as const, label: 'Normal (10s)' },
+            { val: 'slow' as const, label: 'Slow (15s)' }
+          ].map(s => (
+            <button
+              key={s.val}
+              type="button"
+              onClick={() => handleSpeedChange(s.val)}
+              className={`flex-1 text-[10px] font-bold py-1.5 rounded-xl transition cursor-pointer border-0 ${
+                pmrSpeed === s.val ? 'bg-white shadow-xs text-[#4A6741]' : 'text-[#4A6741]/60 hover:text-[#4A6741]/85'
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="shrink-0 pt-2 border-t border-slate-100/80 text-center flex items-center justify-center gap-1">
@@ -779,18 +816,52 @@ interface SafetyProps {
   onBack: () => void;
 }
 
+const STEP_EXAMPLES: Record<string, string[]> = {
+  warningSigns: [
+    'Feeling physically tense or restless in the evening',
+    'Not wanting to reply to texts or answer messages',
+    'Shallow breathing or holding your breath unconsciously',
+    'Clenching your jaw or feeling sudden neck stiffness'
+  ],
+  copingStrategies: [
+    'Do a 4-7-8 mindful breathing cycle for 2 minutes',
+    'Listen to gentle forest stream or soft rainfall sounds',
+    'Splash cool water on your face to slow your heart rate',
+    'Step away to stretch your shoulders and neck slowly'
+  ],
+  socialOutlets: [
+    'A peaceful corner in your local community library',
+    'A quiet bench in the park under a shady tree',
+    'A warm, cozy independent neighborhood coffee shop',
+    'Strolling down a familiar, quiet and calm street'
+  ],
+  keySupporters: [
+    'A close, non-judgmental friend or trusted buddy',
+    'A supportive sibling or family member',
+    'Crisis Support Helpline (Call or Text 988)',
+    'Crisis Text Line (Text HOME to 741741)'
+  ],
+  safeEnvironments: [
+    'Under a soft, heavy blanket with lights turned low',
+    'A comfortable chair with gentle, soothing music',
+    'A cozy spot on my bedroom rug with nice pillows',
+    'A clean, dimly lit room with a warm mug of tea'
+  ]
+};
+
 export const SimulatorSafetyPlan: React.FC<SafetyProps> = ({ onBack }) => {
   const [activeStep, setActiveStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [tempText, setTempText] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
 
   const [plan, setPlan] = useState<SafetyPlanData>(() => {
     const saved = localStorage.getItem('safespace_safety_plan');
     return saved ? JSON.parse(saved) : {
-      warningSigns: ['Feeling tense or restless in the evenings', 'Not wanting to reply to texts'],
-      copingStrategies: ['Mindful box breathing for a few minutes', 'Listening to calming ambient sounds'],
-      socialOutlets: ['A cozy local neighborhood cafe', 'A walk in the nearest botanical garden'],
-      keySupporters: ['My close friend (Anna): 555-0129', 'My sister or brother'],
-      safeEnvironments: ['A cozy spot on my bedroom rug', 'A peaceful park bench'],
+      warningSigns: [],
+      copingStrategies: [],
+      socialOutlets: [],
+      keySupporters: [],
+      safeEnvironments: [],
     };
   });
 
@@ -853,101 +924,191 @@ export const SimulatorSafetyPlan: React.FC<SafetyProps> = ({ onBack }) => {
       <div className="text-center mb-3 shrink-0">
         <h2 className="text-lg font-black text-[#4A6741] leading-tight font-sans">Safety & Comfort Plan</h2>
         <p className="text-[10px] text-slate-500 mt-0.5 leading-tight">
-          Create a personalized, gentle step-by-step plan to guide you toward peace and support whenever things feel tough.
+          A personalized crisis safety blueprint based on gold-standard steps to maintain tranquility and seek kind support.
         </p>
       </div>
 
-      {/* Main steps cards wrapper - unconstrained to allow natural scrolling */}
-      <div className="flex flex-col space-y-3.5 pb-6">
-        {/* Step indicator pills */}
-        <div className="flex justify-between items-center bg-white/70 border border-slate-100 p-2 rounded-2xl select-none shrink-0 gap-1 overflow-x-auto no-scrollbar">
-          {STEPS_REF.map(s => (
-            <button
-              key={s.id}
-              onClick={() => setActiveStep(s.id as any)}
-              className={`w-6.5 h-6.5 rounded-full flex items-center justify-center text-[9.5px] font-black transition border-0 cursor-pointer ${
-                activeStep === s.id
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-slate-105 text-slate-450 hover:bg-slate-150'
-              }`}
-            >
-              {s.id}
-            </button>
-          ))}
-        </div>
+      {/* Mode Switcher */}
+      {!isEditing ? (
+        /* ================================================= */
+        /* VIEW MODE: Beautiful Compiled Safety Plan Display */
+        /* ================================================= */
+        <div className="flex flex-col space-y-3.5 pb-6">
+          {/* Prominent Edit Action Element */}
+          <button
+            onClick={() => setIsEditing(true)}
+            className="w-full flex items-center justify-center space-x-1.5 py-2.5 px-4 bg-slate-900 text-white font-extrabold text-[11px] rounded-2xl hover:bg-slate-800 active:scale-98 transition shadow-sm border-0 cursor-pointer"
+          >
+            <Edit2 size={12} className="animate-pulse" />
+            <span>Edit My Safety Plan</span>
+          </button>
 
-        {/* Interactive Workspace Area Card */}
-        <div className="bg-white/95 rounded-3xl p-3.5 border border-[#CAD9CC]/50 shadow-sm text-left">
-          <span className="text-[8px] font-bold text-indigo-400 uppercase tracking-wider block">Step {currStep.id} of 5</span>
-          <h3 className="text-xs font-black text-[#4A6741] leading-tight mt-0.5 mb-1">{currStep.title}</h3>
-          <p className="text-[9px] text-slate-400 leading-tight mb-3 font-medium">{currStep.sub}</p>
-
-          {/* Form to append */}
-          <form onSubmit={handleAdd} className="flex gap-2 mb-3">
-            <input
-              type="text"
-              required
-              placeholder="e.g. Add comforting step..."
-              value={tempText}
-              onChange={(e) => setTempText(e.target.value)}
-              className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 text-[10.5px] rounded-xl focus:outline-none focus:bg-white text-slate-800"
-            />
-            <button
-              type="submit"
-              className="bg-[#4A6741] hover:bg-[#3E5536] text-white p-2 rounded-xl flex items-center justify-center transition border-0 cursor-pointer shadow-xs"
-            >
-              <Plus size={13} />
-            </button>
-          </form>
-
-          {/* Active List of custom step records */}
-          <div className="space-y-1.5 max-h-36 overflow-y-auto no-scrollbar pl-0.5">
-            {itemsList.length === 0 ? (
-              <p className="text-[9.5px] italic text-slate-350 pr-2 leading-none py-2 text-center font-bold">Your list is currently empty. Click above to add an item!</p>
-            ) : (
-              itemsList.map((item, idx) => (
-                <div key={idx} className="flex justify-between items-center bg-[#F1F5F2]/50 hover:bg-[#F1F5F2] border border-slate-100 rounded-xl p-2 select-none">
-                  <span className="text-[10px] text-slate-700 font-semibold font-sans leading-tight leading-none break-all flex-1 pr-3">
-                    ✔ {item}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemove(currStep.key, idx)}
-                    className="text-slate-350 hover:text-red-500 transition border-0 bg-transparent cursor-pointer p-0.5"
-                    title="Remove"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Plan Compilation Card Previewer */}
-        <div className="bg-slate-900 text-slate-100 rounded-[24px] p-3 shadow-inner border border-slate-800 text-left select-none relative overflow-hidden">
-          {/* Subtle safety emblem */}
-          <Shield size={65} className="absolute right-[-15px] bottom-[-15px] text-slate-800/60 pointer-events-none select-none" />
-          <div className="flex items-center space-x-1 mb-2">
-            <Shield size={12} className="text-emerald-400" />
-            <span className="text-[8px] font-black tracking-wider uppercase text-slate-400 font-mono">My Saved Safety Plan</span>
-          </div>
-
-          <div className="space-y-2 relative z-10">
+          {/* List of custom styled safety sections */}
+          <div className="space-y-3">
             {STEPS_REF.map(s => {
               const currentList = plan[s.key];
+              const getEmojiForStep = (id: number) => {
+                switch(id) {
+                  case 1: return '⚠️';
+                  case 2: return '🧘';
+                  case 3: return '🌎';
+                  case 4: return '📞';
+                  case 5: return '🏡';
+                  default: return '✨';
+                }
+              };
               return (
-                <div key={s.id} className="text-[9.5px]">
-                  <span className="font-extrabold text-indigo-400">{s.id}. {s.title}:</span>{' '}
-                  <span className="text-slate-200">
-                    {currentList.length > 0 ? currentList.join(' • ') : <span className="text-slate-600 italic">None logged yet</span>}
-                  </span>
+                <div key={s.id} className="bg-white/95 rounded-2xl p-3.5 border border-[#CAD9CC]/65 text-left shadow-xs hover:scale-[1.01] transition-transform duration-200">
+                  <div className="flex items-center space-x-1.5 mb-2">
+                    <span className="text-xs">{getEmojiForStep(s.id)}</span>
+                    <span className="font-extrabold text-[9.5px] text-[#4A6741] uppercase tracking-wide">{s.title}</span>
+                  </div>
+                  {currentList.length > 0 ? (
+                    <div className="space-y-1.5 pl-0.5">
+                      {currentList.map((item, idx) => (
+                        <div key={idx} className="text-[10.5px] text-slate-700 font-semibold leading-relaxed bg-[#F1F5F2]/45 py-1 px-2.5 rounded-xl border border-slate-100 flex items-start gap-1">
+                          <Check size={10} className="text-emerald-600 mt-1 shrink-0 stroke-[3]" />
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5 pl-0.5">
+                      <div className="text-[8.5px] font-black text-slate-400 tracking-wider uppercase mb-1">Suggested Examples:</div>
+                      {STEP_EXAMPLES[s.key].slice(0, 2).map((item, idx) => (
+                        <div key={idx} className="text-[10px] text-slate-450 leading-relaxed bg-[#F8FAFC]/90 py-1 px-2.5 rounded-xl border border-dashed border-slate-200/80 flex items-start gap-1 select-none">
+                          <span className="text-slate-300 mt-0.5">•</span>
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                      <p className="text-[8px] text-slate-400 italic mt-1 font-medium pl-1">
+                        No custom items added yet. Tap "Edit" to customize.
+                      </p>
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
+
+          {/* Supportive note */}
+          <div className="bg-emerald-50/50 rounded-2xl p-3 border border-emerald-100/60 text-left select-none relative overflow-hidden flex items-center space-x-2">
+            <Shield size={14} className="text-emerald-600 shrink-0" />
+            <p className="text-[9.5px] font-bold text-emerald-800 leading-tight">
+              Reviewing these details regularly reinforces calming pathways in the mind. Set simple, caring reminders to stay centered.
+            </p>
+          </div>
         </div>
-      </div>
+      ) : (
+        /* ================================================= */
+        /* EDIT MODE: Step-by-Step Interactive Form Editor    */
+        /* ================================================= */
+        <div className="flex flex-col space-y-3.5 pb-6">
+          {/* Step circles navigation */}
+          <div className="flex justify-between items-center bg-white/70 border border-slate-100 p-2 rounded-2xl select-none shrink-0 gap-1 overflow-x-auto no-scrollbar">
+            {STEPS_REF.map(s => (
+              <button
+                key={s.id}
+                onClick={() => setActiveStep(s.id as any)}
+                className={`w-6.5 h-6.5 rounded-full flex items-center justify-center text-[9.5px] font-black transition border-0 cursor-pointer ${
+                  activeStep === s.id
+                    ? 'bg-[#4A6741] text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-400 hover:bg-slate-150'
+                }`}
+              >
+                {s.id}
+              </button>
+            ))}
+          </div>
+
+          {/* Work area block */}
+          <div className="bg-white/95 rounded-3xl p-3.5 border border-[#CAD9CC]/50 shadow-sm text-left">
+            <span className="text-[8px] font-bold text-[#4A6741] uppercase tracking-wider block">Step {currStep.id} of 5</span>
+            <h3 className="text-xs font-black text-slate-800 leading-tight mt-0.5 mb-1">{currStep.title}</h3>
+            <p className="text-[9px] text-slate-405 leading-tight mb-3 font-medium">{currStep.sub}</p>
+
+            {/* Form */}
+            <form onSubmit={handleAdd} className="flex gap-2 mb-3">
+              <input
+                type="text"
+                required
+                placeholder="e.g. Add details..."
+                value={tempText}
+                onChange={(e) => setTempText(e.target.value)}
+                className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 text-[10.5px] rounded-xl focus:outline-none focus:bg-white text-slate-800 focus:border-[#4A6741]/55"
+              />
+              <button
+                type="submit"
+                className="bg-[#4A6741] hover:bg-[#3E5536] text-white p-2 rounded-xl flex items-center justify-center transition border-0 cursor-pointer shadow-xs"
+              >
+                <Plus size={13} />
+              </button>
+            </form>
+
+            {/* active list records */}
+            <div className="space-y-1.5 max-h-36 overflow-y-auto no-scrollbar pl-0.5">
+              {itemsList.length === 0 ? (
+                <p className="text-[9.5px] italic text-slate-350 pr-2 leading-snug py-2 text-center font-bold">Your custom list is currently empty. Add items using the box above or tap the suggestions below!</p>
+              ) : (
+                itemsList.map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-center bg-[#F1F5F2]/50 hover:bg-[#F1F5F2] border border-slate-100 rounded-xl p-2 select-none">
+                    <span className="text-[10px] text-slate-700 font-semibold font-sans leading-tight break-all flex-1 pr-3">
+                      ✔ {item}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemove(currStep.key, idx)}
+                      className="text-slate-355 hover:text-red-500 transition border-0 bg-transparent cursor-pointer p-1"
+                      title="Remove"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Quick addition chips */}
+            <div className="mt-4 pt-3 border-t border-slate-150">
+              <span className="text-[8.5px] font-black text-[#4A6741] uppercase tracking-wider block mb-2">💡 Tap Example to Add Immediately:</span>
+              <div className="flex flex-wrap gap-1.5">
+                {STEP_EXAMPLES[currStep.key].map((item, idx) => {
+                  const isAlreadyAdded = itemsList.includes(item);
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      disabled={isAlreadyAdded}
+                      onClick={() => {
+                        setPlan(prev => ({
+                          ...prev,
+                          [currStep.key]: [...prev[currStep.key], item]
+                        }));
+                      }}
+                      className={`text-[9.5px] font-semibold py-1 px-2 rounded-full transition cursor-pointer text-left border active:scale-95 text-xs ${
+                        isAlreadyAdded 
+                          ? 'bg-slate-50 text-slate-350 border-slate-100 cursor-not-allowed opacity-60' 
+                          : 'bg-[#F1F5F2] text-slate-700 border-slate-200/60 hover:bg-[#E2ECE4] hover:text-[#4A6741] hover:border-[#CAD9CC]'
+                      }`}
+                    >
+                      {isAlreadyAdded ? '✓ Added' : `+ ${item}`}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Done action */}
+          <button
+            onClick={() => setIsEditing(false)}
+            className="w-full flex items-center justify-center space-x-1.5 py-2.5 px-3 bg-[#4A6741] hover:bg-[#3E5536] text-white font-black text-xs rounded-2xl transition border-0 cursor-pointer shadow-xs active:scale-[0.98]"
+          >
+            <Check size={14} />
+            <span>Done & Preview Plan</span>
+          </button>
+        </div>
+      )}
 
       <div className="shrink-0 pt-2 border-t border-slate-100/80 text-center flex items-center justify-center gap-1">
         <Shield size={10} className="text-[#4A6741]" />

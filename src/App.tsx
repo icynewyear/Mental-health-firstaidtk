@@ -5,9 +5,31 @@ import { androidProjectFiles } from './androidCode';
 import { ActiveScreen, MoodLogEntry } from './types';
 import { Leaf, Compass, BookOpen, Phone, Terminal, Heart, Settings, Milestone } from 'lucide-react';
 
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+// Helper to calculate the Sunday date string ('YYYY-MM-DD') of the current calendar week
+function getStartOfWeekDate(date: Date = new Date()): string {
+  const d = new Date(date);
+  const day = d.getDay(); // 0 is Sunday, 1 is Monday, ..., 6 is Saturday
+  const diff = d.getDate() - day; // subtract the day index to get Sunday
+  const sunday = new Date(d.setDate(diff));
+  const y = sunday.getFullYear();
+  const m = String(sunday.getMonth() + 1).padStart(2, '0');
+  const r = String(sunday.getDate()).padStart(2, '0');
+  return `${y}-${m}-${r}`;
+}
+
+// Generates Sunday-to-Saturday structure with empty/cleared logs for all days by default
+function getDefaultWeekHistory(): MoodLogEntry[] {
+  return WEEKDAYS.map((day) => {
+    return { day, moodValue: 0, moodLabel: 'No Data', stress: 5, hasData: false };
+  });
+}
+
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<ActiveScreen>('dashboard');
   const [selectedFileIndex, setSelectedFileIndex] = useState<number>(5); // Defaults to DashboardScreen.kt (index 5)
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   
   // Simulated State to persist across tab switches in the phone
   const [showDebugMenu, setShowDebugMenu] = useState<boolean>(false);
@@ -20,46 +42,93 @@ export default function App() {
   });
 
   const [moodHistory, setMoodHistory] = useState<MoodLogEntry[]>(() => {
+    const currentWeekSunday = getStartOfWeekDate();
+    const savedWeekSunday = localStorage.getItem('safespace_current_week_sunday');
+    
+    // Clear the week and start over if we have entered a brand-new week
+    if (savedWeekSunday && savedWeekSunday !== currentWeekSunday) {
+      localStorage.setItem('safespace_current_week_sunday', currentWeekSunday);
+      const clean = getDefaultWeekHistory();
+      localStorage.setItem('safespace_mood_history', JSON.stringify(clean));
+      localStorage.removeItem('safespace_logged_mood');
+      localStorage.setItem('safespace_stress_level', '5');
+      return clean;
+    }
+
     const saved = localStorage.getItem('safespace_mood_history');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.length === 7) {
+          // Align and map any loaded entries (or legacy schema blocks) to standard Sun-to-Sat week
+          const todayIndex = new Date().getDay();
+          const todayAbbr = WEEKDAYS[todayIndex];
+          const aligned = WEEKDAYS.map(dayName => {
+            const matched = parsed.find((item: any) => 
+              item.day === dayName || 
+              (item.day === 'Today' && dayName === todayAbbr)
+            );
+            if (matched) {
+              return { ...matched, day: dayName };
+            }
+            return { day: dayName, moodValue: 0, moodLabel: 'No Data', stress: 5, hasData: false };
+          });
+          return aligned;
+        }
       } catch (e) {
-        // Fallback to defaults
+        // Fallback below
       }
     }
-    return [
-      { day: 'Mon', moodValue: 1, moodLabel: '🌊', stress: 4, hasData: true },
-      { day: 'Tue', moodValue: 1, moodLabel: '⛈️', stress: 6, hasData: true },
-      { day: 'Wed', moodValue: 0, moodLabel: 'No Data', stress: 5, hasData: false },
-      { day: 'Thu', moodValue: 1, moodLabel: '🍃', stress: 3, hasData: true },
-      { day: 'Fri', moodValue: 0, moodLabel: 'No Data', stress: 5, hasData: false },
-      { day: 'Sat', moodValue: 1, moodLabel: '🌊', stress: 4, hasData: true },
-      { day: 'Today', moodValue: 0, moodLabel: 'No Data', stress: 5, hasData: false },
-    ];
+    
+    // Default initial save
+    localStorage.setItem('safespace_current_week_sunday', currentWeekSunday);
+    const clean = getDefaultWeekHistory();
+    localStorage.setItem('safespace_mood_history', JSON.stringify(clean));
+    return clean;
   });
 
   const resetMoodData = () => {
     setLoggedMood(null);
     setStressLevel(5);
-    const defaults = [
-      { day: 'Mon', moodValue: 1, moodLabel: '🌊', stress: 3, hasData: true },
-      { day: 'Tue', moodValue: 0, moodLabel: 'No Data', stress: 5, hasData: false },
-      { day: 'Wed', moodValue: 1, moodLabel: '🌊', stress: 3, hasData: true },
-      { day: 'Thu', moodValue: 0, moodLabel: 'No Data', stress: 5, hasData: false },
-      { day: 'Fri', moodValue: 1, moodLabel: '🌊', stress: 3, hasData: true },
-      { day: 'Sat', moodValue: 0, moodLabel: 'No Data', stress: 5, hasData: false },
-      { day: 'Today', moodValue: 0, moodLabel: 'No Data', stress: 5, hasData: false },
-    ];
-    setMoodHistory(defaults);
+    const clean = getDefaultWeekHistory();
+    setMoodHistory(clean);
+  };
+
+  const restoreAllToDefaults = () => {
+    localStorage.clear();
+    setLoggedMood(null);
+    setStressLevel(3);
+    const clean = getDefaultWeekHistory();
+    setMoodHistory(clean);
+    window.location.reload();
   };
 
   const seedRandomData = () => {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Today'];
+    const todayIndex = new Date().getDay();
     const availableEmojis = ['🍃', '🌊', '⛈️', '😰', '🧘', '🪴', '🍵', '✨', '☕'];
-    const randomHistory = days.map((day) => {
-      const hasData = Math.random() > 0.3; // 70% data, 30% no data
-      if (!hasData) {
+    const randomHistory = WEEKDAYS.map((day, idx) => {
+      // Seed values for Sunday through Today of the current week only (future remains empty)
+      if (idx <= todayIndex) {
+        const hasData = Math.random() > 0.2; // 80% logged
+        if (!hasData) {
+          return {
+            day,
+            moodValue: 0,
+            moodLabel: 'No Data',
+            stress: 5,
+            hasData: false,
+          };
+        }
+        const emoji = availableEmojis[Math.floor(Math.random() * availableEmojis.length)];
+        const stress = Math.floor(Math.random() * 8) + 1; // 1 to 8
+        return {
+          day,
+          moodValue: 1,
+          moodLabel: emoji,
+          stress,
+          hasData: true,
+        };
+      } else {
         return {
           day,
           moodValue: 0,
@@ -68,27 +137,71 @@ export default function App() {
           hasData: false,
         };
       }
-      const emoji = availableEmojis[Math.floor(Math.random() * availableEmojis.length)];
-      const stress = Math.floor(Math.random() * 10) + 1; // 1 to 10
-      return {
-        day,
-        moodValue: 1,
-        moodLabel: emoji,
-        stress,
-        hasData: true,
-      };
     });
 
-    const todayVal = randomHistory[6];
+    const todayVal = randomHistory[todayIndex];
     if (todayVal.hasData) {
-      setLoggedMood(todayVal.moodLabel);
-      setStressLevel(todayVal.stress);
+      localStorage.setItem('safespace_logged_mood', todayVal.moodLabel);
+      localStorage.setItem('safespace_stress_level', todayVal.stress.toString());
     } else {
+      localStorage.removeItem('safespace_logged_mood');
+      localStorage.setItem('safespace_stress_level', '3');
+    }
+    localStorage.setItem('safespace_mood_history', JSON.stringify(randomHistory));
+
+    // Seed monthly simulation logs as well
+    const mockMonthly: Record<string, { moodValue: number; moodLabel: string; stress: number; hasData: boolean }> = {};
+    const seedForMonth = (monthStr: string, totalDays: number, monthNum: number) => {
+      for (let day = 1; day <= totalDays; day++) {
+        const dateKey = `2026-${monthStr}-${day.toString().padStart(2, '0')}`;
+        const pseudoRandom = Math.sin(day * 13 + monthNum * 37) * 10000;
+        const val = pseudoRandom - Math.floor(pseudoRandom);
+        const hasData = val > 0.35; // ~65% check-in
+        
+        if (hasData) {
+          const stress = Math.floor((val * 99) % 8) + 1; // 1 to 8
+          let emoji = '🍃';
+          if (stress <= 3) emoji = '🍃';
+          else if (stress <= 5) emoji = '🌊';
+          else if (stress <= 7) emoji = '⛈️';
+          else emoji = '😰';
+
+          mockMonthly[dateKey] = {
+            moodValue: 1,
+            moodLabel: emoji,
+            stress,
+            hasData: true
+          };
+        } else {
+          mockMonthly[dateKey] = {
+            moodValue: 0,
+            moodLabel: 'No Data',
+            stress: 5,
+            hasData: false
+          };
+        }
+      }
+    };
+    seedForMonth('04', 30, 4); // April
+    seedForMonth('05', 31, 5); // May
+    seedForMonth('06', 30, 6); // June
+    localStorage.setItem('safespace_monthly_data', JSON.stringify(mockMonthly));
+
+    window.location.reload();
+  };
+
+  // Verify week rollover state on mount
+  useEffect(() => {
+    const currentWeekSunday = getStartOfWeekDate();
+    const savedWeekSunday = localStorage.getItem('safespace_current_week_sunday');
+    if (savedWeekSunday !== currentWeekSunday) {
+      localStorage.setItem('safespace_current_week_sunday', currentWeekSunday);
+      const clean = getDefaultWeekHistory();
+      setMoodHistory(clean);
       setLoggedMood(null);
       setStressLevel(5);
     }
-    setMoodHistory(randomHistory);
-  };
+  }, []);
 
   // Persist stressLevel to local storage on change
   useEffect(() => {
@@ -111,8 +224,11 @@ export default function App() {
 
   // Sync today's active values directly from loggedMood & stressLevel
   useEffect(() => {
+    const todayIndex = new Date().getDay();
+    const todayAbbr = WEEKDAYS[todayIndex];
+    
     setMoodHistory(prev => prev.map(entry => {
-      if (entry.day === 'Today') {
+      if (entry.day === todayAbbr) {
         const hasData = loggedMood !== null;
         return {
           ...entry,
@@ -215,6 +331,13 @@ export default function App() {
           {/* Quick Stats / Info Row */}
           <div className="flex items-center space-x-6 text-[10px] font-mono shrink-0 select-none">
             <button 
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="flex items-center space-x-1.5 text-slate-600 bg-[#E1E8E3]/60 hover:bg-[#E1E8E3] active:scale-95 transition px-3 py-1.5 rounded-2xl border border-white/40 cursor-pointer"
+              title="Toggle Dark Mode"
+            >
+              <span>{isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}</span>
+            </button>
+            <button 
               onClick={() => setShowDebugMenu(!showDebugMenu)}
               className="flex items-center space-x-1.5 text-slate-600 bg-[#E1E8E3]/60 hover:bg-[#E1E8E3] active:scale-95 transition px-3 py-1.5 rounded-2xl border border-white/40 cursor-pointer"
               title="Click to open Developer Sandbox debug menu"
@@ -272,7 +395,9 @@ export default function App() {
                 showDebugMenu={showDebugMenu}
                 setShowDebugMenu={setShowDebugMenu}
                 resetMoodData={resetMoodData}
+                restoreAllToDefaults={restoreAllToDefaults}
                 seedRandomData={seedRandomData}
+                isDarkMode={isDarkMode}
               />
             </div>
           </div>

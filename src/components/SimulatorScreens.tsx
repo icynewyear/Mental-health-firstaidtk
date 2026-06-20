@@ -30,12 +30,18 @@ import {
   Sparkles,
   Shield,
   Eye,
-  Activity
+  Activity,
+  Download,
+  Check,
+  Copy,
+  FileText,
+  Upload
 } from 'lucide-react';
 import { ActiveScreen, BreathingType, CopingStatement, GroundingStep, MoodLogEntry } from '../types';
 import { startAmbientSound, stopAmbientSound, setAmbientVolume } from '../utils/audioSynth';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { ALL_TOOLS, getFavoriteToolIds, saveFavoriteToolIds, toggleFavoriteToolId, ToolDef } from '../utils/toolsData';
+import { Reorder } from 'motion/react';
 
 // Dynamic ToolIcon renderer mapping IDs to their pre-vetted Lucide icons
 export const ToolIcon: React.FC<{ id: ActiveScreen; size?: number; className?: string }> = ({ id, size = 16, className = "" }) => {
@@ -79,9 +85,11 @@ const CustomTooltip = ({ active, payload }: any) => {
     if (!data.hasData || !data.moodValue) {
       return null;
     }
+    const todayAbbr = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date().getDay()];
+    const isToday = data.day === 'Today' || data.day === todayAbbr;
     return (
       <div className="bg-slate-900 border border-slate-800 text-white rounded-xl p-2.5 shadow-lg text-[10px] leading-relaxed select-none font-sans z-50">
-        <p className="font-bold text-[#A8C69F]">{data.day === 'Today' ? 'Today' : `${data.day}`}</p>
+        <p className="font-bold text-[#A8C69F]">{isToday ? 'Today' : `${data.day}`}</p>
         <p className="mt-0.5 text-slate-300">Mood: <span className="font-bold text-white">{data.moodLabel}</span></p>
         <p className="text-slate-300">Stress: <span className="font-bold text-white">{data.stress}/10</span></p>
       </div>
@@ -110,21 +118,18 @@ const extractEmoji = (moodLabel: string | undefined, moodValue?: number): string
   return '🍃';
 };
 
-// Custom rendered Dot showing nervous system emoji corresponding to each day's mood
-const RenderCustomDot = (props: any) => {
-  const { cx, cy, payload } = props;
-  if (cx === undefined || cy === undefined) return null;
-  
-  const hasData = payload.hasData;
-
-  if (!hasData) {
-    return null;
-  }
+// Custom rendered Bar showing nervous system emoji corresponding to each day's mood
+const RenderCustomBar = (props: any) => {
+  const { x, y, width, height, payload } = props;
+  if (!payload.hasData) return null;
   
   const emoji = extractEmoji(payload.moodLabel, payload.moodValue);
+  const cx = x + width / 2;
+  const cy = y;
 
   return (
     <g>
+      <rect x={x} y={y} width={width} height={height} fill="#4A6741" opacity={0.3} rx={4} ry={4} />
       <circle cx={cx} cy={cy} r={8.5} fill="#FFFFFF" stroke="#D1DBCE" strokeWidth={1} style={{ filter: 'drop-shadow(0px 1px 1.5px rgba(0,0,0,0.1))' }} />
       <text
         x={cx}
@@ -140,21 +145,18 @@ const RenderCustomDot = (props: any) => {
   );
 };
 
-// Larger floating Custom rendered Active Dot
-const RenderCustomActiveDot = (props: any) => {
-  const { cx, cy, payload } = props;
-  if (cx === undefined || cy === undefined) return null;
-
-  const hasData = payload.hasData;
-
-  if (!hasData) {
-    return null;
-  }
+// Larger floating Custom rendered Active Bar
+const RenderCustomActiveBar = (props: any) => {
+  const { x, y, width, height, payload } = props;
+  if (!payload.hasData) return null;
 
   const emoji = extractEmoji(payload.moodLabel, payload.moodValue);
+  const cx = x + width / 2;
+  const cy = y;
 
   return (
     <g>
+      <rect x={x} y={y} width={width} height={height} fill="#4A6741" opacity={0.6} rx={4} ry={4} />
       <circle cx={cx} cy={cy} r={12.5} fill="#4A6741" opacity={0.15} className="animate-pulse" />
       <circle cx={cx} cy={cy} r={11} fill="#FFFFFF" stroke="#4A6741" strokeWidth={1.5} style={{ filter: 'drop-shadow(0px 1.5px 3px rgba(0,0,0,0.2))' }} />
       <text
@@ -193,14 +195,14 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
 }) => {
   const PREDEFINED_EMOJI_SETS = [
     {
-      id: 'nature',
-      name: 'Nature 🍃',
-      emojis: ['🍃', '🌊', '⛈️', '🌿']
-    },
-    {
       id: 'faces',
       name: 'Faces 😊',
       emojis: ['😌', '🙂', '😟', '😰']
+    },
+    {
+      id: 'nature',
+      name: 'Nature 🍃',
+      emojis: ['🍃', '🌊', '⛈️', '🌿']
     },
     {
       id: 'weather',
@@ -220,7 +222,7 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
   ];
 
   const [activeSetId, setActiveSetId] = useState<string>(() => {
-    return localStorage.getItem('safespace_active_emoji_set_id') || 'nature';
+    return localStorage.getItem('safespace_active_emoji_set_id') || 'faces';
   });
 
   const [showSelector, setShowSelector] = useState<boolean>(false);
@@ -280,6 +282,7 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
 
   const [favoriteIds, setFavoriteIds] = useState<ActiveScreen[]>(() => getFavoriteToolIds());
   const [showFavoritesManage, setShowFavoritesManage] = useState<boolean>(false);
+  const [isReorderingFavorites, setIsReorderingFavorites] = useState<boolean>(false);
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -295,7 +298,7 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
     <div className="flex flex-col h-full bg-[#F1F5F2] p-5 overflow-y-auto relative">
       {/* Phone custom keyboard picker input modal */}
       {showKeyboardInput && (
-        <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-5 z-55">
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-5 z-55">
           <div className="bg-white rounded-3xl p-5 shadow-xl border border-slate-100 flex flex-col space-y-4 w-60 text-center animate-scale-in">
             <div>
               <h3 className="text-sm font-bold text-[#4A6741]">Keyboard Custom Feel</h3>
@@ -345,36 +348,187 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
         </div>
       )}
 
+      {/* Configure Emoji Set Modal */}
+      {showSelector && (
+        <div className="fixed inset-0 bg-slate-950/65 backdrop-blur-xs flex items-end justify-center z-50">
+          <div className="bg-white rounded-t-[28px] w-full max-h-[88%] overflow-y-auto p-5 pb-8 shadow-2xl border-t border-slate-100 flex flex-col space-y-4 animate-slide-up text-left z-55 select-none">
+            {/* Header */}
+            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+              <div>
+                <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider leading-none mb-1">Set Symbols Options</h3>
+                <p className="text-[10px] text-slate-400">Choose a preset pack or make a custom set</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSelector(false)}
+                className="text-[11px] font-bold text-[#4A6741] bg-[#E1E8E3] hover:bg-[#CBD9CC] hover:text-[#4A6741] px-2.5 py-1 rounded-full cursor-pointer border-0 transition"
+              >
+                Close ✕
+              </button>
+            </div>
+
+            {/* Selector tabs */}
+            <div className="space-y-1.5">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block leading-none">Select Active Set</span>
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                {PREDEFINED_EMOJI_SETS.map((set) => {
+                  const isActive = activeSetId === set.id;
+                  return (
+                    <button
+                      key={set.id}
+                      type="button"
+                      onClick={() => handleSelectSet(set.id)}
+                      className={`text-[9px] font-bold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer border-0 ${
+                        isActive
+                          ? 'bg-[#4A6741] text-white shadow-xs'
+                          : 'bg-slate-50 text-[#4A6741] hover:bg-[#E1E8E3]/45'
+                      }`}
+                    >
+                      {set.name}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => handleSelectSet('custom')}
+                  className={`text-[9px] font-black px-2.5 py-1.5 rounded-lg transition-all cursor-pointer flex items-center space-x-0.5 border-0 ${
+                    activeSetId === 'custom'
+                      ? 'bg-amber-600 text-white font-bold shadow-xs'
+                      : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
+                  }`}
+                >
+                  <span>My Set ⚙️</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Set Preview */}
+            {activeSetId !== 'custom' && (
+              <div className="space-y-2 pb-1 bg-[#F9FBF9] p-3 rounded-2xl border border-slate-100">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase">Set Preview</span>
+                  <span className="text-[8px] font-black text-emerald-800 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full uppercase">Active Pack</span>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {activeSet.emojis.map((emoji, idx) => (
+                    <div 
+                      key={idx} 
+                      className="text-lg p-2 bg-white border border-slate-150 rounded-xl flex items-center justify-center shadow-2xs"
+                    >
+                      {emoji}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Custom Emoji Set Panel */}
+            {activeSetId === 'custom' && (
+              <div className="flex flex-col space-y-3">
+                <div className="bg-amber-50/50 p-2.5 rounded-2xl border border-amber-100">
+                  <p className="text-[9.5px] text-amber-800 leading-normal">
+                    <strong>Custom Slot Editor</strong>: Select one of the 4 slots below, then tap a suggestion or register yours!
+                  </p>
+                </div>
+
+                {/* 4 Slots */}
+                <div className="grid grid-cols-4 gap-2">
+                  {[0, 1, 2, 3].map((idx) => {
+                    const emoji = customEmojiSet[idx] || '🧘';
+                    const isSelectedSlot = activeCustomSlotIndex === idx;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setActiveCustomSlotIndex(idx)}
+                        className={`p-2 rounded-2xl transition-all duration-200 flex flex-col items-center justify-center cursor-pointer border ${
+                          isSelectedSlot
+                            ? 'bg-[#E1E8E3] border-[#4A6741] ring-2 ring-[#4A6741]/40 scale-[1.03] shadow-xs'
+                            : 'bg-slate-50 border-slate-150 hover:bg-white text-slate-800 shadow-2xs'
+                        }`}
+                      >
+                        <span className="text-[7.5px] uppercase font-bold text-slate-400 mb-1">Slot {idx + 1}</span>
+                        <span className="text-xl">{emoji}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Slot replacement input */}
+                <div className="p-3 bg-slate-50 border border-slate-100 rounded-2xl space-y-2">
+                  <span className="text-[9px] font-extrabold text-[#4A6741] uppercase tracking-wide block">
+                    Update Slot {activeCustomSlotIndex + 1} ({customEmojiSet[activeCustomSlotIndex] || '🧘'})
+                  </span>
+                  
+                  <input
+                    type="text"
+                    placeholder="Type or paste any emoji..."
+                    value={newCustomInput}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewCustomInput(val);
+                      if (val.trim()) {
+                         updateCustomSlot(val);
+                         setNewCustomInput('');
+                      }
+                    }}
+                    className="bg-white border border-[#CBD9CC] rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4A6741] w-full"
+                    maxLength={4}
+                  />
+
+                  {/* Suggestions */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-200/40">
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block w-full">Suggestions</span>
+                    {['🌸', '🪐', '🍀', '🌈', '🌙', '🌌', '🎈', '🧸', '🍦', '🍕', '🎡', '🐈', '🧘', '🪴', '🍵', '🕯️', '💭'].map(sug => {
+                      return (
+                        <button
+                          key={sug}
+                          type="button"
+                          onClick={() => updateCustomSlot(sug)}
+                          className="text-base p-1 rounded-lg hover:bg-[#E1E8E3] hover:scale-110 transition-all cursor-pointer border-0 bg-transparent"
+                        >
+                          {sug}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Greeting */}
-      <div className="text-left mt-4 mb-5 select-none">
-        <span className="text-[10px] font-bold text-[#4A6741] uppercase tracking-widest bg-[#E1E8E3] px-2 py-0.5 rounded">OFFLINE FIRST</span>
-        <h2 className="text-2xl font-bold text-[#4A6741] tracking-tight mt-1.5 font-sans">Safe Space</h2>
-        <p className="text-xs text-slate-500 mt-1">Take a moment. You are safe, and you are here.</p>
+      <div className="text-left mt-1.5 mb-4 select-none relative">
+        <span className="text-[8.5px] font-black text-[#4A6741] uppercase tracking-wider bg-[#E1E8E3] px-2.5 py-0.5 rounded-full shadow-2xs">OFFLINE FIRST</span>
+        <h2 className="text-xl font-black text-[#4A6741] tracking-tight mt-1.5 font-sans">Safe Space</h2>
+        <p className="text-[11px] font-semibold text-slate-500 mt-0.5">Take a moment. You are safe, validated, and supported.</p>
       </div>
 
       {/* Mood Check-In Widget */}
-      <div className="bg-white/80 backdrop-blur-md rounded-3xl p-4.5 shadow-xs border border-white/60 flex flex-col mb-4">
-        
-        {/* Compact, dense top row pairing title, active indicator & settings button */}
-        <div className="flex justify-between items-center mb-2 select-none">
+      <div className="bg-white rounded-[24px] p-4 shadow-2xs border border-[#CBD9CC]/35 flex flex-col mb-4 select-none relative">
+        {/* Spacious, premium top row pairing title, active indicator & settings button */}
+        <div className="flex justify-between items-center mb-3 select-none">
           <div className="flex items-center space-x-1.5 text-left">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Daily Feel</span>
-            <span className="text-[9px] text-[#4A6741] bg-[#E1E8E3] px-2 py-0.5 rounded-full font-extrabold shadow-2xs">
-              {activeSet.id === 'custom' ? 'My Set ⚙️' : activeSet.name}
-            </span>
+            <div className="w-5 h-5 rounded-md bg-[#E1E8E3] flex items-center justify-center text-[#4A6741]">
+              <Smile size={12} className="font-bold" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Daily Feel</span>
+              <span className="text-[8px] font-black text-[#4A6741] bg-[#E1E8E3]/60 px-1.5 py-0.2 rounded-full inline-block font-mono leading-none">
+                {activeSet.id === 'custom' ? 'My Set ⚙️' : activeSet.name}
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center space-x-1">
             <button
               type="button"
-              onClick={() => setShowSelector(!showSelector)}
-              className={`text-[9px] font-black px-2.5 py-1 rounded-full border-0 cursor-pointer transition flex items-center space-x-0.5 select-none ${
-                showSelector 
-                  ? 'bg-[#4A6741] text-white shadow-xs' 
-                  : 'bg-[#4A6741]/10 text-[#4A6741] hover:bg-[#4A6741]/20'
-              }`}
+              onClick={() => setShowSelector(true)}
+              className="text-[8.5px] font-bold px-2 py-1 rounded-lg border-0 cursor-pointer bg-[#4A6741]/10 text-[#4A6741] hover:bg-[#4A6741]/25 transition-all flex items-center space-x-0.5 select-none shadow-2xs"
             >
-              <span>⚙️ Tune Set</span>
+              <span>⚙️ Options</span>
             </button>
             {loggedMood && (
               <button
@@ -382,34 +536,35 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
                   setLoggedMood(null);
                   updateKeyboardCustomEmoji(null);
                 }}
-                className="text-[9px] font-extrabold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100/70 px-2.5 py-1 rounded-full transition border-0 cursor-pointer"
+                className="text-[8.5px] font-black text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100/60 px-2 py-1 rounded-lg transition-all border-0 cursor-pointer shadow-2xs"
                 title="Clear feel"
               >
-                Clear feel ✕
+                Clear ✕
               </button>
             )}
           </div>
         </div>
 
         {/* Dynamic status / statement label showing chosen feel inline */}
-        <div className="text-left mb-3 select-none">
+        <div className="text-left mb-2 select-none">
           {loggedMood ? (
-            <p className="text-xs font-semibold text-slate-800 flex items-center space-x-1.5">
-              <span>Today representing as</span>
-              <span className="w-6 h-6 rounded-lg bg-[#E1E8E3] flex items-center justify-center text-sm border border-[#4A6741]/30 animate-pulse font-bold">
-                {loggedMood}
-              </span>
-              <span className="text-[9px] font-normal text-slate-400">(Saved to history)</span>
-            </p>
+            <div className="flex flex-col">
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide flex items-center space-x-1.5">
+                <span>Logged Today:</span>
+                <span className="w-5.5 h-5.5 rounded-full bg-[#E1E8E3] flex items-center justify-center text-xs border border-[#4A6741]/20 animate-pulse font-extrabold shadow-2xs">
+                  {loggedMood}
+                </span>
+              </p>
+            </div>
           ) : (
-            <p className="text-xs font-semibold text-slate-400 italic">
-              Tap a focus symbol to log your feel today
+            <p className="text-[11px] font-semibold text-slate-400 italic">
+              Tap a physical focus symbol below to log your state today
             </p>
           )}
         </div>
 
-        {/* Dense 5-Slot Option Grid (4 themed + 1 customizable) */}
-        <div className="grid grid-cols-5 gap-1.5 mb-1 select-none">
+        {/* Compact 5-Slot Option Grid (4 themed + 1 customizable) */}
+        <div className="grid grid-cols-5 gap-2.5 mb-1 select-none">
           {/* First 4 from selected active set */}
           {activeSet.emojis.slice(0, 4).map((emoji, idx) => {
             const isSelected = loggedMood === emoji;
@@ -421,10 +576,10 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
                   setLoggedMood(emoji);
                   updateKeyboardCustomEmoji(null); // Overwrite keyboard input with selection
                 }}
-                className={`text-xl py-2.5 rounded-2xl transition hover:scale-105 active:scale-95 flex items-center justify-center cursor-pointer border ${
+                className={`text-xl h-10 rounded-xl transition-all duration-305 hover:scale-105 active:scale-95 flex items-center justify-center cursor-pointer border ${
                   isSelected 
                     ? 'bg-[#EBF2EC] border-[#4A6741] text-[#4A6741] shadow-xs font-extrabold ring-3 ring-[#4A6741]/10' 
-                    : 'bg-[#F9FAF9] border-[#CBD9CC]/50 hover:bg-white text-slate-700'
+                    : 'bg-white border-[#CBD9CC]/25 hover:bg-[#F9FAF9] hover:border-slate-300 text-slate-700'
                 }`}
                 title={`Log feel as ${emoji}`}
               >
@@ -437,7 +592,7 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
           {(() => {
             const hasKbEmoji = keyboardCustomEmoji !== null;
             const isSelected = loggedMood !== null && loggedMood === keyboardCustomEmoji;
-            const displayChar = keyboardCustomEmoji || '❓';
+            const displayChar = keyboardCustomEmoji || '⚙️';
             return (
               <button
                 type="button"
@@ -445,16 +600,20 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
                   setPhoneKeyboardInput(keyboardCustomEmoji || '');
                   setShowKeyboardInput(true);
                 }}
-                className={`text-xl py-2.5 rounded-2xl transition hover:scale-105 active:scale-95 flex items-center justify-center cursor-pointer relative border ${
+                className={`text-lg h-10 rounded-xl transition-all duration-305 hover:scale-105 active:scale-95 flex items-center justify-center cursor-pointer relative border ${
                   isSelected
                     ? 'bg-[#EBF2EC] border-[#4A6741] text-[#4A6741] shadow-xs font-extrabold ring-3 ring-[#4A6741]/10'
                     : hasKbEmoji
-                    ? 'bg-amber-50/50 border-amber-200 hover:bg-amber-100/40 text-slate-700'
-                    : 'bg-slate-50 border-dashed border-slate-200 text-slate-400 hover:border-slate-300 hover:bg-slate-100/50'
+                    ? 'bg-amber-50/70 border-amber-200 text-slate-705 shadow-2xs'
+                    : 'bg-slate-50 border-dashed border-slate-200 text-slate-400 hover:border-slate-300 hover:bg-[#fafafc] hover:text-slate-500'
                 }`}
                 title={hasKbEmoji ? `Custom keyboard emoji: ${keyboardCustomEmoji}` : 'Set keyboard custom emoji'}
               >
-                <span className={!hasKbEmoji ? "text-xs font-black opacity-60" : ""}>{displayChar}</span>
+                {hasKbEmoji ? (
+                  <span className="text-xl">{displayChar}</span>
+                ) : (
+                  <span className="text-[9px] font-black tracking-widest text-slate-400">PICK</span>
+                )}
                 {/* Tiny badge indicating this is a custom keyboard-powered slot */}
                 <span className="absolute -top-0.5 -right-0.5 flex h-1.5 w-1.5">
                   <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${hasKbEmoji ? 'bg-amber-400' : 'bg-[#4A6741]/40'}`}></span>
@@ -465,143 +624,7 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
           })()}
         </div>
 
-        {/* Universal Emoji Selector & Custom Set Customizer Panel */}
-        {showSelector && (
-          <div className="mt-3.5 p-3.5 bg-[#FAFDFB] border border-[#CBD9CC]/60 rounded-2xl shadow-inner animate-fade-in text-left">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 leading-none">Select Active Set</span>
-            
-            {/* Tabs */}
-            <div className="flex flex-wrap gap-1.5 mb-3 pb-2.5 border-b border-dashed border-slate-100">
-              {PREDEFINED_EMOJI_SETS.map((set) => {
-                const isActive = activeSetId === set.id;
-                return (
-                  <button
-                    key={set.id}
-                    type="button"
-                    onClick={() => handleSelectSet(set.id)}
-                    className={`text-[9px] font-bold px-2 py-1 rounded-lg transition-all cursor-pointer border-0 ${
-                      isActive
-                        ? 'bg-[#4A6741] text-white shadow-xs'
-                        : 'bg-slate-50 text-[#4A6741] hover:bg-[#E1E8E3]/45'
-                    }`}
-                  >
-                    {set.name}
-                  </button>
-                );
-              })}
-              <button
-                type="button"
-                onClick={() => handleSelectSet('custom')}
-                className={`text-[9px] font-black px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center space-x-0.5 border-0 ${
-                  activeSetId === 'custom'
-                    ? 'bg-amber-600 text-white font-bold shadow-xs'
-                    : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
-                }`}
-              >
-                <span>My Set ⚙️</span>
-              </button>
-            </div>
 
-            {/* Predefined View showing preview of the 4 items */}
-            {activeSetId !== 'custom' && (
-              <div className="space-y-2 pb-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase">Set Preview (4 Emojis)</span>
-                  <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded mr-1">Currently Selected Active Set</span>
-                </div>
-                <div className="grid grid-cols-4 gap-1 bg-[#F9FBF9] p-2 rounded-xl border border-slate-100">
-                  {activeSet.emojis.map((emoji, idx) => (
-                    <div 
-                      key={idx} 
-                      className="text-base p-1 bg-white border border-slate-100 rounded-lg flex items-center justify-center"
-                    >
-                      {emoji}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Custom Emoji Set Panel with precisely 4 slots customizer */}
-            {activeSetId === 'custom' && (
-              <div className="flex flex-col space-y-2.5">
-                <div className="flex justify-between items-center bg-amber-50/50 p-2 rounded-xl border border-amber-100">
-                  <p className="text-[8.5px] text-amber-800 leading-tight">
-                    <strong>Custom Slot Editor</strong>: Select one of the 4 slots below and assign any emoji to swap it!
-                  </p>
-                </div>
-
-                {/* The 4 Slot Cards for custom list */}
-                <div className="grid grid-cols-4 gap-1.5">
-                  {[0, 1, 2, 3].map((idx) => {
-                    const emoji = customEmojiSet[idx] || '🧘';
-                    const isSelectedSlot = activeCustomSlotIndex === idx;
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setActiveCustomSlotIndex(idx)}
-                        className={`p-1.5 rounded-xl transition flex flex-col items-center justify-center cursor-pointer border ${
-                          isSelectedSlot
-                            ? 'bg-[#E1E8E3] border-[#4A6741] ring-2 ring-[#4A6741]/40 scale-[1.03]'
-                            : 'bg-slate-50 border-slate-150 hover:bg-white text-slate-800'
-                        }`}
-                      >
-                        <span className="text-[7.5px] uppercase font-bold text-slate-400 mb-0.5">Slot {idx + 1}</span>
-                        <span className="text-base">{emoji}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Selected Slot replacement controls */}
-                <div className="p-2 bg-slate-50 border border-slate-100 rounded-xl space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-extrabold text-[#4A6741] uppercase tracking-wide">
-                      Update Slot {activeCustomSlotIndex + 1} ({customEmojiSet[activeCustomSlotIndex] || '🧘'})
-                    </span>
-                  </div>
-
-                  {/* Input form */}
-                  <div className="flex">
-                    <input
-                      type="text"
-                      placeholder="Type or paste emoji to auto-assign..."
-                      value={newCustomInput}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setNewCustomInput(val);
-                        if (val.trim()) {
-                          updateCustomSlot(val);
-                          setNewCustomInput('');
-                        }
-                      }}
-                      className="bg-white border border-[#CBD9CC] rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#4A6741] w-full"
-                      maxLength={4}
-                    />
-                  </div>
-
-                  {/* Recommendations / suggestions */}
-                  <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-slate-200/40">
-                    <span className="text-[8px] font-black text-slate-400">Suggestions:</span>
-                    {['🌸', '🪐', '🍀', '🌈', '🌙', '🌌', '🎈', '🧸', '🍦', '🍕', '🎡', '🐈', '🧘', '🪴', '🍵', '🕯️', '💭'].map(sug => {
-                      return (
-                        <button
-                          key={sug}
-                          type="button"
-                          onClick={() => updateCustomSlot(sug)}
-                          className="text-[12px] p-0.5 rounded hover:bg-[#E1E8E3] hover:scale-110 active:scale-95 transition cursor-pointer select-none border-0 bg-transparent"
-                        >
-                          {sug}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Interactive Stress Level Level Meter */}
@@ -642,7 +665,7 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
         {/* Recharts Wrapper */}
         <div className="w-full h-[130px] pr-2" style={{ minWidth: '0' }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={moodHistory} margin={{ top: 10, right: 10, left: -25, bottom: -5 }}>
+            <BarChart data={moodHistory} margin={{ top: 20, right: 10, left: -25, bottom: -5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
               <XAxis 
                 dataKey="day" 
@@ -660,16 +683,14 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
                 axisLine={false} 
                 width={20}
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#A8C69F', strokeWidth: 1, strokeDasharray: '2 2' }} />
-              <Line 
-                type="monotone" 
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(74, 103, 65, 0.05)' }} />
+              <Bar 
                 dataKey="stress" 
-                stroke="transparent" 
-                strokeWidth={0} 
-                dot={<RenderCustomDot />}
-                activeDot={<RenderCustomActiveDot />}
+                activeBar={<RenderCustomActiveBar />}
+                shape={<RenderCustomBar />}
+                barSize={16}
               />
-            </LineChart>
+            </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
@@ -678,18 +699,18 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
       <div className="bg-white/95 rounded-[22px] p-4 border border-slate-200/60 shadow-xs text-left mb-4.5">
         <span className="text-[8.5px] font-black uppercase tracking-widest text-[#4A6741] block mb-2">Recommended For You</span>
         {stressLevel >= 8 ? (
-          <div className="flex items-start space-x-3 bg-rose-50/50 p-3 rounded-2xl border border-rose-100">
-            <div className="bg-rose-600 text-white p-2.5 rounded-xl text-xs flex justify-center items-center font-black animate-pulse shadow-sm h-8 w-8 shrink-0">
-              🚨
+          <div className="flex items-start space-x-3 bg-[#eef2f6] p-3 rounded-2xl border border-[#d1dee8]">
+            <div className="bg-[#3b5b7b] text-white p-2.5 rounded-xl text-xs flex justify-center items-center font-black animate-pulse shadow-sm h-8 w-8 shrink-0">
+              🌬️
             </div>
             <div className="text-left">
-              <h4 className="text-[11px] font-black uppercase tracking-tight text-rose-600">Calming Rescue Space</h4>
+              <h4 className="text-[11px] font-black uppercase tracking-tight text-[#3b5b7b]">Calming Rescue Space</h4>
               <p className="text-[9.5px] text-slate-500 mt-1 leading-snug">If you are feeling very overwhelmed, take a moment to rest. Let's do a simple calming exercise together.</p>
               <button 
                 onClick={() => onNavigate('panicSOS')}
-                className="mt-2.5 bg-rose-600 hover:bg-rose-700 active:scale-95 transition text-white font-extrabold text-[9px] px-3 h-7 rounded-full cursor-pointer flex items-center space-x-1 border-0 shadow-xs"
+                className="mt-2.5 bg-[#4a7298] hover:bg-[#3b5b7b] active:scale-95 transition text-white font-extrabold text-[9px] px-3 h-7 rounded-full cursor-pointer flex items-center space-x-1 border-0 shadow-xs whitespace-nowrap"
               >
-                <span>Go to Calm Rescue</span> <ArrowRight size={10} />
+                <span>Go to Calm Space</span> <ArrowRight size={10} />
               </button>
             </div>
           </div>
@@ -701,18 +722,18 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
             <div className="text-left">
               <h4 className="text-[11px] font-black uppercase tracking-tight text-amber-700">Steady Body Balance</h4>
               <p className="text-[9.5px] text-slate-500 mt-1 leading-snug">If you feel physical tension starting to build, a quick mindful pause can help you reset.</p>
-              <div className="flex space-x-2 mt-2.5">
+              <div className="flex flex-wrap gap-2 mt-2.5">
                 <button 
                   onClick={() => onNavigate('breathing')}
-                  className="bg-[#4A6741] hover:bg-[#3D5535] active:scale-95 cursor-pointer text-white font-extrabold text-[9px] px-3 h-7 rounded-full border-0 shadow-xs flex items-center space-x-0.5"
+                  className="bg-[#4A6741] hover:bg-[#3D5535] active:scale-95 cursor-pointer text-white font-extrabold text-[9px] px-3 h-7 rounded-full border-0 shadow-xs flex items-center space-x-0.5 whitespace-nowrap"
                 >
-                  <Leaf size={10} /> <span>Breathe</span>
+                  <Leaf size={10} /> <span className="whitespace-nowrap">Breathe</span>
                 </button>
                 <button 
                   onClick={() => onNavigate('reframing')}
-                  className="bg-amber-600 hover:bg-amber-700 active:scale-95 cursor-pointer text-white font-extrabold text-[9px] px-3 h-7 rounded-full border-0 shadow-xs flex items-center space-x-0.5"
+                  className="bg-amber-600 hover:bg-amber-700 active:scale-95 cursor-pointer text-white font-extrabold text-[9px] px-3 h-7 rounded-full border-0 shadow-xs flex items-center space-x-0.5 whitespace-nowrap"
                 >
-                  <span>🧠 Reframe</span>
+                  <span className="whitespace-nowrap">🧠 Reframe</span>
                 </button>
               </div>
             </div>
@@ -725,24 +746,43 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
             <div className="text-left">
               <h4 className="text-[11px] font-black uppercase tracking-tight text-emerald-800">Quiet Mind Space</h4>
               <p className="text-[9.5px] text-slate-500 mt-1 leading-snug">You are doing great. Take a couple of minutes to practice gratitude or enjoy a quiet moment of deep breathing.</p>
-              <div className="flex space-x-2 mt-2.5">
+              <div className="flex flex-wrap gap-2 mt-2.5">
                 <button 
                   onClick={() => onNavigate('breathing')}
-                  className="bg-[#4A6741] hover:bg-[#3D5535] active:scale-95 cursor-pointer text-white font-extrabold text-[9px] px-3 h-7 rounded-full border-0 shadow-xs flex items-center space-x-0.5"
+                  className="bg-[#4A6741] hover:bg-[#3D5535] active:scale-95 cursor-pointer text-white font-extrabold text-[9px] px-3 h-7 rounded-full border-0 shadow-xs flex items-center space-x-0.5 whitespace-nowrap"
                 >
-                  <Leaf size={10} /> <span>Breathe</span>
+                  <Leaf size={10} /> <span className="whitespace-nowrap">Breathe</span>
                 </button>
                 <button 
                   onClick={() => onNavigate('gratitude')}
-                  className="bg-teal-600 hover:bg-teal-700 active:scale-95 cursor-pointer text-white font-extrabold text-[9px] px-3 h-7 rounded-full border-0 shadow-xs flex items-center space-x-0.5"
+                  className="bg-teal-600 hover:bg-teal-700 active:scale-95 cursor-pointer text-white font-extrabold text-[9px] px-3 h-7 rounded-full border-0 shadow-xs flex items-center space-x-0.5 whitespace-nowrap"
                 >
-                  <span>🌸 Gratitude</span>
+                  <span className="whitespace-nowrap">🌸 Gratitude</span>
                 </button>
               </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* Safety & Crisis Hub Gateway */}
+      <button
+        onClick={() => onNavigate('safetyHub')}
+        className="w-full bg-[#f0f4f8] hover:bg-[#e1e8f0] border border-[#d1dee8] transition rounded-[22px] p-4 text-left flex items-center justify-between shadow-xs cursor-pointer select-none active:scale-99 mb-4"
+      >
+        <div className="flex items-center space-x-3">
+          <div className="bg-[#3b5b7b] text-white p-2.5 rounded-xl flex items-center justify-center text-xs font-bold leading-none shrink-0 shadow-sm border border-[#2a455f]">
+            🌬️
+          </div>
+          <div className="text-left">
+            <h3 className="text-xs font-bold text-[#3b5b7b]">Support Hub</h3>
+            <p className="text-[9px] text-[#4a7298] mt-0.5 leading-snug">Supportive tools for high-distress moments, step-by-step safety guides, and quiet reassurance.</p>
+          </div>
+        </div>
+        <div className="bg-[#d1dee8] p-1.5 rounded-full flex items-center justify-center text-[#3b5b7b] shrink-0 border border-[#b8cce0]">
+          <ArrowRight size={11} className="stroke-[2.5]" />
+        </div>
+      </button>
 
       {/* Favorite Tools Section */}
       <div className="bg-white/80 backdrop-blur-md rounded-3xl p-4 shadow-sm border border-white/60 mb-4 text-left">
@@ -751,13 +791,29 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
             <span className="text-sm">⭐</span>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Favorite Tools</span>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowFavoritesManage(true)}
-            className="text-[9px] font-black tracking-wide text-[#4A6741] bg-[#E1E8E3] hover:bg-[#D1DBCF] active:scale-95 transition px-2.5 py-1 rounded-full cursor-pointer border-0 leading-none select-none flex items-center space-x-0.5"
-          >
-            <span>Edit ⚙️</span>
-          </button>
+          <div className="flex space-x-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                if (isReorderingFavorites) {
+                  setIsReorderingFavorites(false);
+                  saveFavoriteToolIds(favoriteIds);
+                } else {
+                  setIsReorderingFavorites(true);
+                }
+              }}
+              className={`text-[9px] font-black tracking-wide ${isReorderingFavorites ? 'text-white bg-[#4A6741]' : 'text-[#4A6741] bg-[#E1E8E3] hover:bg-[#D1DBCF]'} active:scale-95 transition px-2.5 py-1 rounded-full cursor-pointer border-0 leading-none select-none flex items-center`}
+            >
+              <span>{isReorderingFavorites ? 'Done ✅' : 'Reorder ↕️'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowFavoritesManage(true)}
+              className="text-[9px] font-black tracking-wide text-[#4A6741] bg-[#E1E8E3] hover:bg-[#D1DBCF] active:scale-95 transition px-2.5 py-1 rounded-full cursor-pointer border-0 leading-none select-none flex items-center space-x-0.5"
+            >
+              <span>Add ➕</span>
+            </button>
+          </div>
         </div>
 
         {/* If no favorites selected */}
@@ -774,6 +830,38 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
               Add Favorites
             </button>
           </div>
+        ) : isReorderingFavorites ? (
+          <Reorder.Group 
+            axis="y" 
+            values={favoriteIds} 
+            onReorder={setFavoriteIds} 
+            className="flex flex-col space-y-1.5 m-0 p-0 list-none relative"
+          >
+            {favoriteIds.map((id) => {
+              const tool = ALL_TOOLS.find(t => t.id === id);
+              if (!tool) return null;
+              return (
+                <Reorder.Item 
+                  key={id}
+                  value={id}
+                  className={`flex items-center justify-between p-2.5 rounded-2xl border shadow-xs cursor-grab active:cursor-grabbing relative z-10 ${tool.bg}`}
+                >
+                  <div className="flex items-center space-x-2.5 min-w-0 flex-1">
+                    <div className="bg-white p-1.5 rounded-xl shadow-xs shrink-0 flex items-center justify-center text-slate-800 border border-slate-100">
+                      <ToolIcon id={id} size={14} className={tool.iconColor} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-[10.5px] font-extrabold text-slate-800 leading-tight whitespace-normal">{tool.name}</h4>
+                      <p className="text-[8px] text-slate-400 tracking-wide font-mono uppercase bg-white/50 px-1 py-0.5 rounded border border-slate-100 inline-block leading-none mt-0.5">{tool.tag}</p>
+                    </div>
+                  </div>
+                  <div className="px-2 text-slate-400 opacity-60 shrink-0">
+                     <span className="text-xl leading-none">≡</span>
+                   </div>
+                </Reorder.Item>
+              );
+            })}
+          </Reorder.Group>
         ) : (
           <div className="flex flex-col space-y-1.5">
             {favoriteIds.map((id) => {
@@ -789,8 +877,8 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
                     <div className="bg-white p-1.5 rounded-xl shadow-xs shrink-0 flex items-center justify-center text-slate-800 border border-slate-100">
                       <ToolIcon id={id} size={14} className={tool.iconColor} />
                     </div>
-                    <div className="min-w-0">
-                      <h4 className="text-[10.5px] font-extrabold text-slate-800 leading-tight truncate">{tool.name}</h4>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-[10.5px] font-extrabold text-slate-800 leading-tight whitespace-normal">{tool.name}</h4>
                       <p className="text-[8px] text-slate-400 tracking-wide font-mono uppercase bg-white/50 px-1 py-0.5 rounded border border-slate-100 inline-block leading-none mt-0.5">{tool.tag}</p>
                     </div>
                   </div>
@@ -818,7 +906,7 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
 
       {/* Manage Favorites Slideup / Dial modal overlay */}
       {showFavoritesManage && (
-        <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-xs flex items-end justify-center z-55">
+        <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs flex items-end justify-center z-55">
           <div className="bg-white rounded-t-[38px] w-full max-h-[85%] overflow-y-auto p-5 shadow-2x2 border-t border-slate-100 flex flex-col space-y-4 select-none pb-8 text-left animate-slide-up">
             <div className="flex justify-between items-center pb-2.5 border-b border-slate-100 shrink-0">
               <div>
@@ -867,9 +955,9 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
                               <ToolIcon id={tool.id} size={13} className={tool.iconColor} />
                             </div>
                             <div className="flex-1 min-w-0 pr-1 select-none">
-                              <div className="flex items-center space-x-1">
-                                <h4 className="text-[10px] font-bold text-slate-800 leading-tight truncate">{tool.name}</h4>
-                                <span className="text-[6.5px] font-bold text-slate-400 border border-slate-200 px-1 py-[1px] rounded scale-90">{tool.tag}</span>
+                              <div className="flex items-start justify-between">
+                                <h4 className="text-[10px] font-bold text-slate-800 leading-tight flex-1 pr-1">{tool.name}</h4>
+                                <span className="text-[6.5px] font-bold text-slate-400 border border-slate-200 px-1 py-[1px] rounded scale-90 shrink-0 select-none">{tool.tag}</span>
                               </div>
                               <p className="text-[8px] text-slate-400 leading-normal mt-0.5 line-clamp-1">{tool.desc}</p>
                             </div>
@@ -903,7 +991,7 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
       )}
 
       {/* 3 Categories Directories (Highly-categorized, low cognitive load) */}
-      <span className="text-[10px] font-bold text-slate-400 text-left uppercase tracking-widest mb-2.5 block">Support Pathways</span>
+      <span className="text-[10px] font-bold text-slate-400 text-left uppercase tracking-widest mb-2.5 block">Wellness Pathways</span>
 
       <div className="flex flex-col space-y-2.5 mb-6">
         {/* Somatic Hub Gateway */}
@@ -944,24 +1032,6 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
           </div>
         </button>
 
-        {/* Safety & Crisis Hub Gateway */}
-        <button
-          onClick={() => onNavigate('safetyHub')}
-          className="w-full bg-[#1A1110] hover:bg-[#251A19] border border-rose-955 transition rounded-[22px] p-4 text-left flex items-center justify-between shadow-xs cursor-pointer select-none active:scale-99"
-        >
-          <div className="flex items-center space-x-3">
-            <div className="bg-rose-950 text-[#FCA5A5] p-2.5 rounded-xl flex items-center justify-center text-xs font-bold leading-none shrink-0 border border-rose-900/60">
-              🚨
-            </div>
-            <div className="text-left">
-              <h3 className="text-xs font-bold text-rose-100">Safety & Support Hub</h3>
-              <p className="text-[9px] text-red-200/60 mt-0.5 leading-snug">Supportive tools for high-distress moments, step-by-step safety guides, and quiet reassurance.</p>
-            </div>
-          </div>
-          <div className="bg-rose-950 p-1.5 rounded-full flex items-center justify-center text-rose-300 shrink-0 border border-rose-900">
-            <ArrowRight size={11} className="stroke-[2.5]" />
-          </div>
-        </button>
       </div>
 
       {/* Safety Footer note */}
@@ -998,6 +1068,15 @@ const BREATHING_CONFIG = {
     bg: 'bg-gradient-to-br from-[#7AA095] to-[#608271]',
     accent: 'text-[#608271] border-[#A8C69F]',
     glow: 'shadow-[0_20px_40px_rgba(96,130,113,0.3)]',
+  },
+  coherent: {
+    inhale: 5,
+    hold1: 0,
+    exhale: 5,
+    hold2: 0, // No hold in Coherent 5-5
+    bg: 'bg-gradient-to-br from-[#87A896] to-[#557F69]',
+    accent: 'text-[#557F69] border-[#A8C69F]',
+    glow: 'shadow-[0_20px_40px_rgba(85,127,105,0.3)]',
   },
 };
 
@@ -1183,6 +1262,20 @@ export const SimulatorBreathing: React.FC<{ onBack?: () => void }> = ({ onBack }
                 setCycleCount((c) => c + 1);
                 break;
             }
+          } else if (breathingMode === 'coherent') {
+            // Coherent breathing: 5s inhale, 5s exhale (no holds)
+            switch (phase) {
+              case 'inhale':
+                nextPhase = 'exhale';
+                break;
+              case 'exhale':
+                nextPhase = 'inhale';
+                setCycleCount((c) => c + 1);
+                break;
+              default:
+                nextPhase = 'inhale';
+                break;
+            }
           } else {
             // Calm breath: 4 inhale, 7 hold, 8 exhale, repeat (doesn't have hold2)
             switch (phase) {
@@ -1331,22 +1424,30 @@ export const SimulatorBreathing: React.FC<{ onBack?: () => void }> = ({ onBack }
         <p className="text-[10px] text-slate-500 px-4 mt-0.5">Soothe anxiety by matching your lungs to the expanding circle.</p>
 
         {/* Tab switcher */}
-        <div className="flex w-full mt-2.5 bg-[#E1E8E3] rounded-2xl p-1">
+        <div className="flex w-full mt-2.5 bg-[#E1E8E3] rounded-2xl p-1 gap-1">
           <button
             onClick={() => setBreathingMode('box')}
-            className={`flex-1 text-[11px] font-bold py-1.5 rounded-xl transition ${
+            className={`flex-1 text-[10px] font-bold py-1.5 rounded-xl transition ${
               breathingMode === 'box' ? 'bg-white shadow-sm text-[#4A6741]' : 'text-[#4A6741]/60'
             }`}
           >
-            Square Breath (4-4-4-4)
+            Square (4-4)
           </button>
           <button
             onClick={() => setBreathingMode('calm')}
-            className={`flex-1 text-[11px] font-bold py-1.5 rounded-xl transition ${
+            className={`flex-1 text-[10px] font-bold py-1.5 rounded-xl transition ${
               breathingMode === 'calm' ? 'bg-white shadow-sm text-[#4A6741]' : 'text-[#4A6741]/60'
             }`}
           >
-            Calm Breath (4-7-8)
+            Calm (4-7-8)
+          </button>
+          <button
+            onClick={() => setBreathingMode('coherent')}
+            className={`flex-1 text-[10px] font-bold py-1.5 rounded-xl transition ${
+              breathingMode === 'coherent' ? 'bg-white shadow-sm text-[#4A6741]' : 'text-[#4A6741]/60'
+            }`}
+          >
+            Coherent (5-5)
           </button>
         </div>
       </div>
@@ -2280,6 +2381,38 @@ interface HistoryProps {
   seedRandomData: () => void;
 }
 
+const KEY_GROUPS = {
+  logs: [
+    'safespace_monthly_data',
+    'safespace_mood_history',
+    'safespace_stress_level',
+    'safespace_logged_mood',
+    'safespace_current_week_sunday',
+    'safespace_kb_emoji_val',
+    'safespace_kb_emoji_date'
+  ],
+  saved: [
+    'safespace_journal_logs',
+    'safespace_gratitude_jar',
+    'safespace_daily_habits',
+    'safespace_reframing_log',
+    'safespace_safety_plan',
+    'safespace_worries',
+    'aid_coping_statements',
+    'safespace_custom_emoji_set_list',
+    'safespace_favorite_tool_ids_list'
+  ],
+  settings: [
+    'safespace_active_emoji_set_id',
+    'mindfulVoiceName',
+    'mindfulVoiceRate',
+    'mindualVoiceRate',
+    'mindfulVoicePitch',
+    'mindfulVoiceVolume',
+    'aid_emergency_contact'
+  ]
+};
+
 export const SimulatorHistory: React.FC<HistoryProps> = ({
   moodHistory,
   onNavigate,
@@ -2288,6 +2421,23 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
 }) => {
   const [historyTab, setHistoryTab] = useState<'monthly' | 'weekly'>('monthly');
   const [selectedMonthIdx, setSelectedMonthIdx] = useState<number>(2); // Default to June
+  const [showExport, setShowExport] = useState(false);
+  const [exportRange, setExportRange] = useState<'week' | 'month'>('week');
+  const [exportFormat, setExportFormat] = useState<'csv' | 'text'>('csv');
+  const [copied, setCopied] = useState(false);
+
+  // Backup / Import states
+  const [exportTab, setExportTab] = useState<'diary' | 'backup'>('diary');
+  const [backupExportLogs, setBackupExportLogs] = useState(true);
+  const [backupExportSaved, setBackupExportSaved] = useState(true);
+  const [backupExportSettings, setBackupExportSettings] = useState(true);
+
+  const [backupImportFile, setBackupImportFile] = useState<any | null>(null);
+  const [backupImportError, setBackupImportError] = useState<string | null>(null);
+  const [backupImportLogs, setBackupImportLogs] = useState(true);
+  const [backupImportSaved, setBackupImportSaved] = useState(true);
+  const [backupImportSettings, setBackupImportSettings] = useState(true);
+  const [importSuccess, setImportSuccess] = useState(false);
 
   const MONTHS_CONFIG = [
     { key: '04', label: 'April 2026', days: 30, offset: 3, name: 'April' },
@@ -2295,49 +2445,62 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
     { key: '06', label: 'June 2026', days: 30, offset: 1, name: 'June' },
   ];
 
+  const [exportSelectedMonthIdx, setExportSelectedMonthIdx] = useState<number>(selectedMonthIdx);
+  const [exportSubMode, setExportSubMode] = useState<'single' | 'range'>('single');
+  const [exportStartMonthIdx, setExportStartMonthIdx] = useState<number>(0);
+  const [exportStartDay, setExportStartDay] = useState<number>(1);
+  const [exportEndMonthIdx, setExportEndMonthIdx] = useState<number>(2);
+  const [exportEndDay, setExportEndDay] = useState<number>(30);
+
+  const updateStartMonth = (idx: number) => {
+    setExportStartMonthIdx(idx);
+    const maxDays = MONTHS_CONFIG[idx].days;
+    if (exportStartDay > maxDays) {
+      setExportStartDay(maxDays);
+    }
+  };
+
+  const updateEndMonth = (idx: number) => {
+    setExportEndMonthIdx(idx);
+    const maxDays = MONTHS_CONFIG[idx].days;
+    if (exportEndDay > maxDays) {
+      setExportEndDay(maxDays);
+    }
+  };
+
+  // Helper calculation to get corresponding date for weekday index
+  const getDayDateString = (dayIndex: number) => {
+    const d = new Date();
+    const day = d.getDay(); // index 0-6
+    const diff = d.getDate() - day + dayIndex;
+    const targetDate = new Date(d.setDate(diff));
+    const y = targetDate.getFullYear();
+    const m = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const r = String(targetDate.getDate()).padStart(2, '0');
+    return `${y}-${m}-${r}`;
+  };
+
   const currentMonth = MONTHS_CONFIG[selectedMonthIdx];
 
   // Seed 30/31 days with a clean calendar dataset
   const getSeededMonthlyData = () => {
     const data: Record<string, { moodValue: number; moodLabel: string; stress: number; hasData: boolean }> = {};
     
-    const seedForMonth = (monthStr: string, totalDays: number, monthNum: number) => {
+    const seedForMonth = (monthStr: string, totalDays: number) => {
       for (let day = 1; day <= totalDays; day++) {
         const dateKey = `2026-${monthStr}-${day.toString().padStart(2, '0')}`;
-        
-        // Seed some days with data, some without
-        const pseudoRandom = Math.sin(day * 13 + monthNum * 37) * 10000;
-        const val = pseudoRandom - Math.floor(pseudoRandom);
-        const hasData = val > 0.35; // ~65% check-in
-        
-        if (hasData) {
-          const stress = Math.floor((val * 99) % 9) + 1; // 1 to 9
-          let emoji = '🍃';
-          if (stress <= 3) emoji = '🍃';
-          else if (stress <= 5) emoji = '🌊';
-          else if (stress <= 7) emoji = '⛈️';
-          else emoji = '😰';
-
-          data[dateKey] = {
-            moodValue: 1,
-            moodLabel: emoji,
-            stress,
-            hasData: true
-          };
-        } else {
-          data[dateKey] = {
-            moodValue: 0,
-            moodLabel: 'No Data',
-            stress: 5,
-            hasData: false
-          };
-        }
+        data[dateKey] = {
+          moodValue: 0,
+          moodLabel: 'No Data',
+          stress: 5,
+          hasData: false
+        };
       }
     };
 
-    seedForMonth('04', 30, 4); // April
-    seedForMonth('05', 31, 5); // May
-    seedForMonth('06', 30, 6); // June
+    seedForMonth('04', 30); // April
+    seedForMonth('05', 31); // May
+    seedForMonth('06', 30); // June
 
     return data;
   };
@@ -2384,7 +2547,10 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
     const dateKey = `2026-${monthKey}-${dayNum.toString().padStart(2, '0')}`;
     
     if (monthKey === '06' && dayNum === 13) {
-      const todayLog = moodHistory.find(h => h.day === 'Today');
+      const todayIndex = new Date().getDay();
+      const todayAbbr = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][todayIndex];
+      // Sync June 13 to today's active live log (or Saturday fallback)
+      const todayLog = moodHistory.find(h => h.day === 'Today' || h.day === todayAbbr) || moodHistory.find(h => h.day === 'Sat');
       if (todayLog) {
         return {
           hasData: todayLog.hasData,
@@ -2423,6 +2589,18 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
   const checkInDays = moodHistory.filter(day => day.hasData && day.moodValue > 0);
   const averageStress = checkInDays.length > 0 
     ? (checkInDays.reduce((acc, curr) => acc + curr.stress, 0) / checkInDays.length).toFixed(1)
+    : '5.0';
+
+  const currentMonthCheckInDays = [];
+  for (let d = 1; d <= currentMonth.days; d++) {
+    const dayData = getDayDetails(currentMonth.key, d);
+    if (dayData.hasData && dayData.moodValue > 0) {
+      currentMonthCheckInDays.push(dayData);
+    }
+  }
+
+  const monthlyAverageStress = currentMonthCheckInDays.length > 0 
+    ? (currentMonthCheckInDays.reduce((acc, curr) => acc + curr.stress, 0) / currentMonthCheckInDays.length).toFixed(1)
     : '5.0';
 
   const selectableEmojis = (() => {
@@ -2495,21 +2673,985 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
   const selectedDayData = getDayDetails(currentMonth.key, selectedDay);
   const selectedDayHasData = selectedDayData.hasData && selectedDayData.moodValue > 0;
 
-  return (
-    <div className="flex flex-col h-full bg-[#F1F5F2] p-5 justify-between overflow-y-auto">
-      <div className="flex flex-col flex-1">
-        {/* Header Navigation */}
-        <div className="flex items-center space-x-2.5 mt-3 mb-3 shrink-0">
+  const getEmojiName = (emoji: string): string => {
+    if (!emoji || emoji === 'No Data' || emoji === '—') return '—';
+    const trimmed = emoji.trim();
+    const mapping: Record<string, string> = {
+      // Nature 🍃
+      '🍃': 'Fluttering Leaf',
+      '🌊': 'Water Wave',
+      '⛈️': 'Thunderstorm',
+      '🌿': 'Herb',
+
+      // Faces 😊
+      '😌': 'Relieved Face',
+      '🙂': 'Slightly Smiling Face',
+      '😟': 'Worried Face',
+      '😰': 'Anxious Face',
+
+      // Weather ☀️
+      '☀️': 'Sunny',
+      '⛅': 'Partly Cloudy',
+      '🌧️': 'Rainy',
+      '⚡': 'Lightning',
+
+      // Vibes ✨
+      '✨': 'Sparkles',
+      '☕': 'Hot Beverage',
+      '💭': 'Thinking',
+      '🔥': 'Fire',
+
+      // Animals 🐾
+      '🐾': 'Paw Prints',
+      '🕊️': 'Peaceful Dove',
+      '🐈': 'Cat',
+      '🐕': 'Dog',
+
+      // Fallbacks / Base seed values
+      '🧘': 'Meditating',
+      '🪴': 'Potted Plant',
+      '🍵': 'Teacup',
+      '😊': 'Smiling',
+      '😐': 'Neutral',
+      '🚨': 'Overwhelmed'
+    };
+    return mapping[trimmed] || trimmed;
+  };
+
+  const generateExportData = () => {
+    if (exportRange === 'week') {
+      if (exportFormat === 'csv') {
+        const headers = 'Date,Day,Feel/Mood,Stress Level (1-10),Status';
+        const rows = moodHistory.map((item, idx) => {
+          const dateStr = getDayDateString(idx);
+          const feel = item.hasData ? getEmojiName(item.moodLabel) : '—';
+          const stressStatus = item.hasData ? item.stress : '—';
+          const status = item.hasData ? 'Logged' : 'No Check-In';
+          return `"${dateStr}","${item.day}","${feel}",${stressStatus},"${status}"`;
+        });
+        return [headers, ...rows].join('\n');
+      } else {
+        const dateStrNow = new Date().toISOString().replace('T', ' ').substring(0, 19);
+        const loggedCount = moodHistory.filter(h => h.hasData).length;
+        const avgSt = moodHistory.filter(h => h.hasData).length > 0
+          ? (moodHistory.filter(h => h.hasData).reduce((sum, h) => sum + h.stress, 0) / loggedCount).toFixed(1)
+          : '5.0';
+        
+        let txt = `==================================================\n`;
+        txt += `        🛡️ SAFESPACE: NERVOUS SYSTEM RECOVERY REPORT\n`;
+        txt += `==================================================\n`;
+        txt += `Report Type: Weekly Mood & Stress Summary\n`;
+        txt += `Generated On: ${dateStrNow} UTC\n`;
+        txt += `--------------------------------------------------\n`;
+        txt += `[SUMMARY STATISTICS]\n`;
+        txt += `- Tracked days this week: ${loggedCount} of 7 days\n`;
+        txt += `- Average Stress score: ${avgSt}/10\n`;
+        txt += `--------------------------------------------------\n\n`;
+        txt += `[DAILY DETAIL ENTRIES]\n`;
+        
+        moodHistory.forEach((item, idx) => {
+          const dateStr = getDayDateString(idx);
+          if (item.hasData) {
+            txt += `• ${item.day} (${dateStr}):\n`;
+            txt += `  - Mood state: ${getEmojiName(item.moodLabel)} (${item.moodLabel})\n`;
+            txt += `  - Stress level: ${item.stress}/10\n`;
+          } else {
+            txt += `• ${item.day} (${dateStr}): — No entry recorded\n`;
+          }
+          txt += `\n`;
+        });
+        txt += `==================================================\n`;
+        txt += `          offline. secure. kind support.\n`;
+        txt += `==================================================\n`;
+        return txt;
+      }
+    } else {
+      if (exportSubMode === 'single') {
+        const activeExportMonth = MONTHS_CONFIG[exportSelectedMonthIdx];
+        const monthLabel = activeExportMonth.label;
+        const monthKey = activeExportMonth.key;
+        const daysCount = activeExportMonth.days;
+
+        // Calculate stats for this specific export month
+        const checkInEntries = [];
+        for (let d = 1; d <= daysCount; d++) {
+          const dayData = getDayDetails(monthKey, d);
+          if (dayData.hasData && dayData.moodValue > 0) {
+            checkInEntries.push(dayData);
+          }
+        }
+        const monthlyAvgStress = checkInEntries.length > 0 
+          ? (checkInEntries.reduce((acc, curr) => acc + curr.stress, 0) / checkInEntries.length).toFixed(1)
+          : '5.0';
+
+        if (exportFormat === 'csv') {
+          const headers = 'Date,Feel/Mood,Stress Level (1-10),Status';
+          const rows = [];
+          for (let d = 1; d <= daysCount; d++) {
+            const dateStr = `2026-${monthKey}-${d.toString().padStart(2, '0')}`;
+            const dayData = getDayDetails(monthKey, d);
+            const feel = dayData.hasData ? getEmojiName(dayData.moodLabel) : '—';
+            const stressStatus = dayData.hasData ? dayData.stress : '—';
+            const status = dayData.hasData ? 'Logged' : 'No Check-In';
+            rows.push(`"${dateStr}","${feel}",${stressStatus},"${status}"`);
+          }
+          return [headers, ...rows].join('\n');
+        } else {
+          const dateStrNow = new Date().toISOString().replace('T', ' ').substring(0, 19);
+          const loggedCount = checkInEntries.length;
+          const avgSt = monthlyAvgStress;
+
+          let txt = `==================================================\n`;
+          txt += `        🛡️ SAFESPACE: NERVOUS SYSTEM RECOVERY REPORT\n`;
+          txt += `==================================================\n`;
+          txt += `Report Type: Monthly Mood & Stress Summary\n`;
+          txt += `Target Period: ${monthLabel}\n`;
+          txt += `Generated On: ${dateStrNow} UTC\n`;
+          txt += `--------------------------------------------------\n`;
+          txt += `[SUMMARY STATISTICS]\n`;
+          txt += `- Tracked days: ${loggedCount} of ${daysCount} total days\n`;
+          txt += `- Average Stress score: ${avgSt}/10\n`;
+          txt += `--------------------------------------------------\n\n`;
+          txt += `[DAILY DETAIL ENTRIES]\n`;
+
+          for (let d = 1; d <= daysCount; d++) {
+            const dateStr = `2026-${monthKey}-${d.toString().padStart(2, '0')}`;
+            const dayData = getDayDetails(monthKey, d);
+            if (dayData.hasData) {
+              txt += `• ${dateStr}:\n`;
+              txt += `  - Mood state: ${getEmojiName(dayData.moodLabel)} (${dayData.moodLabel})\n`;
+              txt += `  - Stress level: ${dayData.stress}/10\n`;
+            } else {
+              txt += `• ${dateStr}: — No entry recorded\n`;
+            }
+            txt += `\n`;
+          }
+          txt += `==================================================\n`;
+          txt += `          offline. secure. kind support.\n`;
+          txt += `==================================================\n`;
+          return txt;
+        }
+      } else {
+        // Date range
+        const allDays: { monthKey: string; monthName: string; day: number; dateStr: string }[] = [];
+        MONTHS_CONFIG.forEach(m => {
+          for (let d = 1; d <= m.days; d++) {
+            allDays.push({
+              monthKey: m.key,
+              monthName: m.name,
+              day: d,
+              dateStr: `2026-${m.key}-${d.toString().padStart(2, '0')}`
+            });
+          }
+        });
+
+        const startDateKey = `2026-${MONTHS_CONFIG[exportStartMonthIdx].key}-${exportStartDay.toString().padStart(2, '0')}`;
+        const endDateKey = `2026-${MONTHS_CONFIG[exportEndMonthIdx].key}-${exportEndDay.toString().padStart(2, '0')}`;
+
+        const startIndex = allDays.findIndex(x => x.dateStr === startDateKey);
+        const endIndex = allDays.findIndex(x => x.dateStr === endDateKey);
+
+        let startIdx = startIndex !== -1 ? startIndex : 0;
+        let endIdx = endIndex !== -1 ? endIndex : allDays.length - 1;
+        if (startIdx > endIdx) {
+          const tmp = startIdx;
+          startIdx = endIdx;
+          endIdx = tmp;
+        }
+        const slicedDays = allDays.slice(startIdx, endIdx + 1);
+
+        const startLabel = `${MONTHS_CONFIG[exportStartMonthIdx].name} ${exportStartDay}`;
+        const endLabel = `${MONTHS_CONFIG[exportEndMonthIdx].name} ${exportEndDay}`;
+        const periodLabel = `${startLabel} – ${endLabel}, 2026`;
+
+        if (exportFormat === 'csv') {
+          const headers = 'Date,Feel/Mood,Stress Level (1-10),Status';
+          const rows = slicedDays.map(day => {
+            const dayData = getDayDetails(day.monthKey, day.day);
+            const feel = dayData.hasData ? getEmojiName(dayData.moodLabel) : '—';
+            const stressStatus = dayData.hasData ? dayData.stress : '—';
+            const status = dayData.hasData ? 'Logged' : 'No Check-In';
+            return `"${day.dateStr}","${feel}",${stressStatus},"${status}"`;
+          });
+          return [headers, ...rows].join('\n');
+        } else {
+          const dateStrNow = new Date().toISOString().replace('T', ' ').substring(0, 19);
+          const rangeDetails = slicedDays.map(d => {
+            const dayData = getDayDetails(d.monthKey, d.day);
+            return { ...d, dayData };
+          });
+
+          const loggedEntries = rangeDetails.filter(r => r.dayData.hasData && r.dayData.moodValue > 0);
+          const loggedCount = loggedEntries.length;
+          const avgSt = loggedCount > 0
+            ? (loggedEntries.reduce((acc, curr) => acc + curr.dayData.stress, 0) / loggedCount).toFixed(1)
+            : '5.0';
+
+          let txt = `==================================================\n`;
+          txt += `        🛡️ SAFESPACE: NERVOUS SYSTEM RECOVERY REPORT\n`;
+          txt += `==================================================\n`;
+          txt += `Report Type: Custom Date Range Summary\n`;
+          txt += `Target Period: ${periodLabel}\n`;
+          txt += `Generated On: ${dateStrNow} UTC\n`;
+          txt += `--------------------------------------------------\n`;
+          txt += `[SUMMARY STATISTICS]\n`;
+          txt += `- Tracked days: ${loggedCount} of ${slicedDays.length} total days\n`;
+          txt += `- Average Stress score: ${avgSt}/10\n`;
+          txt += `--------------------------------------------------\n\n`;
+          txt += `[DAILY DETAIL ENTRIES]\n`;
+
+          rangeDetails.forEach(d => {
+            if (d.dayData.hasData) {
+              txt += `• ${d.dateStr}:\n`;
+              txt += `  - Mood state: ${getEmojiName(d.dayData.moodLabel)} (${d.dayData.moodLabel})\n`;
+              txt += `  - Stress level: ${d.dayData.stress}/10\n`;
+            } else {
+              txt += `• ${d.dateStr}: — No entry recorded\n`;
+            }
+            txt += `\n`;
+          });
+          txt += `==================================================\n`;
+          txt += `          offline. secure. kind support.\n`;
+          txt += `==================================================\n`;
+          return txt;
+        }
+      }
+    }
+  };
+
+  if (showExport) {
+    const rawExportContent = generateExportData();
+    const activeMonthName = MONTHS_CONFIG[exportSelectedMonthIdx] ? MONTHS_CONFIG[exportSelectedMonthIdx].name.toLowerCase() : 'month';
+    const downloadFileName = `safespace_export_${
+      exportRange === 'week' 
+        ? 'week' 
+        : (exportSubMode === 'single' ? activeMonthName : 'range')
+    }_${new Date().toISOString().slice(0, 10)}.${exportFormat === 'csv' ? 'csv' : 'txt'}`;
+
+    const handleCopy = () => {
+      navigator.clipboard.writeText(rawExportContent);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleDownload = () => {
+      const element = document.createElement("a");
+      const file = new Blob([rawExportContent], { type: 'text/plain;charset=utf-8' });
+      element.href = URL.createObjectURL(file);
+      element.download = downloadFileName;
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+    };
+
+    const handleExportBackup = () => {
+      const backupObj: Record<string, any> = {
+        safespace_backup: true,
+        version: "1.0",
+        timestamp: new Date().toISOString(),
+        categories: [] as string[]
+      };
+
+      const payload: Record<string, string | null> = {};
+
+      if (backupExportLogs) {
+        backupObj.categories.push('logs');
+        KEY_GROUPS.logs.forEach(key => {
+          payload[key] = localStorage.getItem(key);
+        });
+      }
+
+      if (backupExportSaved) {
+        backupObj.categories.push('saved');
+        KEY_GROUPS.saved.forEach(key => {
+          payload[key] = localStorage.getItem(key);
+        });
+      }
+
+      if (backupExportSettings) {
+        backupObj.categories.push('settings');
+        KEY_GROUPS.settings.forEach(key => {
+          payload[key] = localStorage.getItem(key);
+        });
+      }
+
+      backupObj.payload = payload;
+
+      const fileContent = JSON.stringify(backupObj, null, 2);
+      const element = document.createElement("a");
+      const file = new Blob([fileContent], { type: 'application/json;charset=utf-8' });
+      element.href = URL.createObjectURL(file);
+      element.download = `safespace_backup_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+    };
+
+    const handleFileSelected = (file: File) => {
+      setBackupImportError(null);
+      setBackupImportFile(null);
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const text = e.target?.result as string;
+          const parsed = JSON.parse(text);
+          if (!parsed || parsed.safespace_backup !== true) {
+            setBackupImportError("Invalid backup configuration. Please select a valid SafeSpace backup JSON file.");
+            return;
+          }
+          setBackupImportFile(parsed);
+          setBackupImportLogs(parsed.categories?.includes('logs') ?? false);
+          setBackupImportSaved(parsed.categories?.includes('saved') ?? false);
+          setBackupImportSettings(parsed.categories?.includes('settings') ?? false);
+        } catch (err) {
+          setBackupImportError("Failed to parse file. Please verify it is a valid backup.json file.");
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    const handlePerformRestore = () => {
+      if (!backupImportFile || !backupImportFile.payload) return;
+
+      const payload = backupImportFile.payload;
+
+      if (backupImportLogs && backupImportFile.categories?.includes('logs')) {
+        KEY_GROUPS.logs.forEach(key => {
+          if (payload[key] !== undefined && payload[key] !== null) {
+            localStorage.setItem(key, payload[key]);
+          }
+        });
+      }
+
+      if (backupImportSaved && backupImportFile.categories?.includes('saved')) {
+        KEY_GROUPS.saved.forEach(key => {
+          if (payload[key] !== undefined && payload[key] !== null) {
+            localStorage.setItem(key, payload[key]);
+          }
+        });
+      }
+
+      if (backupImportSettings && backupImportFile.categories?.includes('settings')) {
+        KEY_GROUPS.settings.forEach(key => {
+          if (payload[key] !== undefined && payload[key] !== null) {
+            localStorage.setItem(key, payload[key]);
+          }
+        });
+      }
+
+      setImportSuccess(true);
+    };
+
+    if (importSuccess) {
+      return (
+        <div className="flex flex-col h-full bg-[#F1F5F2] p-6 justify-center items-center text-center space-y-5">
+          <div className="w-16 h-16 bg-[#E1E8E3] rounded-full flex items-center justify-center text-[#4A6741]">
+            <CheckCircle2 size={36} />
+          </div>
+          <div className="space-y-2 select-none text-left">
+            <h2 className="text-base font-black text-slate-800 text-center font-sans">Local Restore Successful</h2>
+            <p className="text-[10px] text-slate-500 leading-relaxed max-w-[240px] text-center">
+              Your requested backup partitions have been restored successfully to your browser's offline storage.
+            </p>
+          </div>
+
           <button
-            onClick={() => onNavigate('dashboard')}
+            id="btn-apply-reload"
+            type="button"
+            onClick={() => {
+              window.location.reload();
+            }}
+            className="w-full max-w-[240px] py-3 rounded-xl bg-[#4A6741] hover:bg-[#3D5535] text-white font-extrabold text-[11px] uppercase tracking-wider cursor-pointer shadow-xs active:scale-95 transition font-sans"
+          >
+            Apply & Reload App
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-col h-full bg-[#F1F5F2] p-5 justify-between overflow-hidden">
+        {/* Header Navigation - Keep Fixed at top */}
+        <div className="flex items-center space-x-2.5 mt-3 mb-3 shrink-0 select-none">
+          <button
+            onClick={() => setShowExport(false)}
             className="p-1 px-1.5 rounded-xl hover:bg-slate-200 active:scale-90 text-slate-500 transition cursor-pointer border-0 mr-1"
           >
             <ArrowLeft size={16} />
           </button>
           <div className="text-left select-none flex-1">
-            <span className="text-[9px] font-extrabold text-[#4A6741] uppercase tracking-widest bg-[#E1E8E3] px-2 py-0.5 rounded">HISTORY</span>
-            <h2 className="text-sm font-bold text-slate-800 mt-1 leading-none">Nervous System Diary</h2>
+            <span className="text-[9px] font-extrabold text-[#4A6741] uppercase tracking-widest bg-[#E1E8E3] px-2 py-0.5 rounded">EXPORT & DATA</span>
+            <h2 className="text-sm font-bold text-slate-800 mt-1 leading-none">Data Portability Center</h2>
           </div>
+        </div>
+
+        {/* Tab switchers at top */}
+        <div className="flex bg-slate-200/50 p-1 rounded-xl select-none mb-3 shrink-0 font-sans">
+          <button
+            id="tab-btn-diary"
+            type="button"
+            onClick={() => setExportTab('diary')}
+            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg cursor-pointer transition ${
+              exportTab === 'diary' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-850'
+            }`}
+          >
+            📝 Diary Export
+          </button>
+          <button
+            id="tab-btn-backup"
+            type="button"
+            onClick={() => setExportTab('backup')}
+            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg cursor-pointer transition ${
+              exportTab === 'backup' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-850'
+            }`}
+          >
+            🛡️ Full Backup
+          </button>
+        </div>
+
+        {/* Scrollable Container for Config & Preview */}
+        <div className="flex-1 overflow-y-auto no-scrollbar pr-0.5 pb-2 min-h-0 space-y-3.5">
+          {exportTab === 'diary' ? (
+            <>
+              <p className="text-[10px] text-slate-500 leading-snug">
+                Configure secure, offline records of your nervous system tracking inputs. No external servers or cloud services are contacted.
+              </p>
+
+          {/* Configuration Area */}
+          <div className="bg-white/80 border border-white p-3.5 rounded-2xl space-y-3.5 shadow-xs">
+            {/* Range Toggle */}
+            <div>
+              <span className="text-[8.5px] font-black text-[#4A6741] uppercase tracking-wider block mb-1.5">1. Select Range</span>
+              <div className="grid grid-cols-2 gap-2 text-[10px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => setExportRange('week')}
+                  className={`py-2 rounded-xl transition cursor-pointer border text-center ${
+                    exportRange === 'week' ? 'bg-[#4A6741] text-white border-transparent' : 'bg-white text-slate-600 hover:text-slate-850 border-slate-200'
+                  }`}
+                >
+                  📊 7-Day Trend
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExportRange('month')}
+                  className={`py-2 rounded-xl transition cursor-pointer border text-center ${
+                    exportRange === 'month' ? 'bg-[#4A6741] text-white border-transparent' : 'bg-white text-slate-600 hover:text-slate-850 border-slate-200'
+                  }`}
+                >
+                  🗓️ {exportSubMode === 'single' ? `Month (${MONTHS_CONFIG[exportSelectedMonthIdx].name})` : 'Custom Range'}
+                </button>
+              </div>
+            </div>
+
+            {/* Monthly Submenu Options */}
+            {exportRange === 'month' && (
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 space-y-2.5 select-none">
+                {/* Switch sub-mode */}
+                <div className="flex border-b border-slate-200/60 pb-2 text-[9px] font-black uppercase tracking-wider text-slate-400 justify-between items-center">
+                  <span>Month Selection Type</span>
+                  <div className="flex space-x-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setExportSubMode('single')}
+                      className={`px-2 py-0.5 rounded-md cursor-pointer transition text-[9px] ${
+                        exportSubMode === 'single' ? 'bg-[#4A6741] text-white' : 'hover:bg-slate-200 text-slate-500'
+                      }`}
+                    >
+                      Single Month
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setExportSubMode('range')}
+                      className={`px-2 py-0.5 rounded-md cursor-pointer transition text-[9px] ${
+                        exportSubMode === 'range' ? 'bg-[#4A6741] text-white' : 'hover:bg-slate-200 text-slate-500'
+                      }`}
+                    >
+                      Date Range
+                    </button>
+                  </div>
+                </div>
+
+                {/* Submenu choice body */}
+                {exportSubMode === 'single' ? (
+                  <div>
+                    <span className="text-[8px] font-bold text-slate-400 block mb-1">Pick a specific Month:</span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {MONTHS_CONFIG.map((m, idx) => (
+                        <button
+                          key={m.key}
+                          type="button"
+                          onClick={() => setExportSelectedMonthIdx(idx)}
+                          className={`py-1.5 rounded-lg text-[9px] font-extrabold cursor-pointer border text-center transition ${
+                            exportSelectedMonthIdx === idx
+                              ? 'bg-[#4A6741] text-white border-transparent'
+                              : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-700'
+                          }`}
+                        >
+                          {m.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* From selectors */}
+                      <div className="space-y-0.5">
+                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">From:</span>
+                        <div className="flex space-x-1">
+                          <select
+                            value={exportStartMonthIdx}
+                            onChange={(e) => updateStartMonth(Number(e.target.value))}
+                            className="flex-1 bg-white border border-slate-200 text-[10px] text-slate-700 font-extrabold rounded-lg p-1 focus:outline-none focus:ring-1 focus:ring-[#4A6741]"
+                          >
+                            {MONTHS_CONFIG.map((m, idx) => (
+                              <option key={m.key} value={idx}>{m.name}</option>
+                            ))}
+                          </select>
+                          <select
+                            value={exportStartDay}
+                            onChange={(e) => setExportStartDay(Number(e.target.value))}
+                            className="w-12 bg-white border border-slate-200 text-[10px] text-slate-700 font-extrabold rounded-lg p-1 focus:outline-none focus:ring-1 focus:ring-[#4A6741]"
+                          >
+                            {Array.from({ length: MONTHS_CONFIG[exportStartMonthIdx].days }, (_, i) => i + 1).map(dayNum => (
+                              <option key={dayNum} value={dayNum}>{dayNum}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* To selectors */}
+                      <div className="space-y-0.5">
+                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">To:</span>
+                        <div className="flex space-x-1">
+                          <select
+                            value={exportEndMonthIdx}
+                            onChange={(e) => updateEndMonth(Number(e.target.value))}
+                            className="flex-1 bg-white border border-slate-200 text-[10px] text-slate-700 font-extrabold rounded-lg p-1 focus:outline-none focus:ring-1 focus:ring-[#4A6741]"
+                          >
+                            {MONTHS_CONFIG.map((m, idx) => (
+                              <option key={m.key} value={idx}>{m.name}</option>
+                            ))}
+                          </select>
+                          <select
+                            value={exportEndDay}
+                            onChange={(e) => setExportEndDay(Number(e.target.value))}
+                            className="w-12 bg-white border border-slate-200 text-[10px] text-slate-700 font-extrabold rounded-lg p-1 focus:outline-none focus:ring-1 focus:ring-[#4A6741]"
+                          >
+                            {Array.from({ length: MONTHS_CONFIG[exportEndMonthIdx].days }, (_, i) => i + 1).map(dayNum => (
+                              <option key={dayNum} value={dayNum}>{dayNum}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Presets under Date Range */}
+                    <div className="pt-1.5 border-t border-slate-200/60">
+                      <span className="text-[8px] font-bold text-slate-400 block mb-1">Quick Presets:</span>
+                      <div className="flex flex-wrap gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExportStartMonthIdx(0);
+                            setExportStartDay(1);
+                            setExportEndMonthIdx(2);
+                            setExportEndDay(30);
+                          }}
+                          className="bg-white hover:bg-slate-100 border border-slate-200 py-0.5 px-2 rounded-full text-[8.5px] font-extrabold text-[#4A6741] cursor-pointer"
+                        >
+                          All Available
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExportStartMonthIdx(0);
+                            setExportStartDay(1);
+                            setExportEndMonthIdx(0);
+                            setExportEndDay(30);
+                          }}
+                          className="bg-white hover:bg-slate-100 border border-slate-200 py-0.5 px-2 rounded-full text-[8.5px] font-extrabold text-[#4A6741] cursor-pointer"
+                        >
+                          April
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExportStartMonthIdx(1);
+                            setExportStartDay(1);
+                            setExportEndMonthIdx(1);
+                            setExportEndDay(31);
+                          }}
+                          className="bg-white hover:bg-slate-100 border border-slate-200 py-0.5 px-2 rounded-full text-[8.5px] font-extrabold text-[#4A6741] cursor-pointer"
+                        >
+                          May
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExportStartMonthIdx(2);
+                            setExportStartDay(1);
+                            setExportEndMonthIdx(2);
+                            setExportEndDay(30);
+                          }}
+                          className="bg-white hover:bg-slate-100 border border-slate-200 py-0.5 px-2 rounded-full text-[8.5px] font-extrabold text-[#4A6741] cursor-pointer"
+                        >
+                          June
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Choose Format */}
+            <div>
+              <span className="text-[8.5px] font-black text-[#4A6741] uppercase tracking-wider block mb-1.5">2. Choose Format</span>
+              <div className="grid grid-cols-2 gap-2 text-[10px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => setExportFormat('csv')}
+                  className={`py-2 rounded-xl transition cursor-pointer border text-center ${
+                    exportFormat === 'csv' ? 'bg-[#4A6741] text-white border-transparent' : 'bg-white text-slate-600 hover:text-slate-800 border-slate-200'
+                  }`}
+                >
+                  📄 CSV Spreadsheet
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExportFormat('text')}
+                  className={`py-2 rounded-xl transition cursor-pointer border text-center ${
+                    exportFormat === 'text' ? 'bg-[#4A6741] text-white border-transparent' : 'bg-white text-slate-600 hover:text-slate-800 border-slate-200'
+                  }`}
+                >
+                  📝 Journal Text
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Preview Panel */}
+          <div className="flex flex-col min-h-[140px] max-h-[175px]">
+            <span className="text-[8.5px] font-black text-[#4A6741] uppercase tracking-wider block mb-1 pl-1 font-sans">Live Export Preview</span>
+            <div className="bg-slate-900 border border-slate-800 text-slate-100 rounded-2xl p-2.5 relative flex-1 overflow-y-auto no-scrollbar font-mono text-[8px] leading-relaxed">
+              <pre className="whitespace-pre-wrap select-all">{rawExportContent}</pre>
+            </div>
+          </div>
+
+          {/* Floating copy confirmation */}
+          <div className="h-4 mt-1 flex items-center justify-center shrink-0">
+            {copied && (
+              <span className="text-[9px] text-[#4A6741] font-bold bg-[#E1E8E3] px-2.5 py-0.5 rounded-full border border-[#4A6741]/20 transition-all duration-300">
+                ✓ Copied to clipboard!
+              </span>
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="space-y-4 text-left">
+          <p className="text-[10px] text-slate-500 leading-snug">
+            Consolidate all local SafeSpace data—including nervous system daily logs, active tool data (journal slips, gratitude jar records, worries), and app calibration settings—into a secure JSON file or restore a past backup.
+          </p>
+
+          {/* EXPORT BACKUP BLOCK */}
+          <div className="bg-white/80 border border-white p-4 rounded-2xl space-y-3 shadow-xs">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <span className="text-[9.5px] font-black text-slate-800 uppercase tracking-wide">1. Create a Secure Backup</span>
+              <span className="text-[8px] bg-[#E1E8E3] text-[#4A6741] font-black px-1.5 py-0.5 rounded uppercase font-sans">Export JSON</span>
+            </div>
+
+            <div className="space-y-3">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">Choose data categories to include:</span>
+              
+              {/* Category 1: logs */}
+              <label className="flex items-start space-x-2.5 text-[10.5px] text-slate-700 cursor-pointer select-none">
+                <input 
+                  id="chk-export-logs"
+                  type="checkbox" 
+                  checked={backupExportLogs} 
+                  onChange={(e) => setBackupExportLogs(e.target.checked)} 
+                  className="mt-0.5 rounded border-slate-300 text-[#4A6741] focus:ring-[#4A6741]"
+                />
+                <div>
+                  <span className="font-bold block text-slate-800 leading-tight">Nervous System Daily Logs</span>
+                  <span className="text-[8.5px] text-slate-500 block leading-normal">Calendar log entries, daily check-in states, and rating matrices.</span>
+                </div>
+              </label>
+
+              {/* Category 2: saved */}
+              <label className="flex items-start space-x-2.5 text-[10.5px] text-slate-700 cursor-pointer select-none">
+                <input 
+                  id="chk-export-saved"
+                  type="checkbox" 
+                  checked={backupExportSaved} 
+                  onChange={(e) => setBackupExportSaved(e.target.checked)} 
+                  className="mt-0.5 rounded border-slate-300 text-[#4A6741] focus:ring-[#4A6741]"
+                />
+                <div>
+                  <span className="font-bold block text-slate-800 leading-tight">Saved Data from Clinical Skills</span>
+                  <span className="text-[8.5px] text-slate-500 block leading-normal">Emotional journals, gratitude slips, safety plans, EMDR worries, daily habits, and coping cards.</span>
+                </div>
+              </label>
+
+              {/* Category 3: settings */}
+              <label className="flex items-start space-x-2.5 text-[10.5px] text-slate-700 cursor-pointer select-none">
+                <input 
+                  id="chk-export-settings"
+                  type="checkbox" 
+                  checked={backupExportSettings} 
+                  onChange={(e) => setBackupExportSettings(e.target.checked)} 
+                  className="mt-0.5 rounded border-slate-300 text-[#4A6741] focus:ring-[#4A6741]"
+                />
+                <div>
+                  <span className="font-bold block text-slate-800 leading-tight">Settings & App Calibration</span>
+                  <span className="text-[8.5px] text-slate-500 block leading-normal">Personal voice rate/parameters, emergency contact triggers, active emoji definitions.</span>
+                </div>
+              </label>
+
+              {/* Quick Select Actions */}
+              <div className="flex space-x-2 pt-1 border-t border-slate-100">
+                <button
+                  id="btn-export-select-all"
+                  type="button"
+                  onClick={() => {
+                    setBackupExportLogs(true);
+                    setBackupExportSaved(true);
+                    setBackupExportSettings(true);
+                  }}
+                  className="text-[8.5px] font-bold text-[#4A6741] hover:underline cursor-pointer"
+                >
+                  Select All
+                </button>
+                <span className="text-[8px] text-slate-300">|</span>
+                <button
+                  id="btn-export-deselect-all"
+                  type="button"
+                  onClick={() => {
+                    setBackupExportLogs(false);
+                    setBackupExportSaved(false);
+                    setBackupExportSettings(false);
+                  }}
+                  className="text-[8.5px] font-bold text-slate-400 hover:underline cursor-pointer"
+                >
+                  Deselect All
+                </button>
+              </div>
+
+              <button
+                id="btn-export-backup-json"
+                type="button"
+                onClick={handleExportBackup}
+                disabled={!backupExportLogs && !backupExportSaved && !backupExportSettings}
+                className="w-full mt-1.5 py-2.5 rounded-xl bg-[#4A6741] hover:bg-[#3D5535] active:scale-[98] disabled:opacity-50 disabled:active:scale-100 text-white font-extrabold text-[10px] transition cursor-pointer shadow-xs flex items-center justify-center space-x-1.5"
+              >
+                <Download size={11} />
+                <span>Download JSON Backup File</span>
+              </button>
+            </div>
+          </div>
+
+          {/* IMPORT BACKUP BLOCK */}
+          <div className="bg-white/80 border border-white p-4 rounded-2xl space-y-3 shadow-xs">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <span className="text-[9.5px] font-black text-slate-800 uppercase tracking-wide">2. Restore from Backup</span>
+              <span className="text-[8px] bg-slate-200 text-slate-700 font-black px-1.5 py-0.5 rounded uppercase font-sans">Import JSON</span>
+            </div>
+
+            {!backupImportFile ? (
+              <div className="space-y-3">
+                <span className="text-[8px] font-black text-[#4A6741] uppercase tracking-widest block">Upload a valid backup file:</span>
+                <div 
+                  id="btn-trigger-picker"
+                  onClick={() => document.getElementById('backup-file-picker')?.click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const file = e.dataTransfer.files[0];
+                    if (file) handleFileSelected(file);
+                  }}
+                  className="border border-dashed border-slate-300 rounded-xl p-5 text-center cursor-pointer hover:bg-slate-50 transition flex flex-col items-center justify-center space-y-1.5 active:scale-95 group font-sans"
+                >
+                  <Upload size={20} className="text-slate-400 group-hover:text-[#4A6741] transition" />
+                  <div className="space-y-0.5">
+                    <span className="text-[9.5px] font-extrabold text-slate-700 block font-sans">Select backup .json</span>
+                    <span className="text-[8px] text-slate-400 block font-normal font-sans">Click or drag backup file here</span>
+                  </div>
+                  <input 
+                    id="backup-file-picker" 
+                    type="file" 
+                    accept=".json" 
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileSelected(file);
+                    }}
+                    className="hidden" 
+                  />
+                </div>
+                
+                {backupImportError && (
+                  <div className="p-2.5 rounded-xl bg-red-50 border border-red-100 text-[9px] text-red-700 font-medium leading-tight select-none">
+                    ⚠ {backupImportError}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-150 text-[9px] font-mono leading-relaxed space-y-1 text-slate-500 block relative text-left">
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setBackupImportFile(null);
+                      setBackupImportError(null);
+                    }} 
+                    className="absolute top-1 right-2 text-[8.5px] font-black text-red-600 hover:underline cursor-pointer"
+                  >
+                    Reset File
+                  </button>
+                  <div className="font-extrabold text-[#4A6741] text-[9.5px] font-sans">✓ Verified Backup Package</div>
+                  <div>Uploaded: {new Date(backupImportFile.timestamp).toLocaleString()}</div>
+                  <div className="capitalize font-mono">Partitions: {backupImportFile.categories?.join(', ') || 'unknown'}</div>
+                </div>
+
+                <div className="space-y-2.5 text-left">
+                  <span className="text-[8px] font-black text-[#4A6741] uppercase tracking-wider block">Import specific segments:</span>
+                  
+                  {/* logs check */}
+                  <label className={`flex items-start space-x-2 text-[10.5px] cursor-pointer select-none ${
+                    !(backupImportFile.categories?.includes('logs')) ? 'opacity-30 pointer-events-none' : ''
+                  }`}>
+                    <input 
+                      id="chk-import-logs"
+                      type="checkbox" 
+                      checked={backupImportLogs} 
+                      disabled={!(backupImportFile.categories?.includes('logs'))}
+                      onChange={(e) => setBackupImportLogs(e.target.checked)}
+                      className="mt-0.5 rounded border-slate-350 text-[#4A6741] focus:ring-[#4A6741]"
+                    />
+                    <div>
+                      <span className="font-bold text-slate-800 leading-tight block">Restore Nervous System Daily Logs</span>
+                      <span className="text-[8.5px] text-slate-500 block">Restores calendars and rated checked-ins.</span>
+                    </div>
+                  </label>
+
+                  {/* saved check */}
+                  <label className={`flex items-start space-x-2 text-[10.5px] cursor-pointer select-none ${
+                    !(backupImportFile.categories?.includes('saved')) ? 'opacity-30 pointer-events-none' : ''
+                  }`}>
+                    <input 
+                      id="chk-import-saved"
+                      type="checkbox" 
+                      checked={backupImportSaved} 
+                      disabled={!(backupImportFile.categories?.includes('saved'))}
+                      onChange={(e) => setBackupImportSaved(e.target.checked)}
+                      className="mt-0.5 rounded border-slate-350 text-[#4A6741] focus:ring-[#4A6741]"
+                    />
+                    <div>
+                      <span className="font-bold text-slate-800 leading-tight block">Restore Saved Tools Entries</span>
+                      <span className="text-[8.5px] text-slate-500 block">Restores gratitude slips, journal items, habit cards, worries.</span>
+                    </div>
+                  </label>
+
+                  {/* settings check */}
+                  <label className={`flex items-start space-x-2 text-[10.5px] cursor-pointer select-none ${
+                    !(backupImportFile.categories?.includes('settings')) ? 'opacity-30 pointer-events-none' : ''
+                  }`}>
+                    <input 
+                      id="chk-import-settings"
+                      type="checkbox" 
+                      checked={backupImportSettings} 
+                      disabled={!(backupImportFile.categories?.includes('settings'))}
+                      onChange={(e) => setBackupImportSettings(e.target.checked)}
+                      className="mt-0.5 rounded border-slate-350 text-[#4A6741] focus:ring-[#4A6741]"
+                    />
+                    <div>
+                      <span className="font-bold text-slate-800 leading-tight block">Restore settings & Emergency Contacts</span>
+                      <span className="text-[8.5px] text-slate-500 block">Restores customized emergency details and voiced parameters.</span>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 flex items-center space-x-2">
+                  <button
+                    id="btn-import-backup-json"
+                    type="button"
+                    onClick={handlePerformRestore}
+                    disabled={!backupImportLogs && !backupImportSaved && !backupImportSettings}
+                    className="w-full py-2.5 rounded-xl bg-[#4A6741] hover:bg-[#3D5535] active:scale-[98] disabled:opacity-50 text-white font-extrabold text-[10px] cursor-pointer text-center flex items-center justify-center space-x-1 uppercase tracking-widest font-sans border-0"
+                  >
+                    <span>Trigger Secure Local Import</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+
+    {/* Action Buttons - Fixed at bottom */}
+    <div className="space-y-2 mt-2 shrink-0 border-t border-slate-250/20 pt-3">
+      {exportTab === 'diary' && (
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="py-2.5 rounded-xl bg-white hover:bg-slate-100 active:scale-95 text-slate-700 font-bold text-[10px] transition cursor-pointer border border-slate-200 shadow-xs flex items-center justify-center space-x-1"
+          >
+            <Copy size={11} className="text-slate-500" />
+            <span>Copy Data</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleDownload}
+            className="py-2.5 rounded-xl bg-[#4A6741] hover:bg-[#3D5535] active:scale-95 text-white font-bold text-[10px] transition cursor-pointer border-0 shadow-xs flex items-center justify-center space-x-1 text-center font-sans"
+          >
+            <Download size={11} />
+            <span>Save File</span>
+          </button>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setShowExport(false)}
+        className="w-full bg-slate-200 hover:bg-slate-250 text-slate-755 text-[9.5px] font-black py-2.5 rounded-xl transition cursor-pointer border-0 shadow-xs leading-none uppercase tracking-widest"
+      >
+        Go Back
+      </button>
+    </div>
+  </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full bg-[#F1F5F2] p-5 justify-between overflow-y-auto">
+      <div className="flex flex-col flex-1">
+        {/* Header Navigation */}
+        <div className="flex items-center justify-between mt-3 mb-3 shrink-0">
+          <div className="flex items-center space-x-2.5">
+            <button
+              onClick={() => onNavigate('dashboard')}
+              className="p-1 px-1.5 rounded-xl hover:bg-slate-200 active:scale-90 text-slate-500 transition cursor-pointer border-0 mr-1"
+            >
+              <ArrowLeft size={16} />
+            </button>
+            <div className="text-left select-none">
+              <span className="text-[9px] font-extrabold text-[#4A6741] uppercase tracking-widest bg-[#E1E8E3] px-2 py-0.5 rounded">HISTORY</span>
+              <h2 className="text-sm font-bold text-slate-800 mt-1 leading-none">Nervous System Diary</h2>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowExport(true)}
+            className="flex items-center space-x-1 p-1.5 px-2.5 rounded-xl bg-[#E1E8E3] hover:bg-[#D4DDD6] text-[#4A6741] font-bold text-[9.5px] transition cursor-pointer border-0 active:scale-95 shadow-xs"
+            title="Export Records"
+          >
+            <Download size={11} />
+            <span>Export</span>
+          </button>
         </div>
 
         {/* Tab Switching Chips */}
@@ -2561,7 +3703,9 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
                   >
                     <div>
                       <div className="flex items-center space-x-1.5">
-                        <span className="text-xs font-bold text-slate-700">{item.day === 'Today' ? 'Today' : item.day}</span>
+                        <span className="text-xs font-bold text-slate-700">
+                          {item.day === 'Today' || item.day === ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date().getDay()] ? 'Today' : item.day}
+                        </span>
                         {item.hasData ? (
                           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full border bg-[#EBF2EC] border-[#A8C69F]/40 text-[#4A6741]">
                             Feel: {extractEmoji(item.moodLabel, item.moodValue)}
@@ -2634,6 +3778,23 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
               </button>
             </div>
 
+            <div className="grid grid-cols-2 gap-2.5 mb-2.5 shrink-0">
+              <div className="bg-white/80 p-2.5 rounded-2xl border border-white/60 text-left select-none">
+                <span className="text-[8px] uppercase tracking-wider font-extrabold text-slate-400">Total Logs</span>
+                <div className="flex items-baseline space-x-1 mt-0.5">
+                  <span className="text-base font-black text-[#4A6741]">{currentMonthCheckInDays.length}</span>
+                  <span className="text-[9px] text-slate-400">/ {currentMonth.days} days</span>
+                </div>
+              </div>
+              <div className="bg-white/80 p-2.5 rounded-2xl border border-white/60 text-left select-none">
+                <span className="text-[8px] uppercase tracking-wider font-extrabold text-slate-400">Avg Stress</span>
+                <div className="flex items-baseline space-x-1 mt-0.5">
+                  <span className="text-base font-black text-[#4A6741]">{monthlyAverageStress}</span>
+                  <span className="text-[9px] text-slate-400">/ 10 level</span>
+                </div>
+              </div>
+            </div>
+
             {/* Calendar grid board */}
             <div className="bg-white/80 p-3 rounded-2xl border border-white/60 flex flex-col mb-3 shrink-0 select-none">
               <div className="grid grid-cols-7 gap-1.5 mb-1.5 text-center">
@@ -2699,61 +3860,16 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
               </div>
 
               {/* Day item custom checks toggling/mutations */}
-              <div className="mt-2 text-center pt-2 border-t border-slate-100 flex items-center justify-between shrink-0">
-                {!selectedDayHasData ? (
+              {!selectedDayHasData && (
+                <div className="mt-2 text-center pt-2 border-t border-slate-100 flex items-center justify-between shrink-0">
                   <button
                     onClick={() => handleUpdateDay(selectedDay, { hasData: true, moodLabel: '🍃', stress: 5 })}
                     className="w-full bg-[#E1E8E3] hover:bg-[#D1DBCF] active:scale-95 text-[#4A6741] font-bold text-[9px] py-1.5 rounded-xl cursor-pointer border-0 transition"
                   >
                     ➕ Record Retrospective Check-In
                   </button>
-                ) : (
-                  <div className="flex items-center justify-between w-full space-x-2">
-                    <div className="flex items-center space-x-1">
-                      <button 
-                        onClick={() => handleUpdateDay(selectedDay, { stress: Math.max(1, selectedDayData.stress - 1) })}
-                        className="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 active:scale-90 flex items-center justify-center font-bold text-slate-600 font-mono text-xs cursor-pointer border-0 select-none pb-0.5"
-                        title="Decrease Stress"
-                      >
-                        -
-                      </button>
-                      <span className="text-[9px] font-bold text-slate-500 shrink-0 font-mono">Stress</span>
-                      <button 
-                        onClick={() => handleUpdateDay(selectedDay, { stress: Math.min(10, selectedDayData.stress + 1) })}
-                        className="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 active:scale-90 flex items-center justify-center font-bold text-slate-600 font-mono text-xs cursor-pointer border-0 select-none pb-0.5"
-                        title="Increase Stress"
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    <div className="flex space-x-1">
-                      {selectableEmojis.map((emoji) => {
-                        const isCurrent = selectedDayData.moodLabel === emoji;
-                        return (
-                          <button
-                            key={emoji}
-                            onClick={() => handleUpdateDay(selectedDay, { moodLabel: emoji })}
-                            className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition cursor-pointer border-0 ${
-                              isCurrent ? 'bg-[#E1E8E3]/80 ring-1 ring-[#4A6741]' : 'bg-slate-50 hover:bg-slate-100'
-                            }`}
-                            title="Mark Feel"
-                          >
-                            {emoji}
-                          </button>
-                        );
-                      })}
-                      <button
-                        onClick={() => handleUpdateDay(selectedDay, { hasData: false, moodValue: 0, stress: 5 })}
-                        className="w-6 h-6 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center text-[10px] text-red-500 cursor-pointer border-0"
-                        title="Clear check-in"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         )}
