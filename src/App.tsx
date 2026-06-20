@@ -235,19 +235,34 @@ export default function App() {
     const todayIndex = new Date().getDay();
     const todayAbbr = WEEKDAYS[todayIndex];
     
-    setMoodHistory(prev => prev.map(entry => {
-      if (entry.day === todayAbbr) {
-        const hasData = loggedMood !== null;
-        return {
-          ...entry,
-          hasData,
-          moodValue: hasData ? 1 : 0,
-          moodLabel: loggedMood || 'No Data',
-          stress: hasData ? stressLevel : 5
-        };
+    setMoodHistory(prev => {
+      const todayEntry = prev.find(entry => entry.day === todayAbbr);
+      const hasData = loggedMood !== null;
+      const targetMoodLabel = loggedMood || 'No Data';
+      const targetStress = hasData ? stressLevel : 5;
+      const targetMoodValue = hasData ? 1 : 0;
+      
+      if (todayEntry && 
+          todayEntry.hasData === hasData && 
+          todayEntry.moodLabel === targetMoodLabel && 
+          todayEntry.stress === targetStress &&
+          todayEntry.moodValue === targetMoodValue) {
+        return prev; // Performance optimization: skip state update if data matches perfectly
       }
-      return entry;
-    }));
+      
+      return prev.map(entry => {
+        if (entry.day === todayAbbr) {
+          return {
+            ...entry,
+            hasData,
+            moodValue: targetMoodValue,
+            moodLabel: targetMoodLabel,
+            stress: targetStress
+          };
+        }
+        return entry;
+      });
+    });
   }, [loggedMood, stressLevel]);
 
   // Sync simulator screens to active Kotlin Files
