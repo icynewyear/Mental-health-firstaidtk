@@ -183,6 +183,8 @@ interface DashboardProps {
   loggedMood: string | null;
   setLoggedMood: (mood: string | null) => void;
   moodHistory: MoodLogEntry[];
+  isDarkMode?: boolean;
+  setIsDarkMode?: (val: boolean) => void;
 }
 
 export const SimulatorDashboard: React.FC<DashboardProps> = ({
@@ -192,6 +194,8 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
   loggedMood,
   setLoggedMood,
   moodHistory,
+  isDarkMode = false,
+  setIsDarkMode,
 }) => {
   const PREDEFINED_EMOJI_SETS = [
     {
@@ -500,10 +504,23 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
       )}
 
       {/* Greeting */}
-      <div className="text-left mt-1.5 mb-4 select-none relative">
-        <span className="text-[8.5px] font-black text-[#4A6741] uppercase tracking-wider bg-[#E1E8E3] px-2.5 py-0.5 rounded-full shadow-2xs">OFFLINE FIRST</span>
-        <h2 className="text-xl font-black text-[#4A6741] tracking-tight mt-1.5 font-sans">Safe Space</h2>
-        <p className="text-[11px] font-semibold text-slate-500 mt-0.5">Take a moment. You are safe, validated, and supported.</p>
+      <div className="flex justify-between items-start mt-1.5 mb-4 select-none relative">
+        <div className="text-left">
+          <span className="text-[8.5px] font-black text-[#4A6741] uppercase tracking-wider bg-[#E1E8E3] px-2.5 py-0.5 rounded-full shadow-2xs">OFFLINE FIRST</span>
+          <h2 className="text-xl font-black text-[#4A6741] tracking-tight mt-1.5 font-sans">Safe Space</h2>
+          <p className="text-[11px] font-semibold text-slate-500 mt-0.5 font-sans leading-tight">Take a moment. You are safe, validated, and supported.</p>
+        </div>
+        {setIsDarkMode && (
+          <button
+            type="button"
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            className="flex items-center space-x-1.5 text-[9.5px] font-black text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 border border-[#CBD9CC]/35 rounded-xl px-2.5 py-1.5 transition-all shadow-3xs cursor-pointer select-none active:scale-95"
+            title="Toggle theme inside phone"
+          >
+            <span>{isDarkMode ? '☀️' : '🌙'}</span>
+            <span className="font-extrabold text-[8px] uppercase tracking-wider text-slate-500">{isDarkMode ? 'Light' : 'Dark'}</span>
+          </button>
+        )}
       </div>
 
       {/* Mood Check-In Widget */}

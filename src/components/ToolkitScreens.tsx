@@ -323,9 +323,10 @@ export const SimulatorHabit: React.FC<HabitProps> = ({ onBack }) => {
 // ============================================================================
 interface GratitudeProps {
   onBack: () => void;
+  isDarkMode?: boolean;
 }
 
-export const SimulatorGratitude: React.FC<GratitudeProps> = ({ onBack }) => {
+export const SimulatorGratitude: React.FC<GratitudeProps> = ({ onBack, isDarkMode = false }) => {
   const [gratitudeText, setGratitudeText] = useState('');
   const [slips, setSlips] = useState<GratitudeSlip[]>(() => {
     const saved = localStorage.getItem('safespace_gratitude_jar');
@@ -468,24 +469,30 @@ export const SimulatorGratitude: React.FC<GratitudeProps> = ({ onBack }) => {
 
       {/* DRAW POPUP MODAL */}
       {drawnSlip && (
-        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 rounded-[35px] flex items-center justify-center p-6 animate-fade-in select-none">
+        <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm z-50 rounded-[35px] flex items-center justify-center p-6 animate-fade-in select-none">
           <div
-            className="w-full h-fit rounded-[32px] p-5 text-center shadow-2xl flex flex-col justify-between items-center relative animate-slide-up border"
+            className="w-full h-fit rounded-[32px] p-5 text-center shadow-2xl flex flex-col justify-between items-center relative animate-slide-up border transition-all duration-300"
             style={{
-              backgroundColor: `hsla(${drawnSlip.hue}, 92%, 96%, 0.98)`,
-              borderColor: `hsla(${drawnSlip.hue}, 80%, 45%, 0.3)`
+              backgroundColor: isDarkMode ? `hsla(${drawnSlip.hue}, 30%, 14%, 0.98)` : `hsla(${drawnSlip.hue}, 92%, 96%, 0.98)`,
+              borderColor: isDarkMode ? `hsla(${drawnSlip.hue}, 50%, 40%, 0.5)` : `hsla(${drawnSlip.hue}, 80%, 45%, 0.3)`
             }}
           >
             {/* Soft background decor */}
             <div className="absolute top-4 left-4 text-2xl select-none opacity-20">✨</div>
             <div className="absolute bottom-4 right-4 text-2xl select-none opacity-20">🤍</div>
 
-            <div className="space-y-3.5 py-4 w-full h-full text-slate-800">
-              <span className="text-[8.5px] uppercase font-black tracking-widest text-[#4A6741]" style={{ color: `hsl(${drawnSlip.hue}, 50%, 25%)` }}>
+            <div className="space-y-3.5 py-4 w-full h-full">
+              <span 
+                className="text-[8.5px] uppercase font-black tracking-widest block" 
+                style={{ color: isDarkMode ? `hsl(${drawnSlip.hue}, 80%, 75%)` : `hsl(${drawnSlip.hue}, 50%, 25%)` }}
+              >
                 Memories Re-emerging • {drawnSlip.timestamp}
               </span>
               
-              <p className="text-sm font-black italic max-w-[90%] mx-auto leading-relaxed text-slate-800">
+              <p 
+                className="text-sm font-black italic max-w-[90%] mx-auto leading-relaxed"
+                style={{ color: isDarkMode ? '#f1f5f9' : '#1e293b' }}
+              >
                 "{drawnSlip.text}"
               </p>
             </div>
@@ -503,10 +510,10 @@ export const SimulatorGratitude: React.FC<GratitudeProps> = ({ onBack }) => {
                   setSlips(slips.filter(s => s.id !== drawnSlip.id));
                   setDrawnSlip(null);
                 }}
-                className="px-4 py-2 rounded-full font-extrabold text-[10.5px] uppercase tracking-wider bg-white/70 hover:bg-white/90 border transition active:scale-95 cursor-pointer shadow-xs flex-1"
+                className="px-4 py-2 rounded-full font-extrabold text-[10.5px] uppercase tracking-wider hover:opacity-90 border transition active:scale-95 cursor-pointer shadow-xs flex-1 bg-transparent"
                 style={{ 
-                  color: `hsl(${drawnSlip.hue}, 70%, 24%)`,
-                  borderColor: `hsla(${drawnSlip.hue}, 80%, 45%, 0.25)`
+                  color: isDarkMode ? `hsl(${drawnSlip.hue}, 85%, 80%)` : `hsl(${drawnSlip.hue}, 70%, 24%)`,
+                  borderColor: isDarkMode ? `hsla(${drawnSlip.hue}, 80%, 45%, 0.6)` : `hsla(${drawnSlip.hue}, 80%, 45%, 0.25)`
                 }}
                 title="Permanently remove this memory from the jar"
               >

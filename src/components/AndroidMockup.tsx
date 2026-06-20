@@ -43,6 +43,7 @@ interface AndroidMockupProps {
   restoreAllToDefaults: () => void;
   seedRandomData: () => void;
   isDarkMode: boolean;
+  setIsDarkMode: (val: boolean) => void;
 }
 
 export const AndroidMockup: React.FC<AndroidMockupProps> = ({
@@ -59,6 +60,7 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
   restoreAllToDefaults,
   seedRandomData,
   isDarkMode,
+  setIsDarkMode,
 }) => {
   const [timeState, setTimeState] = useState('14:05');
   const [offlinePillClicks, setOfflinePillClicks] = useState(0);
@@ -139,6 +141,8 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
                 loggedMood={loggedMood}
                 setLoggedMood={setLoggedMood}
                 moodHistory={moodHistory}
+                isDarkMode={isDarkMode}
+                setIsDarkMode={setIsDarkMode}
               />
             )}
             {activeScreen === 'somaticHub' && (
@@ -193,7 +197,7 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
               <SimulatorHabit onBack={() => setActiveScreen('cbtHub')} />
             )}
             {activeScreen === 'gratitude' && (
-              <SimulatorGratitude onBack={() => setActiveScreen('cbtHub')} />
+              <SimulatorGratitude onBack={() => setActiveScreen('cbtHub')} isDarkMode={isDarkMode} />
             )}
             {activeScreen === 'somatic' && (
               <SimulatorSomatic onBack={() => setActiveScreen('somaticHub')} />

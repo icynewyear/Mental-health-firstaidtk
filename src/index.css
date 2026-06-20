@@ -38,7 +38,28 @@
 .simulator-dark-mode.bg-white, .simulator-dark-mode .bg-white { background-color: #1e293b !important; border-color: #334155 !important; }
 .simulator-dark-mode.bg-white\/80, .simulator-dark-mode .bg-white\/80 { background-color: rgba(30, 41, 59, 0.8) !important; border-color: rgba(51, 65, 85, 0.4) !important; }
 .simulator-dark-mode.bg-white\/90, .simulator-dark-mode .bg-white\/90 { background-color: rgba(15, 23, 42, 0.95) !important; border-color: #334155 !important; }
+.simulator-dark-mode.bg-white\/95, .simulator-dark-mode .bg-white\/95 { background-color: rgba(30, 41, 59, 0.95) !important; border-color: rgba(51, 65, 85, 0.5) !important; }
+.simulator-dark-mode.bg-white\/85, .simulator-dark-mode .bg-white\/85 { background-color: rgba(30, 41, 59, 0.85) !important; border-color: rgba(51, 65, 85, 0.4) !important; }
 .simulator-dark-mode.bg-white\/50, .simulator-dark-mode .bg-white\/50 { background-color: rgba(30, 41, 59, 0.5) !important; }
+
+/* Support Hub button border, hover, active states in dark mode */
+.simulator-dark-mode.border-\[\#d1dee8\], .simulator-dark-mode .border-\[\#d1dee8\] { border-color: #334155 !important; }
+.simulator-dark-mode.hover\:bg-\[\#e1e8f0\]:hover, .simulator-dark-mode .hover\:bg-\[\#e1e8f0\]:hover { background-color: #1e293b !important; }
+.simulator-dark-mode.border-\[\#b8cce0\], .simulator-dark-mode .border-\[\#b8cce0\] { border-color: #334155 !important; }
+
+/* Recommended For You - high, medium, low alert states in dark mode */
+.simulator-dark-mode .border-slate-200\/60, .simulator-dark-mode.border-slate-200\/60 { border-color: rgba(51, 65, 85, 0.5) !important; }
+.simulator-dark-mode .bg-\[\#eef2f6\] { background-color: rgba(15, 23, 42, 0.6) !important; }
+.simulator-dark-mode .border-\[\#d1dee8\] { border-color: #334155 !important; }
+.simulator-dark-mode .text-\[\#3b5b7b\] { color: #38bdf8 !important; }
+.simulator-dark-mode .bg-\[\#4a7298\] { background-color: #0284c7 !important; color: #ffffff !important; }
+.simulator-dark-mode .bg-amber-50\/60 { background-color: rgba(69, 26, 3, 0.4) !important; }
+.simulator-dark-mode .bg-emerald-50\/40 { background-color: rgba(6, 78, 59, 0.3) !important; }
+.simulator-dark-mode .border-[#E1E8E3]/60 { border-color: rgba(36, 53, 39, 0.5) !important; }
+
+/* Bottom navigation bar wrappers & borders in dark mode */
+.simulator-dark-mode.bg-\[\#F1F5F2\]\/95, .simulator-dark-mode .bg-\[\#F1F5F2\]\/95 { background-color: rgba(15, 23, 42, 0.95) !important; }
+.simulator-dark-mode.border-t.border-\[\#E1E8E3\]\/60, .simulator-dark-mode .border-t.border-\[\#E1E8E3\]\/60 { border-top-color: rgba(51, 65, 85, 0.6) !important; }
 
 .simulator-dark-mode.text-slate-800, .simulator-dark-mode .text-slate-800,
 .simulator-dark-mode.text-slate-700, .simulator-dark-mode .text-slate-700 { color: #f1f5f9 !important; }
@@ -74,10 +95,46 @@
 .simulator-dark-mode.bg-rose-50, .simulator-dark-mode .bg-rose-50 { background-color: #4c0519 !important; border-color: #881337 !important; color: #fda4af !important; }
 .simulator-dark-mode.text-red-500, .simulator-dark-mode .text-red-500 { color: #f43f5e !important; }
 .simulator-dark-mode.text-red-600, .simulator-dark-mode .text-red-600 { color: #fb7185 !important; }
-.simulator-dark-mode.bg-amber-50, .simulator-dark-mode .bg-amber-50 { background-color: #451a03 !important; }
+.simulator-dark-mode.bg-amber-50, .simulator-dark-mode .bg-amber-50 { background-color: #451a03 !important; border-color: #78350f !important; color: #fde68a !important; }
 .simulator-dark-mode.bg-blue-50, .simulator-dark-mode .bg-blue-50 { background-color: #1e3a8a !important; border-color: #1e40af !important;}
-.simulator-dark-mode.bg-emerald-50, .simulator-dark-mode .bg-emerald-50 { background-color: #064e3b !important; border-color: #065f46 !important;}
+.simulator-dark-mode.bg-emerald-50, .simulator-dark-mode .bg-emerald-50 { background-color: #064e3b !important; border-color: #065f46 !important; color: #a7f3d0 !important; }
 .simulator-dark-mode.bg-purple-50, .simulator-dark-mode .bg-purple-50 { background-color: #4c1d95 !important; border-color: #5b21b6 !important;}
+
+/* Precise tag color and icon color overrides */
+.simulator-dark-mode.text-emerald-800, .simulator-dark-mode .text-emerald-800 { color: #a7f3d0 !important; }
+.simulator-dark-mode.text-teal-800, .simulator-dark-mode .text-teal-800 { color: #99f6e4 !important; }
+.simulator-dark-mode.text-blue-800, .simulator-dark-mode .text-blue-800 { color: #93c5fd !important; }
+.simulator-dark-mode.text-purple-800, .simulator-dark-mode .text-purple-800 { color: #ddd6fe !important; }
+.simulator-dark-mode.text-rose-800, .simulator-dark-mode .text-rose-800 { color: #fda4af !important; }
+
+/* Inactive Star style rules */
+.simulator-dark-mode.text-slate-300, .simulator-dark-mode .text-slate-300,
+.simulator-dark-mode.text-slate-350, .simulator-dark-mode .text-slate-350 { color: #475569 !important; }
+
+/* Custom backgrounds for colorful card paths in somatic, CBT, and safety pathways */
+.simulator-dark-mode.bg-teal-50, .simulator-dark-mode .bg-teal-50 { background-color: #042f2e !important; border-color: #115e59 !important; color: #99f6e4 !important; }
+.simulator-dark-mode.bg-indigo-50, .simulator-dark-mode .bg-indigo-50 { background-color: #1e1b4b !important; border-color: #3730a3 !important; color: #c7d2fe !important; }
+.simulator-dark-mode.bg-sky-50, .simulator-dark-mode .bg-sky-50 { background-color: #0c4a6e !important; border-color: #0369a1 !important; color: #bae6fd !important; }
+.simulator-dark-mode.bg-amber-50\/50, .simulator-dark-mode .bg-amber-50\/50 { background-color: #451a03 !important; border-color: #78350f !important; color: #fde68a !important; }
+.simulator-dark-mode.bg-\[\#FAF8F5\], .simulator-dark-mode .bg-\[\#FAF8F5\] { background-color: #1e293b !important; border-color: #334155 !important; color: #cbd5e1 !important; }
+
+/* Hover, active state handlers for background and border classes */
+.simulator-dark-mode.border-teal-100, .simulator-dark-mode .border-teal-100 { border-color: #115e59 !important; }
+.simulator-dark-mode.border-indigo-100, .simulator-dark-mode .border-indigo-100 { border-color: #3730a3 !important; }
+.simulator-dark-mode.border-sky-100, .simulator-dark-mode .border-sky-100 { border-color: #0369a1 !important; }
+.simulator-dark-mode.border-rose-100, .simulator-dark-mode .border-rose-100 { border-color: #881337 !important; }
+.simulator-dark-mode.border-amber-100, .simulator-dark-mode .border-amber-100 { border-color: #78350f !important; }
+.simulator-dark-mode.border-emerald-100, .simulator-dark-mode .border-emerald-100 { border-color: #065f46 !important; }
+.simulator-dark-mode.border-\[\#F2ECE4\], .simulator-dark-mode .border-\[\#F2ECE4\] { border-color: #334155 !important; }
+.simulator-dark-mode.border-slate-150\/70, .simulator-dark-mode .border-slate-150\/70 { border-color: #334155 !important; }
+.simulator-dark-mode.border-\[\#CBD9CC\], .simulator-dark-mode .border-\[\#CBD9CC\] { border-color: #3a5c40 !important; }
+
+/* Override exact card icons */
+.simulator-dark-mode.text-emerald-700, .simulator-dark-mode .text-emerald-700 { color: #a7f3d0 !important; }
+.simulator-dark-mode.text-teal-700, .simulator-dark-mode .text-teal-700 { color: #99f6e4 !important; }
+.simulator-dark-mode.text-amber-700, .simulator-dark-mode .text-amber-700 { color: #fde68a !important; }
+.simulator-dark-mode.text-indigo-700, .simulator-dark-mode .text-indigo-700 { color: #c7d2fe !important; }
+.simulator-dark-mode.text-sky-700, .simulator-dark-mode .text-sky-700 { color: #bae6fd !important; }
 
 .simulator-dark-mode.from-white\/0, .simulator-dark-mode .from-white\/0 { --tw-gradient-from: rgba(15, 23, 42, 0) !important; --tw-gradient-from-position:  !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
 .simulator-dark-mode.via-white, .simulator-dark-mode .via-white { --tw-gradient-via: rgba(15, 23, 42, 1) !important; --tw-gradient-via-position:  !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-via), var(--tw-gradient-to) !important; }
@@ -86,3 +143,72 @@
 /* Invert shadows slightly for dark mode contrast */
 .simulator-dark-mode.shadow-sm, .simulator-dark-mode .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.5) !important; }
 .simulator-dark-mode.shadow-md, .simulator-dark-mode .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5) !important; }
+
+/* Gratitude Jar button in skills list - specific overrides */
+.simulator-dark-mode.bg-\[\#F2F8F5\], .simulator-dark-mode .bg-\[\#F2F8F5\] { background-color: #15251d !important; border-color: #274031 !important; color: #a7f3d0 !important; }
+.simulator-dark-mode.border-\[\#DCEBE2\], .simulator-dark-mode .border-\[\#DCEBE2\] { border-color: #274031 !important; }
+.simulator-dark-mode.hover\:bg-\[\#DCEBE2\]\/60:hover, .simulator-dark-mode .hover\:bg-\[\#DCEBE2\]\/60:hover { background-color: #1e3629 !important; }
+.simulator-dark-mode.text-\[\#608271\], .simulator-dark-mode .text-\[\#608271\] { color: #a7f3d0 !important; }
+
+/* Safety & Comfort Plan specific overrides for unreadable background elements */
+.simulator-dark-mode.bg-\[\#F1F5F2\]\/45, .simulator-dark-mode .bg-\[\#F1F5F2\]\/45 { background-color: rgba(30, 41, 59, 0.45) !important; border-color: rgba(51, 65, 85, 0.40) !important; }
+.simulator-dark-mode.bg-\[\#F1F5F2\]\/50, .simulator-dark-mode .bg-\[\#F1F5F2\]\/50 { background-color: rgba(30, 41, 59, 0.50) !important; border-color: rgba(51, 65, 85, 0.40) !important; }
+.simulator-dark-mode.hover\:bg-\[\#F1F5F2\]:hover, .simulator-dark-mode .hover\:bg-\[\#F1F5F2\]:hover { background-color: rgba(51, 65, 85, 0.6) !important; }
+
+/* Suggestions and list item chips */
+.simulator-dark-mode.bg-\[\#F8FAFC\]\/90, .simulator-dark-mode .bg-\[\#F8FAFC\]\/90 { background-color: rgba(15, 23, 42, 0.6) !important; border-color: rgba(51, 65, 85, 0.5) !important; color: #94a3b8 !important; }
+
+/* Differentiate layout screen background from internal cards and list chips */
+.simulator-dark-mode .flex-col.h-full.bg-\[\#F1F5F2\],
+.simulator-dark-mode .flex-col.h-full.bg-\[\#F5F8F6\],
+.simulator-dark-mode.bg-\[\#F1F5F2\],
+.simulator-dark-mode.bg-\[\#F5F8F6\],
+.simulator-dark-mode .h-9.bg-\[\#F1F5F2\] { 
+  background-color: #0c121e !important; 
+}
+
+/* Override inner container/chips so they contrast against the dark base layout */
+.simulator-dark-mode .bg-\[\#F1F5F2\]:not(.h-full) { 
+  background-color: #1e293b !important; 
+  border-color: #334155 !important; 
+  color: #cbd5e1 !important; 
+}
+
+.simulator-dark-mode.text-slate-450, .simulator-dark-mode .text-slate-450 { color: #94a3b8 !important; }
+.simulator-dark-mode.text-slate-350, .simulator-dark-mode .text-slate-350 { color: #64748b !important; }
+.simulator-dark-mode.text-slate-355, .simulator-dark-mode .text-slate-355 { color: #94a3b8 !important; }
+.simulator-dark-mode.hover\:bg-\[\#E2ECE4\]:hover, .simulator-dark-mode .hover\:bg-\[\#E2ECE4\]:hover { background-color: #334155 !important; }
+.simulator-dark-mode.hover\:text-\[\#4A6741\]:hover, .simulator-dark-mode .hover\:text-\[\#4A6741\]:hover { color: #a8c69f !important; }
+.simulator-dark-mode.hover\:border-\[\#CAD9CC\]:hover, .simulator-dark-mode .hover\:border-\[\#CAD9CC\]:hover { border-color: #3a5c40 !important; }
+
+/* Step-by-Step interactive circles navigation in edit mode */
+.simulator-dark-mode.bg-slate-100, .simulator-dark-mode .bg-slate-100 { background-color: #334155 !important; color: #94a3b8 !important; }
+.simulator-dark-mode.hover\:bg-slate-150:hover, .simulator-dark-mode .hover\:bg-slate-150:hover { background-color: #475569 !important; }
+.simulator-dark-mode.bg-slate-50, .simulator-dark-mode .bg-slate-50 { background-color: #0f172a !important; border-color: #334155 !important; color: #cbd5e1 !important; }
+.simulator-dark-mode.focus\:bg-white:focus, .simulator-dark-mode .focus\:bg-white:focus { background-color: #1e293b !important; color: #f1f5f9 !important; }
+.simulator-dark-mode .border-slate-150 { border-color: rgba(51, 65, 85, 0.8) !important; }
+.simulator-dark-mode .border-slate-100 { border-color: rgba(51, 65, 85, 0.4) !important; }
+
+/* Add-on support and reassuring page helpers */
+.simulator-dark-mode.bg-white\/70, .simulator-dark-mode .bg-white\/70 { background-color: rgba(30, 41, 59, 0.70) !important; border-color: rgba(51, 65, 85, 0.40) !important; }
+.simulator-dark-mode.border-\[\#E1E8E3\], .simulator-dark-mode .border-\[\#E1E8E3\] { border-color: rgba(51, 65, 85, 0.50) !important; }
+.simulator-dark-mode select option { background-color: #1e293b !important; color: #f1f5f9 !important; }
+
+/* Custom light helper styles across sub-features and lists */
+.simulator-dark-mode.bg-\[\#F9FBF9\], .simulator-dark-mode .bg-\[\#F9FBF9\] { background-color: #121815 !important; border-color: #1e2e21 !important; }
+.simulator-dark-mode.bg-\[\#FAF0E6\], .simulator-dark-mode .bg-\[\#FAF0E6\] { background-color: #2c1a0c !important; border-color: #5c3015 !important; color: #fed7aa !important; }
+.simulator-dark-mode.bg-\[\#F4F7F5\], .simulator-dark-mode .bg-\[\#F4F7F5\] { background-color: #15221b !important; border-color: #2a3d31 !important; color: #f1f5f9 !important; }
+
+/* Crisis / Support & Helpline Contacts button (and other safety cards) overrides in dark mode */
+.simulator-dark-mode.bg-\[\#f4effa\], .simulator-dark-mode .bg-\[\#f4effa\] { background-color: #231b30 !important; border-color: #403259 !important; color: #ddd6fe !important; }
+.simulator-dark-mode.border-\[\#e9defe\], .simulator-dark-mode .border-\[\#e9defe\] { border-color: #403259 !important; }
+.simulator-dark-mode.hover\:bg-\[\#ede4f8\]:hover, .simulator-dark-mode .hover\:bg-\[\#ede4f8\]:hover { background-color: #2e243e !important; }
+
+.simulator-dark-mode.border-\[\#d9e2ec\], .simulator-dark-mode .border-\[\#d9e2ec\] { border-color: #334155 !important; }
+.simulator-dark-mode.hover\:bg-\[\#e1e8f0\]\/60:hover, .simulator-dark-mode .hover\:bg-\[\#e1e8f0\]\/60:hover { background-color: rgba(30, 41, 59, 0.6) !important; }
+.simulator-dark-mode.hover\:bg-\[\#E1E8E3\]\/60:hover, .simulator-dark-mode .hover\:bg-\[\#E1E8E3\]\/60:hover { background-color: rgba(36, 53, 39, 0.6) !important; }
+
+
+
+
+
