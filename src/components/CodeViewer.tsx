@@ -165,6 +165,43 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({
 
           <hr className="border-slate-800" />
 
+          <div>
+            <h3 className="text-base font-bold text-white flex items-center space-x-2">
+              <span className="bg-emerald-600 text-white rounded p-1"><FileCode size={15} /></span>
+              <span>4. GitHub Actions Automated APK Builder</span>
+            </h3>
+            <p className="text-xs text-slate-400 mt-2 pl-7 mb-2">
+              Instead of compiling locally, you can automate your Android builds! Create a folder at the project root named <code className="bg-slate-950 px-1.5 py-0.5 rounded text-sky-400 font-mono">.github/workflows/</code> and save a file called <code className="bg-slate-950 px-1.5 py-0.5 rounded text-rose-400 font-mono">build-apk.yml</code> containing the configuration:
+            </p>
+            <pre className="bg-slate-950 p-3 rounded-2xl border border-slate-850 text-[10px] font-mono text-emerald-300 overflow-x-auto mx-7 max-h-48 select-all">
+{`name: Compile Safe Space Android APK
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+        cache: 'gradle'
+    - run: chmod +x gradlew
+    - run: ./gradlew assembleDebug
+    - name: Upload Test APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: safe-space-test-apk
+        path: app/build/outputs/apk/debug/app-debug.apk`}
+            </pre>
+            <p className="text-xs text-slate-400 mt-2 pl-7">
+              Push your code to modern GitHub. Click on the <strong>Actions</strong> tab to monitor the packaging pipeline, then download the finished <strong>safe-space-test-apk</strong> ZIP at the bottom!
+            </p>
+          </div>
+
+          <hr className="border-slate-800" />
+
           <div className="bg-emerald-950/20 rounded-2xl border border-emerald-800/40 p-4 flex items-start space-x-3">
             <AlertCircle className="text-emerald-400 shrink-0 mt-0.5" size={17} />
             <div className="text-xs">
