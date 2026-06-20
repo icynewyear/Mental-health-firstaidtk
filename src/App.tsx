@@ -355,14 +355,14 @@ export default function App() {
           <div className="flex items-center space-x-6 text-[10px] font-mono shrink-0 select-none">
             <button 
               onClick={() => setIsDarkMode(!isDarkMode)}
-              className={`flex items-center space-x-1.5 active:scale-95 transition px-3 py-1.5 rounded-2xl border cursor-pointer ${
+              className={`flex items-center justify-center w-8 h-8 active:scale-95 transition rounded-2xl border cursor-pointer ${
                 isDarkMode 
                   ? 'text-slate-100 bg-[#253229]/80 hover:bg-[#253229] border-emerald-950/60 shadow-md' 
                   : 'text-slate-600 bg-[#E1E8E3]/60 hover:bg-[#E1E8E3] border-white/40'
               }`}
               title="Toggle Dark Mode"
             >
-              <span>{isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}</span>
+              <span>{isDarkMode ? '☀️' : '🌙'}</span>
             </button>
             <button 
               onClick={() => setShowDebugMenu(!showDebugMenu)}

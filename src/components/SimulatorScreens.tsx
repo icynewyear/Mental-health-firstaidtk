@@ -514,11 +514,10 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
           <button
             type="button"
             onClick={() => setIsDarkMode(!isDarkMode)}
-            className="flex items-center space-x-1.5 text-[9.5px] font-black text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 border border-[#CBD9CC]/35 rounded-xl px-2.5 py-1.5 transition-all shadow-3xs cursor-pointer select-none active:scale-95"
+            className="flex items-center justify-center text-[10px] w-7 h-7 bg-white hover:bg-slate-50 border border-[#CBD9CC]/35 rounded-xl transition-all shadow-3xs cursor-pointer select-none active:scale-95"
             title="Toggle theme inside phone"
           >
             <span>{isDarkMode ? '☀️' : '🌙'}</span>
-            <span className="font-extrabold text-[8px] uppercase tracking-wider text-slate-500">{isDarkMode ? 'Light' : 'Dark'}</span>
           </button>
         )}
       </div>
