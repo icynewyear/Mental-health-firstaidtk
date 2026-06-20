@@ -765,25 +765,6 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
         )}
       </div>
 
-      {/* Safety & Crisis Hub Gateway */}
-      <button
-        onClick={() => onNavigate('safetyHub')}
-        className="w-full bg-[#f0f4f8] hover:bg-[#e1e8f0] border border-[#d1dee8] transition rounded-[22px] p-4 text-left flex items-center justify-between shadow-xs cursor-pointer select-none active:scale-99 mb-4"
-      >
-        <div className="flex items-center space-x-3">
-          <div className="bg-[#3b5b7b] text-white p-2.5 rounded-xl flex items-center justify-center text-xs font-bold leading-none shrink-0 shadow-sm border border-[#2a455f]">
-            🌬️
-          </div>
-          <div className="text-left">
-            <h3 className="text-xs font-bold text-[#3b5b7b]">Support Hub</h3>
-            <p className="text-[9px] text-[#4a7298] mt-0.5 leading-snug">Supportive tools for high-distress moments, step-by-step safety guides, and quiet reassurance.</p>
-          </div>
-        </div>
-        <div className="bg-[#d1dee8] p-1.5 rounded-full flex items-center justify-center text-[#3b5b7b] shrink-0 border border-[#b8cce0]">
-          <ArrowRight size={11} className="stroke-[2.5]" />
-        </div>
-      </button>
-
       {/* Favorite Tools Section */}
       <div className="bg-white/80 backdrop-blur-md rounded-3xl p-4 shadow-sm border border-white/60 mb-4 text-left">
         <div className="flex justify-between items-center mb-2.5">
@@ -903,6 +884,25 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
           </div>
         )}
       </div>
+
+      {/* Safety & Crisis Hub Gateway */}
+      <button
+        onClick={() => onNavigate('safetyHub')}
+        className="w-full bg-[#f0f4f8] hover:bg-[#e1e8f0] border border-[#d1dee8] transition rounded-[22px] p-4 text-left flex items-center justify-between shadow-xs cursor-pointer select-none active:scale-99 mb-4"
+      >
+        <div className="flex items-center space-x-3">
+          <div className="bg-[#3b5b7b] text-white p-2.5 rounded-xl flex items-center justify-center text-xs font-bold leading-none shrink-0 shadow-sm border border-[#2a455f]">
+            🌬️
+          </div>
+          <div className="text-left">
+            <h3 className="text-xs font-bold text-[#3b5b7b]">Support Hub</h3>
+            <p className="text-[9px] text-[#4a7298] mt-0.5 leading-snug">Supportive tools for high-distress moments, step-by-step safety guides, and quiet reassurance.</p>
+          </div>
+        </div>
+        <div className="bg-[#d1dee8] p-1.5 rounded-full flex items-center justify-center text-[#3b5b7b] shrink-0 border border-[#b8cce0]">
+          <ArrowRight size={11} className="stroke-[2.5]" />
+        </div>
+      </button>
 
       {/* Manage Favorites Slideup / Dial modal overlay */}
       {showFavoritesManage && (
