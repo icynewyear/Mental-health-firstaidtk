@@ -2295,6 +2295,31 @@ export const SimulatorEmergency: React.FC<EmergencyProps> = ({ onNavigate, onBac
               SMS
             </button>
           </div>
+
+          {/* The Trevor Project */}
+          <div className="flex justify-between items-center bg-indigo-50/30 p-2.5 rounded-2xl border border-indigo-100/40">
+            <div className="max-w-[65%]">
+              <h4 className="text-xs font-bold text-indigo-700">The Trevor Project</h4>
+              <p className="text-[10px] text-slate-500 leading-tight mt-0.5">Crisis services & support for LGBTQ+ young people.</p>
+            </div>
+            <div className="flex space-x-1 shrink-0">
+              <button
+                onClick={() => handleTriggerDial('18664887386')}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[10px] px-2.5 py-1.5 rounded-xl transition shadow-xs active:scale-95 flex items-center space-x-0.5"
+                title="Call The Trevor Project"
+              >
+                <Phone size={10} />
+                <span>Call</span>
+              </button>
+              <button
+                onClick={() => handleTriggerDial('678678')}
+                className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold text-[10px] px-2.5 py-1.5 rounded-xl transition shadow-xs active:scale-95"
+                title="Text START to 678-678"
+              >
+                SMS
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Custom Personal Contact Card */}

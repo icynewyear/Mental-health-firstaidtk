@@ -846,7 +846,8 @@ const STEP_EXAMPLES: Record<string, string[]> = {
     'A close, non-judgmental friend or trusted buddy',
     'A supportive sibling or family member',
     'Crisis Support Helpline (Call or Text 988)',
-    'Crisis Text Line (Text HOME to 741741)'
+    'Crisis Text Line (Text HOME to 741741)',
+    'The Trevor Project LGBTQ+ Support (Call 1-866-488-7386 or Text START to 678-678)'
   ],
   safeEnvironments: [
     'Under a soft, heavy blanket with lights turned low',

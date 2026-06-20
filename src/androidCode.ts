@@ -1224,6 +1224,41 @@ fun EmergencyContactsScreen() {
                         Text("Text", fontSize = 12.sp)
                     }
                 }
+
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                // Hotline 3: The Trevor Project
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("The Trevor Project", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                        Text("Crisis support/suicide prevention for LGBTQ+ youth.", fontSize = 12.sp, color = Color.Gray)
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Button(
+                            onClick = { dialNumber("18664887386") },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F51B5)),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Call", fontSize = 12.sp)
+                        }
+                        Button(
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_VIEW).apply {
+                                    data = Uri.parse("sms:678678?body=START")
+                                }
+                                context.startActivity(intent)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF757575)),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("SMS", fontSize = 12.sp)
+                        }
+                    }
+                }
             }
         }
 

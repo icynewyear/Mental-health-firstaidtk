@@ -832,7 +832,7 @@ export const SimulatorPanicSOS: React.FC<{ onBack: () => void }> = ({ onBack }) 
 
   const SOS_STEPS = [
     { text: 'Acknowledge this wave of feeling. You are in a safe place. This is just a temporary surge of energy. Let it wash past you gently.', tone: 220, duration: 6, label: 'GENTLE WAVE' },
-    { text: 'Look around you. Find 3 cozy or comforting blue/green items in your local room right now. Feel your breath slow down.', tone: 277.18, duration: 15, label: 'SENSORY REFocus' },
+    { text: 'Look around you. Find 3 cozy or comforting items in your immediate surroundings right now. Feel your breath slow down.', tone: 277.18, duration: 15, label: 'SENSORY REFocus' },
     { text: 'Breathe in slowly and comfortably for 4 seconds... hold for 4 seconds... breathe out softly for 5 seconds.', tone: 329.63, duration: 13, label: 'SLOW CHEST BREATH' },
     { text: 'Place your feet flat and solid on the floor. Feel the ground beneath you supporting you. You are held safe.', tone: 220, duration: 15, label: 'FEEL THE GROUND' },
     { text: 'You did wonderfully. You are safe, secure, and grounded. If you need further grounding, feel free to restart this SOS guide or try one of our calming breathing exercises.', tone: 440, duration: 8, label: 'GENTLE RECOVERY' }
