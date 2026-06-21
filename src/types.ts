@@ -39,6 +39,7 @@ export type ActiveScreen =
   | 'emotionWheel'
   | 'vagusHacks'
   | 'panicSOS'
+  | 'resources'
   | 'somaticHub'
   | 'cbtHub'
   | 'safetyHub';

@@ -2464,7 +2464,7 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
   const [selectedMonthIdx, setSelectedMonthIdx] = useState<number>(2); // Default to June
   const [showExport, setShowExport] = useState(false);
   const [exportRange, setExportRange] = useState<'week' | 'month'>('week');
-  const [exportFormat, setExportFormat] = useState<'csv' | 'text'>('csv');
+  const [exportFormat, setExportFormat] = useState<'csv' | 'text'>('text');
   const [copied, setCopied] = useState(false);
 
   // Backup / Import states
@@ -3117,9 +3117,9 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
         <div className="flex items-center space-x-2.5 mt-3 mb-3 shrink-0 select-none">
           <button
             onClick={() => setShowExport(false)}
-            className="p-1 px-1.5 rounded-xl hover:bg-slate-200 active:scale-90 text-slate-500 transition cursor-pointer border-0 mr-1"
+            className="p-1 px-1.5 rounded-xl hover:bg-[#E1E8E3] active:scale-90 text-[#4A6741] transition cursor-pointer border-0 mr-1 flex items-center justify-center font-bold"
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={16} className="stroke-[2.5]" />
           </button>
           <div className="text-left select-none flex-1">
             <span className="text-[9px] font-extrabold text-[#4A6741] uppercase tracking-widest bg-[#E1E8E3] px-2 py-0.5 rounded">EXPORT & DATA</span>
@@ -3354,21 +3354,21 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
               <div className="grid grid-cols-2 gap-2 text-[10px] font-bold">
                 <button
                   type="button"
-                  onClick={() => setExportFormat('csv')}
-                  className={`py-2 rounded-xl transition cursor-pointer border text-center ${
-                    exportFormat === 'csv' ? 'bg-[#4A6741] text-white border-transparent' : 'bg-white text-slate-600 hover:text-slate-800 border-slate-200'
-                  }`}
-                >
-                  📄 CSV Spreadsheet
-                </button>
-                <button
-                  type="button"
                   onClick={() => setExportFormat('text')}
                   className={`py-2 rounded-xl transition cursor-pointer border text-center ${
                     exportFormat === 'text' ? 'bg-[#4A6741] text-white border-transparent' : 'bg-white text-slate-600 hover:text-slate-800 border-slate-200'
                   }`}
                 >
                   📝 Journal Text
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExportFormat('csv')}
+                  className={`py-2 rounded-xl transition cursor-pointer border text-center ${
+                    exportFormat === 'csv' ? 'bg-[#4A6741] text-white border-transparent' : 'bg-white text-slate-600 hover:text-slate-800 border-slate-200'
+                  }`}
+                >
+                  📄 CSV Spreadsheet
                 </button>
               </div>
             </div>
@@ -3675,9 +3675,9 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
           <div className="flex items-center space-x-2.5">
             <button
               onClick={() => onNavigate('dashboard')}
-              className="p-1 px-1.5 rounded-xl hover:bg-slate-200 active:scale-90 text-slate-500 transition cursor-pointer border-0 mr-1"
+              className="p-1 px-1.5 rounded-xl hover:bg-[#E1E8E3] active:scale-90 text-[#4A6741] transition cursor-pointer border-0 mr-1 flex items-center justify-center font-bold"
             >
-              <ArrowLeft size={16} />
+              <ArrowLeft size={16} className="stroke-[2.5]" />
             </button>
             <div className="text-left select-none">
               <span className="text-[9px] font-extrabold text-[#4A6741] uppercase tracking-widest bg-[#E1E8E3] px-2 py-0.5 rounded">HISTORY</span>
@@ -3752,7 +3752,7 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
                             Feel: {extractEmoji(item.moodLabel, item.moodValue)}
                           </span>
                         ) : (
-                          <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full border bg-slate-50 border-slate-100 text-slate-400">
+                          <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full border bg-slate-50 border-slate-100 text-slate-600">
                             No Check-In
                           </span>
                         )}

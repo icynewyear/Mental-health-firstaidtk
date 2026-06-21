@@ -207,6 +207,24 @@
 .simulator-dark-mode.border-\[\#d9e2ec\], .simulator-dark-mode .border-\[\#d9e2ec\] { border-color: #334155 !important; }
 .simulator-dark-mode.hover\:bg-\[\#e1e8f0\]\/60:hover, .simulator-dark-mode .hover\:bg-\[\#e1e8f0\]\/60:hover { background-color: rgba(30, 41, 59, 0.6) !important; }
 .simulator-dark-mode.hover\:bg-\[\#E1E8E3\]\/60:hover, .simulator-dark-mode .hover\:bg-\[\#E1E8E3\]\/60:hover { background-color: rgba(36, 53, 39, 0.6) !important; }
+.simulator-dark-mode.hover\:bg-\[\#E1E8E3\]:hover, .simulator-dark-mode .hover\:bg-\[\#E1E8E3\]:hover { background-color: #243527 !important; }
+
+
+/* Custom highly-readable Hub tags (designed for perfect contrast in both themes) */
+.hub-tool-tag {
+  color: #0f172a !important;
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+.simulator-dark-mode .hub-tool-tag,
+.simulator-dark-mode.hub-tool-tag {
+  color: #f8fafc !important;
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+}
+
+
 
 
 

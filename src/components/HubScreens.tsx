@@ -96,7 +96,7 @@ export const SimulatorSomaticHub: React.FC<HubProps> = ({ onNavigate, onBack }) 
           <button 
             type="button"
             onClick={onBack}
-            className="p-1 px-1.5 rounded-xl hover:bg-slate-200 text-slate-500 transition active:scale-95 cursor-pointer border-0 bg-transparent flex items-center justify-center shrink-0"
+            className="p-1 px-1.5 rounded-xl hover:bg-[#E1E8E3] text-[#4A6741] transition active:scale-95 cursor-pointer border-0 bg-transparent flex items-center justify-center shrink-0"
           >
             <ArrowLeft size={16} className="stroke-[2.5]" />
           </button>
@@ -127,7 +127,7 @@ export const SimulatorSomaticHub: React.FC<HubProps> = ({ onNavigate, onBack }) 
             <div className="flex-1 min-w-0 pr-6">
               <div className="flex items-start justify-between">
                 <h3 className="text-xs font-bold text-slate-800 leading-snug flex-1 pr-1.5">{tool.name}</h3>
-                <span className="text-[8px] font-black uppercase text-slate-400 tracking-wider bg-white px-1.5 py-0.5 rounded-md border border-slate-100 shrink-0">
+                <span className="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md border shrink-0 hub-tool-tag">
                   {tool.tag}
                 </span>
               </div>
@@ -220,7 +220,7 @@ export const SimulatorCbtHub: React.FC<HubProps> = ({ onNavigate, onBack }) => {
           <button 
             type="button"
             onClick={onBack}
-            className="p-1 px-1.5 rounded-xl hover:bg-slate-200 text-slate-500 transition active:scale-95 cursor-pointer border-0 bg-transparent flex items-center justify-center shrink-0"
+            className="p-1 px-1.5 rounded-xl hover:bg-[#E1E8E3] text-[#4A6741] transition active:scale-95 cursor-pointer border-0 bg-transparent flex items-center justify-center shrink-0"
           >
             <ArrowLeft size={16} className="stroke-[2.5]" />
           </button>
@@ -251,7 +251,7 @@ export const SimulatorCbtHub: React.FC<HubProps> = ({ onNavigate, onBack }) => {
             <div className="flex-1 min-w-0 pr-6">
               <div className="flex items-start justify-between">
                 <h3 className="text-xs font-bold text-slate-800 leading-snug flex-1 pr-1.5">{tool.name}</h3>
-                <span className="text-[8px] font-black uppercase text-slate-400 tracking-wider bg-white px-1.5 py-0.5 rounded-md border border-slate-100 shrink-0">
+                <span className="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md border shrink-0 hub-tool-tag">
                   {tool.tag}
                 </span>
               </div>
@@ -315,6 +315,16 @@ export const SimulatorSafetyHub: React.FC<HubProps> = ({ onNavigate, onBack }) =
       textColor: 'text-slate-800',
       descColor: 'text-slate-500',
       tag: '📞 Get Support',
+    },
+    {
+      id: 'resources' as ActiveScreen,
+      name: 'Mental Health Resource Links',
+      desc: 'Direct web access to trusted global mental health organizations, educational guides, and screening tools.',
+      icon: <BookOpen size={16} className="text-indigo-650" />,
+      bg: 'bg-indigo-50 border-indigo-100 hover:bg-indigo-100/50 text-slate-800',
+      textColor: 'text-slate-800',
+      descColor: 'text-slate-500',
+      tag: '🌐 Web Links',
     }
   ];
 
@@ -326,7 +336,7 @@ export const SimulatorSafetyHub: React.FC<HubProps> = ({ onNavigate, onBack }) =
           <button 
             type="button"
             onClick={onBack}
-            className="p-1 px-1.5 rounded-xl hover:bg-slate-200/50 text-slate-500 transition active:scale-95 cursor-pointer border-0 bg-transparent flex items-center justify-center shrink-0"
+            className="p-1 px-1.5 rounded-xl hover:bg-[#E1E8E3] text-[#4A6741] transition active:scale-95 cursor-pointer border-0 bg-transparent flex items-center justify-center shrink-0"
           >
             <ArrowLeft size={16} className="stroke-[2.5]" />
           </button>
@@ -357,7 +367,7 @@ export const SimulatorSafetyHub: React.FC<HubProps> = ({ onNavigate, onBack }) =
             <div className="flex-1 min-w-0 pr-6 text-left">
               <div className="flex items-start justify-between">
                 <h3 className={`text-xs font-black leading-snug flex-1 pr-1.5 ${tool.textColor}`}>{tool.name}</h3>
-                <span className="text-[8px] font-black uppercase text-slate-500 tracking-wider bg-white/60 px-1.5 py-0.5 rounded-md border border-slate-200 shrink-0">
+                <span className="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md border shrink-0 hub-tool-tag">
                   {tool.tag}
                 </span>
               </div>

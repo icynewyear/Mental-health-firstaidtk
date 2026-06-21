@@ -28,6 +28,7 @@ import {
   SimulatorCbtHub,
   SimulatorSafetyHub
 } from './HubScreens';
+import { SimulatorResources } from './ResourcesScreen';
 
 interface AndroidMockupProps {
   activeScreen: ActiveScreen;
@@ -95,6 +96,7 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
       case 'gratitude': return 'Gratitude Jar';
       case 'somatic': return 'Muscle Release';
       case 'safetyPlan': return 'My Safety Plan';
+      case 'resources': return 'Resource Web Links';
       default: return 'Safe Space';
     }
   };
@@ -219,6 +221,9 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
             )}
             {activeScreen === 'panicSOS' && (
               <SimulatorPanicSOS onBack={() => setActiveScreen('safetyHub')} />
+            )}
+            {activeScreen === 'resources' && (
+              <SimulatorResources onBack={() => setActiveScreen('safetyHub')} />
             )}
           </div>
 

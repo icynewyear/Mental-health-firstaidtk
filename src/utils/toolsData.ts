@@ -148,6 +148,17 @@ export const ALL_TOOLS: ToolDef[] = [
     textColor: 'text-slate-800',
     descColor: 'text-slate-500',
     iconColor: 'text-rose-750'
+  },
+  {
+    id: 'resources',
+    name: 'Mental Health Resource Links',
+    desc: 'Direct web access to trusted global mental health organizations, educational guides, and screening tools.',
+    tag: '🌐 Web Resources',
+    category: 'Safety',
+    bg: 'bg-indigo-50 border-indigo-100 hover:bg-indigo-100/50 text-slate-800',
+    textColor: 'text-slate-800',
+    descColor: 'text-slate-500',
+    iconColor: 'text-indigo-650'
   }
 ];
 
