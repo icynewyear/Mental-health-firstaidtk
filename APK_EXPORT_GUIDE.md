@@ -73,14 +73,35 @@ Add the high-quality interactive features you built to your new application pack
 
 ---
 
-## 🚀 Step 4: Automate Builds with GitHub Actions
+## 🚀 Step 4: Build Options (Local Offline or Free Auto-Builds)
 
-Instead of compilation using a local setup or slow machines, you can configure **GitHub Actions** to automatically build a physical `.apk` file for you every time you commit code!
+You don't need GitHub Premium or any paid account to build your app! You can compile your APK in two different ways: **Option A (100% Local & Offline)** or **Option B (Free GitHub Actions automated build)**.
 
-1.  In the root folder of your project, create a directory layout for GitHub metadata:
-    *   `.github/workflows/`
-2.  Inside `.github/workflows/`, create a blank file named **`build-apk.yml`**.
-3.  Paste the following continuous integration workflow into **`build-apk.yml`**:
+### 🔌 Option A: Compile Automatically on Your Local Computer (Recommended)
+You can build the APK right on your machine instantly, completely offline.
+
+1. **Inside Android Studio:**
+   * Go to the top menu bar and select **Build > Build Bundle(s) / APK(s) > Build APK(s)**.
+   * Wait a few seconds for the build task to complete.
+   * A small popup notification will appear at the bottom right. Click **locate** to instantly open your computer's file explorer showing your newly compiled **`app-debug.apk`**!
+
+2. **Via Local Terminal (CLI):**
+   * Open the local terminal inside Android Studio or your command prompt.
+   * Run the following command:
+     * **Mac/Linux:** `./gradlew assembleDebug`
+     * **Windows:** `gradlew.bat assembleDebug`
+   * Once it prints `BUILD SUCCESSFUL`, you can find your compiled test APK file in your local directory at:
+     `app/build/outputs/apk/debug/app-debug.apk`
+
+---
+
+### ☁️ Option B: Free Automation using GitHub Actions (No Paid Account Needed)
+*Note: GitHub Actions is completely **free** (with 2,000+ build minutes every month) for all standard free accounts. No GitHub Pro/Premium subscription is required!*
+
+1. In the root folder of your local project, create the following path:
+   `.github/workflows/`
+2. Inside `.github/workflows/`, create a new text file named **`build-apk.yml`**.
+3. Paste the following automated script into **`build-apk.yml`**:
 
 ```yaml
 name: Compile & Package Safe Space Android APK
@@ -120,28 +141,30 @@ jobs:
         retention-days: 7
 ```
 
-4.  Initialize git, commit your files, and push them to your GitHub repository:
-    ```bash
-    git init
-    git add .
-    git commit -m "feat: Initial commit with full Jetpack Compose modules & CI workflow"
-    git remote add origin <your-github-repo-url>
-    git branch -M main
-    git push -u origin main
-    ```
+4. Commit your files and push them to your repository on GitHub:
+   ```bash
+   git init
+   git add .
+   git commit -m "feat: Initial commit with Kotlin modules & workflow"
+   git remote add origin <your-github-repo-url>
+   git branch -M main
+   git push -u origin main
+   ```
 
 ---
 
 ## 📥 Step 5: Download and Install Your Test APK
 
-Once pushed, GitHub starts building the application immediately:
+### If you used Option A (Local Build):
+1. Simply copy the generated file from `app/build/outputs/apk/debug/app-debug.apk` to your phone via USB cable, email, or Google Drive.
+2. Tap the file in your phone's File Manager app to install it!
 
-1.  Open your repository on **GitHub** in your web browser.
-2.  Click on the **Actions** tab at the top.
-3.  Select the latest run of the **"Compile & Package Safe Space Android APK"** workflow (indicated by a progress circle).
-4.  Once the job succeeds (marks green), scroll down to the bottom of the page to find the **Artifacts** section.
-5.  Click on **`safe-space-test-apk`** to download a ZIP archive containing your freshly compiled **`app-debug.apk`**.
-6.  Extract the ZIP and transfer the `app-debug.apk` onto your Android testing device via Google Drive, Email, or USB debugging.
-7.  Tap the APK on your device to install it. *(If prompted, allow installation from "Unknown Sources" or your download app)*.
+### If you used Option B (GitHub Workflow):
+1. Open your repository on **GitHub** in your web browser.
+2. Click on the **Actions** tab at the top.
+3. Select the latest run of the **"Compile & Package Safe Space Android APK"** workflow.
+4. Scroll down to the bottom of the page to find the **Artifacts** section.
+5. Click on **`safe-space-test-apk`** to download a ZIP archive containing your built **`app-debug.apk`**.
+6. Extract the ZIP and install the APK on your device! *(Ensure you have "Install Unknown Apps" enabled in your browser/file explorer settings).*
 
 *You now have a fully responsive, native Material 3 self-care app running on your physical phone!*

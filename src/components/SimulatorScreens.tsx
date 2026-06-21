@@ -185,6 +185,10 @@ interface DashboardProps {
   moodHistory: MoodLogEntry[];
   isDarkMode?: boolean;
   setIsDarkMode?: (val: boolean) => void;
+  unlockRequired?: boolean;
+  setUnlockRequired?: (val: boolean) => void;
+  unlockPin?: string;
+  setUnlockPin?: (val: string) => void;
 }
 
 export const SimulatorDashboard: React.FC<DashboardProps> = ({
@@ -196,6 +200,10 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
   moodHistory,
   isDarkMode = false,
   setIsDarkMode,
+  unlockRequired = false,
+  setUnlockRequired,
+  unlockPin = '1234',
+  setUnlockPin,
 }) => {
   const PREDEFINED_EMOJI_SETS = [
     {
@@ -249,6 +257,26 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
 
   const [showKeyboardInput, setShowKeyboardInput] = useState<boolean>(false);
   const [phoneKeyboardInput, setPhoneKeyboardInput] = useState<string>('');
+
+  const [customPinInput, setCustomPinInput] = useState<string>('');
+  const [confirmPinInput, setConfirmPinInput] = useState<string>('');
+  const [currentPinInput, setCurrentPinInput] = useState<string>('');
+  const [currentPinVerified, setCurrentPinVerified] = useState<boolean>(false);
+  const [currentPinError, setCurrentPinError] = useState<boolean>(false);
+  const [confirmPinError, setConfirmPinError] = useState<boolean>(false);
+  const [toggleOffBlockedMessage, setToggleOffBlockedMessage] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!showSelector) {
+      setCurrentPinInput('');
+      setCustomPinInput('');
+      setConfirmPinInput('');
+      setCurrentPinVerified(false);
+      setCurrentPinError(false);
+      setConfirmPinError(false);
+      setToggleOffBlockedMessage(false);
+    }
+  }, [showSelector]);
 
   const updateKeyboardCustomEmoji = (emoji: string | null) => {
     setKeyboardCustomEmoji(emoji);
@@ -499,6 +527,189 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
                 </div>
               </div>
             )}
+
+            {/* 🔒 App Security & Privacy Toggle */}
+            <hr className="border-slate-100/70" />
+            <div className="space-y-2 py-1 bg-slate-50/50 p-3 rounded-2xl border border-slate-100">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col text-left max-w-[70%]">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider leading-none mb-1">App Lock Protection</span>
+                  <span className="text-[10px] font-bold text-slate-700 leading-tight">Require 4-Digit App PIN</span>
+                  <span className="text-[8px] text-slate-400 mt-1 leading-normal">Require entering a 4-digit PIN code to view/edit custom user logs & care history.</span>
+                </div>
+                <div className="flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (unlockRequired) {
+                        // User wants to turn it OFF
+                        if (currentPinVerified) {
+                          if (setUnlockRequired) {
+                            setUnlockRequired(false);
+                            localStorage.setItem('safespace_device_unlock_required', 'false');
+                            setCurrentPinVerified(false);
+                            setToggleOffBlockedMessage(false);
+                          }
+                        } else {
+                          // Block toggle off, require verification first
+                          setToggleOffBlockedMessage(true);
+                          setCurrentPinError(true);
+                        }
+                      } else {
+                        // User wants to turn it ON (doesn't require previous PIN but we configure it)
+                        if (setUnlockRequired) {
+                          setUnlockRequired(true);
+                          localStorage.setItem('safespace_device_unlock_required', 'true');
+                          setCurrentPinVerified(false);
+                          setToggleOffBlockedMessage(false);
+                        }
+                      }
+                    }}
+                    className={`w-9 h-5 rounded-full p-0.5 transition-all duration-200 cursor-pointer border-0 flex ${
+                      unlockRequired ? 'bg-[#4A6741] justify-end' : 'bg-slate-300 justify-start'
+                    }`}
+                  >
+                    <span className="w-4 h-4 rounded-full bg-white shadow-xs" />
+                  </button>
+                </div>
+              </div>
+
+              {toggleOffBlockedMessage && (
+                <div className="text-[8.5px] text-red-500 font-bold leading-normal p-2 rounded-lg bg-red-50 border border-red-100/50">
+                  ⚠️ Please enter and verify your current 4-digit PIN below to disable App Lock Protection.
+                </div>
+              )}
+
+              {unlockRequired && (
+                <div className="pt-2 border-t border-slate-200/40 text-left space-y-2">
+                  {!currentPinVerified ? (
+                    <div className="flex flex-col space-y-1">
+                      <label className="text-[9px] font-black text-slate-500 uppercase">Enter Current PIN to Unlock Settings</label>
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="password"
+                          maxLength={4}
+                          value={currentPinInput}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                            setCurrentPinInput(val);
+                            if (val.length === 4) {
+                              if (val === unlockPin) {
+                                setCurrentPinVerified(true);
+                                setCurrentPinError(false);
+                                setToggleOffBlockedMessage(false);
+                                setCurrentPinInput('');
+                              } else {
+                                setCurrentPinError(true);
+                              }
+                            } else {
+                              setCurrentPinError(false);
+                            }
+                          }}
+                          className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg border border-slate-250 bg-white text-slate-800 placeholder-slate-400 w-24 text-center tracking-widest focus:outline-none focus:border-[#4A6741]"
+                          placeholder="••••"
+                        />
+                        <span className="text-[8px] text-slate-400 leading-snug">
+                          Verify current 4-Digit PIN to make any changes.
+                        </span>
+                      </div>
+                      {currentPinError && (
+                        <span className="text-[7.5px] text-red-500 font-bold block">
+                          ❌ Incorrect Current PIN. Please try again.
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex flex-col space-y-1">
+                        <label className="text-[9px] font-black text-slate-500 uppercase">1. Enter Your New Custom PIN</label>
+                        <div className="flex gap-2 items-center">
+                          <input
+                            type="password"
+                            maxLength={4}
+                            value={customPinInput}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                              setCustomPinInput(val);
+                              setConfirmPinInput('');
+                              setConfirmPinError(false);
+                            }}
+                            className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg border border-[#CBD9CC] bg-white text-slate-800 placeholder-slate-400 w-24 text-center tracking-widest focus:outline-none focus:border-[#4A6741]"
+                            placeholder="••••"
+                          />
+                          <span className="text-[8px] text-slate-400 leading-snug">
+                            Enter a brand new secret 4-digit code.
+                          </span>
+                        </div>
+                        {customPinInput.length > 0 && customPinInput.length < 4 && (
+                          <span className="text-[7.5px] text-amber-600 font-bold block">
+                            • Enter exactly 4 digits
+                          </span>
+                        )}
+                      </div>
+
+                      {customPinInput.length === 4 && (
+                        <div className="flex flex-col space-y-1 pt-1.5 border-t border-slate-100/50">
+                          <label className="text-[9px] font-black text-slate-500 uppercase">2. Confirm / Repeat New PIN</label>
+                          <div className="flex gap-2 items-center">
+                            <input
+                              type="password"
+                              maxLength={4}
+                              value={confirmPinInput}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                setConfirmPinInput(val);
+                                if (val.length === 4) {
+                                  if (val === customPinInput) {
+                                    setConfirmPinError(false);
+                                    if (setUnlockPin) {
+                                      setUnlockPin(val);
+                                      localStorage.setItem('safespace_device_unlock_pin', val);
+                                    }
+                                  } else {
+                                    setConfirmPinError(true);
+                                  }
+                                } else {
+                                  setConfirmPinError(false);
+                                }
+                              }}
+                              className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg border border-[#CBD9CC] bg-white text-slate-800 placeholder-slate-400 w-24 text-center tracking-widest focus:outline-none focus:border-[#4A6741]"
+                              placeholder="••••"
+                            />
+                            <span className="text-[8px] text-slate-400 leading-snug">
+                              Retype the 4 digits to confirm accuracy.
+                            </span>
+                          </div>
+                          {confirmPinError && (
+                            <span className="text-[7.5px] text-red-500 font-bold block">
+                              ❌ PINs do not match! Please verify your digits.
+                            </span>
+                          )}
+                          {confirmPinInput.length === 4 && confirmPinInput === customPinInput && (
+                            <div className="flex items-center justify-between pt-1">
+                              <span className="text-[7.5px] text-emerald-600 font-bold block">
+                                ✓ New PIN Verified & Saved!
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCurrentPinVerified(false);
+                                  setCustomPinInput('');
+                                  setConfirmPinInput('');
+                                }}
+                                className="text-[7.5px] font-extrabold text-[#4A6741] uppercase tracking-wider bg-[#E1E8E3] px-2 py-0.5 rounded cursor-pointer border-0"
+                              >
+                                Lock Changes
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

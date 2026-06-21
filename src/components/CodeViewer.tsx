@@ -168,15 +168,33 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({
           <div>
             <h3 className="text-base font-bold text-white flex items-center space-x-2">
               <span className="bg-emerald-600 text-white rounded p-1"><FileCode size={15} /></span>
-              <span>4. GitHub Actions Automated APK Builder</span>
+              <span>4. Compiling Your Application (Local Offline or Free Actions)</span>
             </h3>
-            <p className="text-xs text-slate-400 mt-2 pl-7 mb-2">
-              Instead of compiling locally, you can automate your Android builds! Create a folder at the project root named <code className="bg-slate-950 px-1.5 py-0.5 rounded text-sky-400 font-mono">.github/workflows/</code> and save a file called <code className="bg-slate-950 px-1.5 py-0.5 rounded text-rose-400 font-mono">build-apk.yml</code> containing the configuration:
-            </p>
-            <pre className="bg-slate-950 p-3 rounded-2xl border border-slate-850 text-[10px] font-mono text-emerald-300 overflow-x-auto mx-7 max-h-48 select-all">
+            
+            <div className="text-xs text-slate-300 mt-3 pl-7 space-y-3">
+              <p>
+                You do <strong>not</strong> need GitHub Premium or any paid subscription! You can compile your APK using either of these quick directions:
+              </p>
+              
+              <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2">
+                <span className="font-bold text-emerald-400 text-[11px] block">🔌 Option A: Fast Local & Offline Compilation (Recommended)</span>
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  Inside <strong>Android Studio</strong> on your computer, click <strong>Build &gt; Build Bundle(s) / APK(s) &gt; Build APK(s)</strong>. 
+                  Alternatively, type <code className="bg-slate-900 text-slate-200 px-1 py-0.5 rounded font-mono">./gradlew assembleDebug</code> in your command line. 
+                  This builds your APK locally instantly. You can locate the executable at:
+                  <code className="block mt-1 font-mono text-[10px] text-indigo-300 bg-slate-900/50 p-1 rounded">app/build/outputs/apk/debug/app-debug.apk</code>
+                </p>
+              </div>
+
+              <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2">
+                <span className="font-bold text-indigo-400 text-[11px] block">☁️ Option B: Free Automation via GitHub Actions</span>
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  GitHub Actions is 100% free with 2000+ build minutes monthly for every free account. 
+                  Create a file named <code className="bg-slate-900 text-[#a8c69f] px-1 py-0.5 rounded font-mono">.github/workflows/build-apk.yml</code> and paste:
+                </p>
+                <pre className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-[10.5px] font-mono text-emerald-300 overflow-x-auto max-h-36 select-all">
 {`name: Compile Safe Space Android APK
 on: [push, pull_request]
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -189,15 +207,16 @@ jobs:
         cache: 'gradle'
     - run: chmod +x gradlew
     - run: ./gradlew assembleDebug
-    - name: Upload Test APK
-      uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v4
       with:
         name: safe-space-test-apk
         path: app/build/outputs/apk/debug/app-debug.apk`}
-            </pre>
-            <p className="text-xs text-slate-400 mt-2 pl-7">
-              Push your code to modern GitHub. Click on the <strong>Actions</strong> tab to monitor the packaging pipeline, then download the finished <strong>safe-space-test-apk</strong> ZIP at the bottom!
-            </p>
+                </pre>
+                <p className="text-slate-400 text-[11px]">
+                  Push your repository to GitHub, go to the <strong>Actions</strong> tab, and download your compiled <strong>safe-space-test-apk</strong> ZIP!
+                </p>
+              </div>
+            </div>
           </div>
 
           <hr className="border-slate-800" />

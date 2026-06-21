@@ -826,133 +826,102 @@ export const SimulatorVagusHacks: React.FC<{ onBack: () => void }> = ({ onBack }
 // ============================================================================
 export const SimulatorPanicSOS: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [phaseIdx, setPhaseIdx] = useState(0);
-  const [secLeft, setSecLeft] = useState(5);
   const [active, setActive] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
+  const [isVoicePaused, setIsVoicePaused] = useState(false);
 
   const SOS_STEPS = [
-    { text: 'Acknowledge this wave of feeling. You are in a safe place. This is just a temporary surge of energy. Let it wash past you gently.', tone: 220, duration: 6, label: 'GENTLE WAVE' },
-    { text: 'Look around you. Find 3 cozy or comforting items in your immediate surroundings right now. Feel your breath slow down.', tone: 277.18, duration: 15, label: 'SENSORY REFocus' },
-    { text: 'Breathe in slowly and comfortably for 4 seconds... hold for 4 seconds... breathe out softly for 5 seconds.', tone: 329.63, duration: 13, label: 'SLOW CHEST BREATH' },
-    { text: 'Place your feet flat and solid on the floor. Feel the ground beneath you supporting you. You are held safe.', tone: 220, duration: 15, label: 'FEEL THE GROUND' },
-    { text: 'You did wonderfully. You are safe, secure, and grounded. If you need further grounding, feel free to restart this SOS guide or try one of our calming breathing exercises.', tone: 440, duration: 8, label: 'GENTLE RECOVERY' }
+    { text: 'Acknowledge this wave of feeling. You are in a safe place. This is just a temporary surge of energy. Let it wash past you gently.', tone: 220, label: 'GENTLE WAVE' },
+    { text: 'Look around you. Find 3 cozy or comforting items in your immediate surroundings right now. Feel your breath slow down.', tone: 277.18, label: 'SENSORY REFOCUS' },
+    { text: 'Breathe in slowly and comfortably for 4 seconds... hold for 4 seconds... breathe out softly for 5 seconds.', tone: 329.63, label: 'SLOW CHEST BREATH' },
+    { text: 'Place your feet flat and solid on the floor. Feel the ground beneath you supporting you. You are held safe.', tone: 220, label: 'FEEL THE GROUND' },
+    { text: 'You did wonderfully. You are safe, secure, and grounded. If you need further grounding, feel free to restart this SOS guide or try one of our calming breathing exercises.', tone: 440, label: 'GENTLE RECOVERY' }
   ];
 
-  // Sound triggering helper
-  const triggerPhaseChime = (phaseName: 'inhale' | 'hold1' | 'exhale' | 'hold2') => {
-    try {
-      if (phaseName === 'inhale') {
-        playFrequencySound(360, 'sine', 0.5, 0.04);
-        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([40, 100, 40]);
-      } else if (phaseName === 'exhale') {
-        playFrequencySound(240, 'sine', 0.6, 0.04);
-        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(60);
-      } else {
-        playFrequencySound(440, 'sine', 0.25, 0.03);
-        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(25);
+  const currentStepInfo = SOS_STEPS[phaseIdx];
+
+  const speakStepText = (text: string) => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      try {
+        window.speechSynthesis.resume();
+        setIsVoicePaused(false);
+        window.speechSynthesis.cancel();
+        
+        // Grab values set in Guided Breathing (SimulatorBreathing)
+        const savedVoiceName = localStorage.getItem('mindfulVoiceName') || '';
+        const savedRate = localStorage.getItem('mindfulVoiceRate') || localStorage.getItem('mindualVoiceRate');
+        const savedPitch = localStorage.getItem('mindfulVoicePitch');
+        const savedVolume = localStorage.getItem('mindfulVoiceVolume');
+
+        const rate = savedRate ? parseFloat(savedRate) : 0.75;
+        const pitch = savedPitch ? parseFloat(savedPitch) : 0.95;
+        const volume = savedVolume ? parseFloat(savedVolume) : 0.85;
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        
+        const voicesList = window.speechSynthesis.getVoices();
+        const matchingVoice = voicesList.find(v => v.name === savedVoiceName);
+        
+        if (matchingVoice) {
+          utterance.voice = matchingVoice;
+          utterance.lang = matchingVoice.lang;
+        } else {
+          // If no exact match, filter or pick an English base voice or any default
+          const enVoices = voicesList.filter(v => v.lang.startsWith('en') || v.lang.startsWith('en-'));
+          if (enVoices.length > 0) {
+            const naturalVoice = enVoices.find(v => 
+              v.name.toLowerCase().includes('natural') || 
+              v.name.toLowerCase().includes('samantha') || 
+              v.name.toLowerCase().includes('google')
+            );
+            utterance.voice = naturalVoice || enVoices[0];
+            utterance.lang = utterance.voice.lang;
+          } else if (voicesList.length > 0) {
+            utterance.voice = voicesList[0];
+            utterance.lang = voicesList[0].lang;
+          } else {
+            utterance.lang = 'en-US';
+          }
+        }
+
+        utterance.rate = rate;
+        utterance.pitch = pitch;
+        utterance.volume = volume;
+
+        window.speechSynthesis.speak(utterance);
+      } catch (err) {
+        console.warn('SpeechSynthesis instruction read error:', err);
       }
-    } catch (e) {}
+    }
   };
 
-  // SOS Grounding timer effects
+  // Speaks when current step changes or becomes active
   useEffect(() => {
-    if (!active) {
-      setPhaseIdx(0);
-      setSecLeft(5);
-      return;
-    }
-
-    if (isPaused) {
-      return;
-    }
-
-    if (secLeft <= 0) {
-      if (phaseIdx < SOS_STEPS.length - 1) {
-        const nextPhase = phaseIdx + 1;
-        setPhaseIdx(nextPhase);
-        setSecLeft(SOS_STEPS[nextPhase].duration);
-        try {
-          playFrequencySound(SOS_STEPS[nextPhase].tone, 'sine', 1.0, 0.05);
-        } catch (e) {}
-      } else {
-        // Do not move off step 5 when the timer ends
+    if (active) {
+      speakStepText(SOS_STEPS[phaseIdx].text);
+    } else {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
       }
-      return;
     }
+  }, [phaseIdx, active]);
 
-    const timerID = setInterval(() => {
-      setSecLeft((s) => s - 1);
-    }, 1000);
-
-    return () => clearInterval(timerID);
-  }, [active, isPaused, phaseIdx, secLeft]);
-
-  // Trigger sub-phase chimes for SOS breathing steps to match guided breathing behavior
+  // Clean-up speech when leaving screen
   useEffect(() => {
-    if (!active || isPaused) return;
-
-    if (phaseIdx === 2) {
-      if (secLeft === 13) {
-        triggerPhaseChime('inhale');
-      } else if (secLeft === 9) {
-        triggerPhaseChime('hold1');
-      } else if (secLeft === 5) {
-        triggerPhaseChime('exhale');
+    return () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
       }
-    } else if (phaseIdx === 3) {
-      if (secLeft === 15) {
-        triggerPhaseChime('inhale');
-      } else if (secLeft === 11) {
-        triggerPhaseChime('hold1');
-      } else if (secLeft === 7) {
-        triggerPhaseChime('exhale');
-      }
-    }
-  }, [secLeft, phaseIdx, active, isPaused]);
+    };
+  }, []);
 
   const handleStartPanicShield = () => {
     setPhaseIdx(0);
-    setSecLeft(SOS_STEPS[0].duration);
+    setIsVoicePaused(false);
     setActive(true);
-    setIsPaused(false);
     try {
       playFrequencySound(SOS_STEPS[0].tone, 'sine', 1.0, 0.05);
     } catch (e) {}
   };
-
-  const currentStepInfo = SOS_STEPS[phaseIdx];
-
-  // Active sub-breathing mapping for the SOS screen third step
-  const getSubPhaseOfSosBreath = (secRemaining: number) => {
-    const elapsed = 13 - secRemaining;
-    if (elapsed < 4) {
-      return { stepLabel: 'Breathe In... 🌬️', scale: 'scale-125', color: 'text-emerald-300 animate-pulse', phaseShort: 'Inhale', subSecLeft: 4 - elapsed };
-    } else if (elapsed < 8) {
-      return { stepLabel: 'Hold Softly... 🌸', scale: 'scale-125', color: 'text-indigo-300', phaseShort: 'Hold', subSecLeft: 8 - elapsed };
-    } else {
-      return { stepLabel: 'Sigh Out... 🍃', scale: 'scale-90', color: 'text-blue-300', phaseShort: 'Exhale', subSecLeft: 13 - elapsed };
-    }
-  };
-
-  // Active sub-breathing mapping for the SOS screen fourth step
-  const getSubPhaseOfSosBreathStep4 = (secRemaining: number) => {
-    const elapsed = 15 - secRemaining;
-    if (elapsed < 4) {
-      return { stepLabel: 'Breathe In... 🌬️', scale: 'scale-125', color: 'text-emerald-300 animate-pulse', phaseShort: 'Inhale', subSecLeft: 4 - elapsed };
-    } else if (elapsed < 8) {
-      return { stepLabel: 'Hold Softly... 🌸', scale: 'scale-125', color: 'text-indigo-300', phaseShort: 'Hold', subSecLeft: 8 - elapsed };
-    } else {
-      return { stepLabel: 'Sigh Out... 🍃', scale: 'scale-90', color: 'text-blue-300', phaseShort: 'Exhale', subSecLeft: 15 - elapsed };
-    }
-  };
-
-  const activeSubBreathStyle = active
-    ? (phaseIdx === 2
-      ? getSubPhaseOfSosBreath(secLeft)
-      : phaseIdx === 3
-      ? getSubPhaseOfSosBreathStep4(secLeft)
-      : null)
-    : null;
 
   return (
     <div className="flex flex-col h-full bg-[#0f172a] overflow-y-auto relative text-blue-50 select-none">
@@ -1006,7 +975,7 @@ export const SimulatorPanicSOS: React.FC<{ onBack: () => void }> = ({ onBack }) 
                   </div>
                   <div className="flex items-center space-x-1.5 text-slate-200">
                     <span className="text-blue-400 font-black">2.</span>
-                    <span><strong className="text-blue-200">Sensory Refocus</strong> - Calm blue/green focus finder</span>
+                    <span><strong className="text-blue-200">Sensory Refocus</strong> - Calm focus finder</span>
                   </div>
                   <div className="flex items-center space-x-1.5 text-slate-200">
                     <span className="text-blue-400 font-black">3.</span>
@@ -1025,33 +994,26 @@ export const SimulatorPanicSOS: React.FC<{ onBack: () => void }> = ({ onBack }) 
             </div>
           ) : (
             <div className="w-full text-center space-y-3 px-2 max-w-[280px]">
-              {/* Dynamic pulsing breathe expansion ring on step 3 */}
-              {activeSubBreathStyle ? (
-                <div className="relative w-20 h-20 mx-auto flex items-center justify-center select-none">
-                  {/* Outer transition ring mirroring main breathing module */}
-                  <div className={`absolute inset-0 rounded-full transition-all duration-1000 ease-in-out border-2 border-blue-400 ${activeSubBreathStyle.scale}`} />
-                  
-                  {/* Inner ambient pulsing guide ring */}
-                  {secLeft > 0 && !isPaused && (
-                    <div className="absolute inset-1.5 border border-blue-500/20 rounded-full animate-pulse pointer-events-none" />
-                  )}
-                  
-                  {/* Solid container holding state numbers */}
-                  <div className="absolute inset-3 bg-slate-900 rounded-full border border-blue-500/40 flex flex-col items-center justify-center">
-                    <span className="text-[8px] uppercase font-black tracking-wider text-blue-300 leading-none">{activeSubBreathStyle.phaseShort}</span>
-                    <span className="text-base font-bold font-mono text-blue-200 leading-none mt-0.5">{activeSubBreathStyle.subSecLeft}s</span>
-                  </div>
+              {/* Gently pulsing circle inside the rescue space */}
+              <div className="relative w-36 h-36 mx-auto flex items-center justify-center select-none my-3">
+                {/* Outer halo */}
+                <div className={`absolute inset-0 rounded-full bg-blue-500/10 transition-all duration-1000 ${
+                  isVoicePaused ? 'animate-none opacity-20' : 'animate-pulse duration-[3000ms] ease-in-out'
+                }`} />
+                {/* Middle halo */}
+                <div className={`absolute inset-4 rounded-full bg-blue-400/15 opacity-40 pointer-events-none transition-all duration-1000 ${
+                  isVoicePaused ? 'animate-none opacity-10' : 'animate-ping duration-[4000ms]'
+                }`} />
+                {/* Core pulsing circle */}
+                <div className={`absolute inset-8 bg-gradient-to-tr from-[#3b5b7b] to-[#4c7ba6] rounded-full border border-blue-300/40 shadow-lg flex flex-col items-center justify-center transition-all duration-1000 ${
+                  isVoicePaused ? 'animate-none scale-95 opacity-80' : 'animate-pulse duration-[2000ms]'
+                }`}>
+                  <div className={`w-1.5 h-1.5 rounded-full mb-1 transition-colors ${isVoicePaused ? 'bg-amber-400' : 'bg-blue-200'}`} />
+                  <span className="text-[9px] uppercase font-bold tracking-widest text-blue-100/90 leading-none">
+                    {isVoicePaused ? 'Paused' : 'Focus Here'}
+                  </span>
                 </div>
-              ) : (
-                <div className="relative w-20 h-20 mx-auto flex items-center justify-center select-none">
-                  {secLeft > 0 && !isPaused && (
-                    <div className="absolute inset-0 bg-blue-500/15 rounded-full animate-ping duration-1500" />
-                  )}
-                  <div className="absolute inset-1.5 bg-slate-900 rounded-full border border-blue-500/40 flex flex-col items-center justify-center">
-                    <span className="text-lg font-bold font-mono text-blue-300 leading-none">{secLeft}s</span>
-                  </div>
-                </div>
-              )}
+              </div>
 
               <div className="space-y-1.5 mt-0.5">
                 {/* Clear Step progress status & Interactive Indicator dots */}
@@ -1066,7 +1028,6 @@ export const SimulatorPanicSOS: React.FC<{ onBack: () => void }> = ({ onBack }) 
                         type="button"
                         onClick={() => {
                           setPhaseIdx(idx);
-                          setSecLeft(SOS_STEPS[idx].duration);
                         }}
                         className={`w-1.5 h-1.5 rounded-full transition-all duration-300 border-0 p-0 cursor-pointer ${
                           idx === phaseIdx
@@ -1084,84 +1045,108 @@ export const SimulatorPanicSOS: React.FC<{ onBack: () => void }> = ({ onBack }) 
                 <span className="text-[8px] font-black tracking-widest text-blue-300 bg-slate-800 border border-slate-700 px-3 py-1 rounded-full uppercase leading-none inline-block">
                   {currentStepInfo.label}
                 </span>
-                
-                {activeSubBreathStyle && (
-                  <p className={`text-[10px] font-black tracking-wide text-blue-200 mt-0.5 leading-none ${secLeft > 0 && !isPaused ? 'animate-pulse' : ''}`}>
-                    {activeSubBreathStyle.stepLabel}
-                  </p>
-                )}
 
                 <p className="text-[11px] font-bold text-blue-50 border-l-[3px] border-blue-500 pl-3 leading-relaxed py-1.5 text-left bg-slate-800/30 rounded-r-xl font-sans min-h-[52px]">
                   {currentStepInfo.text}
                 </p>
               </div>
 
-              {/* Interactive manual navigation buttons */}
-              <div className="flex gap-1.5 w-full pt-1">
+              {/* Voice action controls */}
+              <div className="flex gap-2 w-full pt-1">
                 <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== 'undefined' && window.speechSynthesis) {
+                      if (isVoicePaused) {
+                        window.speechSynthesis.resume();
+                        setIsVoicePaused(false);
+                      } else {
+                        window.speechSynthesis.pause();
+                        setIsVoicePaused(true);
+                      }
+                    }
+                  }}
+                  className={`flex-1 py-1.5 px-2 text-[8.5px] font-black uppercase rounded-full transition cursor-pointer border-0 flex items-center justify-center gap-1.5 min-w-[100px] ${
+                    isVoicePaused
+                      ? 'bg-emerald-600 hover:bg-emerald-500 text-white animate-pulse'
+                      : 'bg-amber-600 hover:bg-amber-500 text-white'
+                  }`}
+                >
+                  {isVoicePaused ? '▶ Resume' : '⏸ Pause'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    speakStepText(currentStepInfo.text);
+                    try {
+                      playFrequencySound(currentStepInfo.tone, 'sine', 0.8, 0.04);
+                    } catch (e) {}
+                  }}
+                  className="flex-1 py-1.5 px-2 text-[8.5px] font-black uppercase rounded-full transition cursor-pointer border border-slate-700 bg-slate-800 hover:bg-slate-700 text-amber-200 hover:text-white flex items-center justify-center gap-1.5"
+                >
+                  🔄 Restart
+                </button>
+              </div>
+
+              {/* Step Navigation buttons */}
+              <div className="flex gap-2 w-full">
+                <button
+                  type="button"
                   onClick={() => {
                     const prev = Math.max(0, phaseIdx - 1);
                     setPhaseIdx(prev);
-                    setSecLeft(SOS_STEPS[prev].duration);
-                    setIsPaused(false);
+                    setIsVoicePaused(false);
                     try {
                       playFrequencySound(SOS_STEPS[prev].tone, 'sine', 1.0, 0.05);
                     } catch (e) {}
                   }}
                   disabled={phaseIdx === 0}
-                  className="flex-1 py-1 px-2 text-[8.5px] font-black uppercase bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800 text-blue-200 rounded-full transition cursor-pointer border border-slate-755"
+                  className="flex-1 py-1 px-1.5 text-[8.5px] font-black uppercase bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800 text-blue-200 rounded-full transition cursor-pointer border border-slate-700 hover:text-white"
                 >
                   ◀ Prev
                 </button>
+
                 <button
-                  onClick={() => setIsPaused(!isPaused)}
-                  className={`flex-1 py-1 px-2 text-[8.5px] font-black uppercase rounded-full transition cursor-pointer border-0 ${
-                    isPaused
-                      ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                      : 'bg-amber-600 hover:bg-amber-500 text-white'
-                  }`}
-                >
-                  {isPaused ? '▶ Resume' : '⏸ Pause'}
-                </button>
-                <button
+                  type="button"
                   onClick={() => {
+                    setIsVoicePaused(false);
                     if (phaseIdx < SOS_STEPS.length - 1) {
                       const nextIdx = phaseIdx + 1;
                       setPhaseIdx(nextIdx);
-                      setSecLeft(SOS_STEPS[nextIdx].duration);
-                      setIsPaused(false);
                       try {
                         playFrequencySound(SOS_STEPS[nextIdx].tone, 'sine', 1.0, 0.05);
                       } catch (e) {}
                     } else {
                       // Restart from first step for step 5
                       setPhaseIdx(0);
-                      setSecLeft(SOS_STEPS[0].duration);
-                      setIsPaused(false);
                       try {
                         playFrequencySound(SOS_STEPS[0].tone, 'sine', 1.0, 0.05);
                       } catch (e) {}
                     }
                   }}
-                  className="flex-1 py-1 px-2 text-[8.5px] font-black uppercase bg-[#3b5b7b] hover:bg-blue-600 text-white rounded-full transition cursor-pointer border-0"
+                  className="flex-1 py-1 px-1.5 text-[8.5px] font-black uppercase bg-[#3b5b7b] hover:bg-blue-600 text-white rounded-full transition cursor-pointer border-0"
                 >
-                  {phaseIdx === SOS_STEPS.length - 1 ? '🔄 Restart' : 'Next ▶'}
+                  {phaseIdx === SOS_STEPS.length - 1 ? 'Start Over' : 'Next ▶'}
                 </button>
               </div>
 
-              <button
-                onClick={() => setActive(false)}
-                className="py-1 px-4 text-[8px] font-semibold uppercase bg-slate-800/60 hover:bg-slate-700 text-slate-400 hover:text-white rounded-full transition cursor-pointer border border-slate-700/40"
-              >
-                Cancel SOS Guide
-              </button>
+              <div className="pt-1 select-none">
+                <button
+                  type="button"
+                  onClick={() => setActive(false)}
+                  className="py-1 px-4 text-[8px] font-semibold uppercase bg-slate-800/60 hover:bg-slate-700 text-slate-400 hover:text-white rounded-full transition cursor-pointer border border-slate-750"
+                >
+                  Cancel SOS Guide
+                </button>
+              </div>
             </div>
           )}
         </div>
 
         <div className="shrink-0 pt-2 border-t border-rose-950/70 text-center flex items-center justify-center gap-1.5 z-10">
           <HeartHandshake size={11} className="text-rose-400" />
-          <span className="text-[8px] text-red-200 uppercase font-mono tracking-widest">You are safe. Please take all the time you need to reset.</span>
+          <span className="text-[8px] text-red-200 uppercase font-mono tracking-widest font-bold">You are safe. Please take all the time you need to reset.</span>
         </div>
       </div>
     </div>
