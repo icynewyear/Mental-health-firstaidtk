@@ -829,6 +829,15 @@ export const SimulatorPanicSOS: React.FC<{ onBack: () => void }> = ({ onBack }) 
   const [active, setActive] = useState(false);
   const [isVoicePaused, setIsVoicePaused] = useState(false);
 
+  // Custom boundary pointer workarounds to support pausing/resuming robustly on Chromium/Sandboxed iFrames
+  const charIndexRef = useRef(0);
+  const isVoicePausedRef = useRef(false);
+  
+  // High-reliability backup timestamp tracking to estimate current word/char index if onboundary is suppressed
+  const speakStartTimeRef = useRef<number>(0);
+  const speakStartCharIndexRef = useRef<number>(0);
+  const speakRateRef = useRef<number>(0.75);
+
   const SOS_STEPS = [
     { text: 'Acknowledge this wave of feeling. You are in a safe place. This is just a temporary surge of energy. Let it wash past you gently.', tone: 220, label: 'GENTLE WAVE' },
     { text: 'Look around you. Find 3 cozy or comforting items in your immediate surroundings right now. Feel your breath slow down.', tone: 277.18, label: 'SENSORY REFOCUS' },
@@ -839,11 +848,9 @@ export const SimulatorPanicSOS: React.FC<{ onBack: () => void }> = ({ onBack }) 
 
   const currentStepInfo = SOS_STEPS[phaseIdx];
 
-  const speakStepText = (text: string) => {
+  const speakStepText = (text: string, startFromCharIndex = 0) => {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       try {
-        window.speechSynthesis.resume();
-        setIsVoicePaused(false);
         window.speechSynthesis.cancel();
         
         // Grab values set in Guided Breathing (SimulatorBreathing)
@@ -856,7 +863,27 @@ export const SimulatorPanicSOS: React.FC<{ onBack: () => void }> = ({ onBack }) 
         const pitch = savedPitch ? parseFloat(savedPitch) : 0.95;
         const volume = savedVolume ? parseFloat(savedVolume) : 0.85;
 
-        const utterance = new SpeechSynthesisUtterance(text);
+        // Save progress tracking anchors
+        speakStartTimeRef.current = performance.now();
+        speakStartCharIndexRef.current = startFromCharIndex;
+        speakRateRef.current = rate;
+
+        // Slice text to play from where the user paused
+        const textToSpeak = text.substring(startFromCharIndex);
+        if (!textToSpeak.trim()) return;
+
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+        
+        // CRITICAL WORKAROUND: Keep a global reference to prevent garbage collection on Chromium browsers
+        (window as any).currentUtterance = utterance;
+        if (!(window as any).activeUtterances) {
+          (window as any).activeUtterances = [];
+        }
+        (window as any).activeUtterances.push(utterance);
+        // prune old ones to avoid leaking memory
+        if ((window as any).activeUtterances.length > 50) {
+          (window as any).activeUtterances.shift();
+        }
         
         const voicesList = window.speechSynthesis.getVoices();
         const matchingVoice = voicesList.find(v => v.name === savedVoiceName);
@@ -887,6 +914,24 @@ export const SimulatorPanicSOS: React.FC<{ onBack: () => void }> = ({ onBack }) 
         utterance.pitch = pitch;
         utterance.volume = volume;
 
+        utterance.onboundary = (event) => {
+          if (event.name === 'word') {
+            // Keep absolute character boundary in step text
+            charIndexRef.current = startFromCharIndex + event.charIndex;
+          }
+        };
+
+        utterance.onend = () => {
+          // Reset pointer once naturally finished or if browser cleared state
+          if (isVoicePausedRef.current) {
+            return;
+          }
+          if ((window as any).currentUtterance !== utterance) {
+            return;
+          }
+          charIndexRef.current = 0;
+        };
+
         window.speechSynthesis.speak(utterance);
       } catch (err) {
         console.warn('SpeechSynthesis instruction read error:', err);
@@ -897,7 +942,10 @@ export const SimulatorPanicSOS: React.FC<{ onBack: () => void }> = ({ onBack }) 
   // Speaks when current step changes or becomes active
   useEffect(() => {
     if (active) {
-      speakStepText(SOS_STEPS[phaseIdx].text);
+      charIndexRef.current = 0;
+      isVoicePausedRef.current = false;
+      setIsVoicePaused(false);
+      speakStepText(SOS_STEPS[phaseIdx].text, 0);
     } else {
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.cancel();
@@ -1027,6 +1075,9 @@ export const SimulatorPanicSOS: React.FC<{ onBack: () => void }> = ({ onBack }) 
                         key={idx}
                         type="button"
                         onClick={() => {
+                          charIndexRef.current = 0;
+                          isVoicePausedRef.current = false;
+                          setIsVoicePaused(false);
                           setPhaseIdx(idx);
                         }}
                         className={`w-1.5 h-1.5 rounded-full transition-all duration-300 border-0 p-0 cursor-pointer ${
@@ -1058,11 +1109,29 @@ export const SimulatorPanicSOS: React.FC<{ onBack: () => void }> = ({ onBack }) 
                   onClick={() => {
                     if (typeof window !== 'undefined' && window.speechSynthesis) {
                       if (isVoicePaused) {
-                        window.speechSynthesis.resume();
+                        isVoicePausedRef.current = false;
                         setIsVoicePaused(false);
+                        speakStepText(currentStepInfo.text, charIndexRef.current);
                       } else {
-                        window.speechSynthesis.pause();
+                        isVoicePausedRef.current = true;
                         setIsVoicePaused(true);
+                        
+                        // Grab elapsed speaking time if onboundary was suppressed or as a high-reliability fallback
+                        if (window.speechSynthesis.speaking) {
+                          const elapsedMs = performance.now() - speakStartTimeRef.current;
+                          const cps = 13.5 * speakRateRef.current;
+                          const estimatedCharsRead = Math.round((elapsedMs / 1000) * cps);
+                          const calculatedIndex = speakStartCharIndexRef.current + estimatedCharsRead;
+                          
+                          charIndexRef.current = Math.min(
+                            Math.max(charIndexRef.current, calculatedIndex),
+                            currentStepInfo.text.length
+                          );
+                        }
+                        
+                        try {
+                          window.speechSynthesis.cancel();
+                        } catch (err) {}
                       }
                     }
                   }}
@@ -1078,7 +1147,10 @@ export const SimulatorPanicSOS: React.FC<{ onBack: () => void }> = ({ onBack }) 
                 <button
                   type="button"
                   onClick={() => {
-                    speakStepText(currentStepInfo.text);
+                    charIndexRef.current = 0;
+                    isVoicePausedRef.current = false;
+                    setIsVoicePaused(false);
+                    speakStepText(currentStepInfo.text, 0);
                     try {
                       playFrequencySound(currentStepInfo.tone, 'sine', 0.8, 0.04);
                     } catch (e) {}
@@ -1095,8 +1167,10 @@ export const SimulatorPanicSOS: React.FC<{ onBack: () => void }> = ({ onBack }) 
                   type="button"
                   onClick={() => {
                     const prev = Math.max(0, phaseIdx - 1);
-                    setPhaseIdx(prev);
+                    charIndexRef.current = 0;
+                    isVoicePausedRef.current = false;
                     setIsVoicePaused(false);
+                    setPhaseIdx(prev);
                     try {
                       playFrequencySound(SOS_STEPS[prev].tone, 'sine', 1.0, 0.05);
                     } catch (e) {}
@@ -1110,6 +1184,8 @@ export const SimulatorPanicSOS: React.FC<{ onBack: () => void }> = ({ onBack }) 
                 <button
                   type="button"
                   onClick={() => {
+                    charIndexRef.current = 0;
+                    isVoicePausedRef.current = false;
                     setIsVoicePaused(false);
                     if (phaseIdx < SOS_STEPS.length - 1) {
                       const nextIdx = phaseIdx + 1;
