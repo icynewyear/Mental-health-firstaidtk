@@ -258,7 +258,7 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
       case 'somatic': return 'Muscle Release';
       case 'safetyPlan': return 'My Safety Plan';
       case 'resources': return 'Resource Web Links';
-      default: return 'Safe Space';
+      default: return 'Mental Health Toolkit';
     }
   };
 

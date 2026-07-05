@@ -270,9 +270,13 @@ export default function App() {
     switch (activeScreen) {
       case 'dashboard':
       case 'somaticHub':
+        setSelectedFileIndex(18); // SomaticHubScreen.kt
+        break;
       case 'cbtHub':
+        setSelectedFileIndex(19); // CbtHubScreen.kt
+        break;
       case 'safetyHub':
-        setSelectedFileIndex(5); // DashboardScreen.kt
+        setSelectedFileIndex(20); // SafetyHubScreen.kt
         break;
       case 'breathing':
         setSelectedFileIndex(3); // GuidedBreathingScreen.kt
@@ -301,18 +305,37 @@ export default function App() {
       case 'safetyPlan':
         setSelectedFileIndex(12); // StanleyBrownSafetyPlan.kt
         break;
-
+      case 'worryBox':
+        setSelectedFileIndex(13); // WorryLockboxScreen.kt
+        break;
+      case 'emdr':
+        setSelectedFileIndex(14); // EmdrPacerScreen.kt
+        break;
+      case 'emotionWheel':
+        setSelectedFileIndex(15); // EmotionWheelScreen.kt
+        break;
+      case 'vagusHacks':
+        setSelectedFileIndex(16); // VagusResetScreen.kt
+        break;
+      case 'panicSOS':
+        setSelectedFileIndex(17); // PanicRescueScreen.kt
+        break;
+      case 'resources':
+        setSelectedFileIndex(21); // SimpleResourcesScreen.kt
+        break;
+      default:
+        setSelectedFileIndex(5); // DashboardScreen.kt
+        break;
     }
   }, [activeScreen]);
 
   // Derive recommended file index for status highlight
   const getRecommendedFileIndex = (): number => {
     switch (activeScreen) {
-      case 'dashboard':
-      case 'somaticHub':
-      case 'cbtHub':
-      case 'safetyHub':
-        return 5;
+      case 'dashboard': return 5;
+      case 'somaticHub': return 18;
+      case 'cbtHub': return 19;
+      case 'safetyHub': return 20;
       case 'breathing': return 3;
       case 'grounding': return 4;
       case 'relief': return 7;
@@ -322,7 +345,12 @@ export default function App() {
       case 'gratitude': return 10;
       case 'somatic': return 11;
       case 'safetyPlan': return 12;
-
+      case 'worryBox': return 13;
+      case 'emdr': return 14;
+      case 'emotionWheel': return 15;
+      case 'vagusHacks': return 16;
+      case 'panicSOS': return 17;
+      case 'resources': return 21;
       default: return 5;
     }
   };
@@ -346,7 +374,7 @@ export default function App() {
               <Leaf size={22} className="stroke-[2.5]" />
             </div>
             <div>
-              <h1 className={`text-lg font-black tracking-tight leading-none font-sans transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Safe Space Studio</h1>
+              <h1 className={`text-lg font-black tracking-tight leading-none font-sans transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Mental Health Toolkit</h1>
               <span className={`text-[10px] uppercase font-extrabold tracking-widest block mt-1 transition-colors duration-300 ${isDarkMode ? 'text-[#a8c69f]' : 'text-[#4A6741]'}`}>Jetpack Compose Kotlin Prototype</span>
             </div>
           </div>
@@ -511,7 +539,7 @@ export default function App() {
           : 'bg-[#E1E8E3]/20 border-[#E1E8E3]/60 text-slate-500'
       }`}>
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-3">
-          <p>© 2026 Mental Health First Aid — Made with ❤️ for Jetpack Compose & Android developers.</p>
+          <p>© 2026 Mental Health Toolkit — Made with ❤️ for Jetpack Compose & Android developers.</p>
           <div className="flex space-x-4 text-slate-400 font-medium font-mono">
             <span className={isDarkMode ? 'hover:text-slate-200 cursor-pointer' : 'hover:text-slate-600 cursor-pointer'}>Offline Safe</span>
             <span>•</span>

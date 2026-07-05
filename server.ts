@@ -2,6 +2,8 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
+import AdmZip from "adm-zip";
+import { androidProjectFiles } from "./src/androidCode";
 
 dotenv.config();
 
@@ -14,6 +16,162 @@ async function startServer() {
   // API endpoint health check
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
+  });
+
+  // API to package and download the complete Android Studio Importable ZIP project
+  app.get("/api/download-android-zip", (req, res) => {
+    try {
+      const zip = new AdmZip();
+
+      // 1. Add all virtual target androidProjectFiles from androidCode.ts
+      androidProjectFiles.forEach(file => {
+        zip.addFile(file.path, Buffer.from(file.code, "utf8"), file.description || "");
+      });
+
+      // 2. Add structural Android boilerplate settings & files so Android Studio loads it instantly
+      
+      // build.gradle.kts (Project root)
+      const projectBuildGradle = `// Top-level build file where you can add configuration options common to all sub-projects/modules.
+plugins {
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.kotlin.android) apply false
+    alias(libs.plugins.kotlin.compose) apply false
+}`;
+      zip.addFile("build.gradle.kts", Buffer.from(projectBuildGradle, "utf8"));
+
+      // settings.gradle.kts (Project root)
+      const settingsGradle = `pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = "Mental Health Toolkit"
+include(":app")`;
+      zip.addFile("settings.gradle.kts", Buffer.from(settingsGradle, "utf8"));
+
+      // gradle.properties (Project root)
+      const gradleProperties = `org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+android.useAndroidX=true
+android.nonTransitiveRClass=true
+kotlin.code.style=official`;
+      zip.addFile("gradle.properties", Buffer.from(gradleProperties, "utf8"));
+
+      // gradle-wrapper.properties (gradle/wrapper/)
+      const gradleWrapperProperties = `distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\\://services.gradle.org/distributions/gradle-8.10.2-bin.zip
+networkTimeout=10000
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists`;
+      zip.addFile("gradle/wrapper/gradle-wrapper.properties", Buffer.from(gradleWrapperProperties, "utf8"));
+
+      // AndroidManifest.xml (app/src/main/)
+      const manifestXml = `<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.mentalhealth.firstaid">
+    <application
+        android:allowBackup="true"
+        android:icon="@android:drawable/sym_def_app_icon"
+        android:label="Mental Health Toolkit"
+        android:supportsRtl="true"
+        android:theme="@android:style/Theme.Material.NoActionBar">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Material.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>`;
+      zip.addFile("app/src/main/AndroidManifest.xml", Buffer.from(manifestXml, "utf8"));
+
+      // Color.kt (app/src/main/java/com/mentalhealth/firstaid/ui/theme/)
+      const colorKt = `package com.mentalhealth.firstaid.ui.theme
+
+import androidx.compose.ui.graphics.Color
+
+val Purple80 = Color(0xFFD0BCFF)
+val PurpleGrey80 = Color(0xFFCCC2DC)
+val Pink80 = Color(0xFFEFB8C8)
+
+val Purple40 = Color(0xFF6650a4)
+val PurpleGrey40 = Color(0xFF625b71)
+val Pink40 = Color(0xFF7D5260)`;
+      zip.addFile("app/src/main/java/com/mentalhealth/firstaid/ui/theme/Color.kt", Buffer.from(colorKt, "utf8"));
+
+      // Theme.kt (app/src/main/java/com/mentalhealth/firstaid/ui/theme/)
+      const themeKt = `package com.mentalhealth.firstaid.ui.theme
+
+import android.os.Build
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+
+private val DarkColorScheme = darkColorScheme(
+    primary = Purple80,
+    secondary = PurpleGrey80,
+    tertiary = Pink80
+)
+
+private val LightColorScheme = lightColorScheme(
+    primary = Purple40,
+    secondary = PurpleGrey40,
+    tertiary = Pink40
+)
+
+@Composable
+fun MentalHealthFirstAidTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    dynamicColor: Boolean = true,
+    content: @Composable () -> Unit
+) {
+    val colorScheme = when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES_S -> {
+            val context = LocalContext.current
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        }
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
+    }
+
+    MaterialTheme(
+        colorScheme = colorScheme,
+        typography = androidx.compose.material3.Typography(),
+        content = content
+    )
+}`;
+      zip.addFile("app/src/main/java/com/mentalhealth/firstaid/ui/theme/Theme.kt", Buffer.from(themeKt, "utf8"));
+
+      const zipBuffer = zip.toBuffer();
+
+      res.writeHead(200, {
+        "Content-Type": "application/zip",
+        "Content-Disposition": "attachment; filename=MentalHealthToolkit_AndroidStudio_Project.zip",
+        "Content-Length": zipBuffer.length
+      });
+      res.end(zipBuffer);
+    } catch (error) {
+      console.error("Failed to generate ZIP:", error);
+      res.status(500).json({ error: "Failed to generate project ZIP archive." });
+    }
   });
 
   // Vite integration middleware

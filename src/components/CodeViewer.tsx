@@ -92,75 +92,127 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({
           <span className="text-xs font-mono font-bold text-slate-400 ml-2">AndroidStudio — Kotlin Development Suite</span>
         </div>
 
-        {/* Tab switch buttons */}
-        <div className="flex bg-slate-900 rounded-lg p-0.5 border border-slate-800">
-          <button
-            onClick={() => setActiveTab('editor')}
-            className={`flex items-center space-x-1 px-3 py-1 text-[11px] font-bold rounded-md transition ${
-              activeTab === 'editor' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
-            }`}
+        {/* Tab switch & ZIP Download buttons */}
+        <div className="flex items-center space-x-3">
+          <a
+            href="/api/download-android-zip"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[10.5px] font-bold bg-[#38563a] hover:bg-[#436746] hover:text-[#e4f3df] text-[#a8c69f] transition active:scale-95 border border-emerald-950/60 shadow-md"
+            title="Download full ready-to-use Android Studio project as a .zip"
           >
-            <Terminal size={12} />
-            <span>Code Editor</span>
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('setup')}
-            className={`flex items-center space-x-1 px-3 py-1 text-[11px] font-bold rounded-md transition ${
-              activeTab === 'setup' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <BookOpen size={12} />
-            <span>Android Setup Steps</span>
-          </button>
+            <FolderOpen size={11} className="stroke-[2.5]" />
+            <span>Download ZIP</span>
+          </a>
+
+          <div className="flex bg-slate-900 rounded-lg p-0.5 border border-slate-800">
+            <button
+              onClick={() => setActiveTab('editor')}
+              className={`flex items-center space-x-1 px-3 py-1 text-[11px] font-bold rounded-md transition ${
+                activeTab === 'editor' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Terminal size={12} />
+              <span>Code Editor</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('setup')}
+              className={`flex items-center space-x-1 px-3 py-1 text-[11px] font-bold rounded-md transition ${
+                activeTab === 'setup' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <BookOpen size={12} />
+              <span>Android Setup Steps</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {activeTab === 'setup' ? (
         /* Setup guidelines panel */
-        <div className="flex-1 overflow-y-auto p-6 text-sm text-slate-300 leading-relaxed text-left space-y-5 select-text">
+        <div className="flex-1 overflow-y-auto p-6 text-sm text-slate-300 leading-relaxed text-left space-y-6 select-text">
+          {/* CRITICAL WARNING CARD FOR IMPORT ERRORS */}
+          <div className="bg-amber-950/20 border border-amber-800/40 rounded-2xl p-4.5 space-y-2">
+            <h4 className="text-sm font-bold text-amber-400 flex items-center space-x-2">
+              <AlertCircle size={16} />
+              <span>Fixing "The project file specified already exists" Error</span>
+            </h4>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              If you downloaded our complete project ZIP and got this error, it means you clicked <strong>"New Project"</strong> inside Android Studio instead of opening it. 
+              Because the ZIP already contains a fully-configured Gradle workspace, Android Studio will throw this error if you try to "create" a new project over it.
+            </p>
+            <div className="text-xs text-slate-300 mt-2 pl-4 border-l-2 border-amber-500/50 py-0.5 space-y-1 font-medium">
+              <p>1. Extract the downloaded <code className="bg-slate-950 px-1 py-0.5 rounded text-amber-300 font-mono">MentalHealthToolkit_AndroidStudio_Project.zip</code> to a folder.</p>
+              <p>2. In Android Studio, click <strong>File &gt; Open</strong> (DO NOT click "New Project").</p>
+              <p>3. Browse to and select the folder you just extracted, and click <strong>OK</strong>.</p>
+            </div>
+          </div>
+
           <div>
             <h3 className="text-base font-bold text-white flex items-center space-x-2">
-              <span className="bg-emerald-600 text-white rounded p-1"><BookOpen size={15} /></span>
-              <span>1. Creating the Android Studio Project</span>
+              <span className="bg-emerald-600 text-white rounded p-1"><FolderOpen size={15} /></span>
+              <span>⚡ Method A: Download & Open Ready-to-Use ZIP (Recommended)</span>
             </h3>
-            <p className="text-xs text-slate-400 mt-2 pl-7">
-              Launch Android Studio, click <strong>New Project</strong>, select <strong>Empty Activity</strong> (the standard template for Jetpack Compose) and click <strong>Next</strong>. Make sure of these inputs:
+            <p className="text-xs text-slate-400 mt-2 pl-7 leading-relaxed">
+              Skip the manual configurations! We packaged a 100% complete, standard, compile-ready Android project for you.
             </p>
-            <ul className="list-disc pl-11 text-xs text-slate-400 space-y-1.5 mt-2">
-              <li><strong>Name:</strong> Mental Health First Aid</li>
-              <li><strong>Package Name:</strong> <code className="bg-slate-950 px-1.5 py-0.5 rounded text-rose-400">com.mentalhealth.firstaid</code></li>
-              <li><strong>Language:</strong> Kotlin</li>
-              <li><strong>Minimum SDK:</strong> API 26 (Android 8.0 Oreo) or higher</li>
-              <li><strong>Build Configuration:</strong> Kotlin DSL (build.gradle.kts)</li>
-            </ul>
+            <ol className="list-decimal pl-11 text-xs text-slate-400 space-y-2 mt-2">
+              <li>Click the green <strong>Download ZIP</strong> button at the top right of this developer workspace.</li>
+              <li>Extract the ZIP folder somewhere on your computer (e.g., your Desktop).</li>
+              <li>Open Android Studio. On the welcome wizard or the top menu bar, go to <strong>File &gt; Open</strong>.</li>
+              <li>Select the extracted folder containing <code className="bg-slate-950 text-slate-300 px-1 py-0.5 rounded font-mono">settings.gradle.kts</code>.</li>
+              <li>Click <strong>OK</strong> and let Android Studio load, sync Gradle dependencies, and configure itself automatically!</li>
+            </ol>
           </div>
 
           <hr className="border-slate-800" />
 
           <div>
             <h3 className="text-base font-bold text-white flex items-center space-x-2">
-              <span className="bg-indigo-600 text-white rounded p-1"><FileCode size={15} /></span>
-              <span>2. Setting up Version Catalogs and Gradle</span>
+              <span className="bg-indigo-600 text-white rounded p-1"><BookOpen size={15} /></span>
+              <span>🛠️ Method B: Manual Copy-Paste Setup (From Scratch)</span>
             </h3>
-            <p className="text-xs text-slate-400 mt-2 pl-7">
-              Replace the content of your <code className="bg-slate-950 px-1 py-0.5 rounded text-amber-300 text-[10px]">gradle/libs.versions.toml</code> and <code className="bg-slate-950 px-1 py-0.5 rounded text-amber-300 text-[10px]">app/build.gradle.kts</code> with the generated files shown in the Code Editor tab. Tap <strong>"Sync Project with Gradle Files"</strong> in the top yellow bar of your IDE to activate dependencies (Compose, Material 3, Navigation).
+            <p className="text-xs text-slate-400 mt-2 pl-7 leading-relaxed">
+              If you prefer to start with a blank canvas and copy-paste the Kotlin files one-by-one, follow these guidelines:
             </p>
-          </div>
+            
+            <div className="mt-3 pl-7 space-y-4">
+              <div>
+                <span className="text-xs font-bold text-slate-200 block">Step B1. Creating the Android Studio Project</span>
+                <p className="text-xs text-slate-400 mt-1">
+                  Launch Android Studio, click <strong>New Project</strong>, select <strong>Empty Activity</strong> (Jetpack Compose standard) and specify these inputs exactly:
+                </p>
+                <ul className="list-disc pl-5 text-xs text-slate-400 space-y-1 mt-1.5">
+                  <li><strong>Name:</strong> Mental Health Toolkit</li>
+                  <li><strong>Package Name:</strong> <code className="bg-slate-950 px-1.5 py-0.5 rounded text-rose-400">com.mentalhealth.firstaid</code></li>
+                  <li><strong>Language:</strong> Kotlin</li>
+                  <li><strong>Minimum SDK:</strong> API 26 (Android 8.0 Oreo) or higher</li>
+                  <li><strong>Build Configuration:</strong> Kotlin DSL (build.gradle.kts)</li>
+                </ul>
+              </div>
 
-          <hr className="border-slate-800" />
+              <div>
+                <span className="text-xs font-bold text-slate-200 block">Step B2. Swap Gradle Configuration files</span>
+                <p className="text-xs text-slate-400 mt-1">
+                  Copy and replace the content of your local project's <code className="bg-slate-950 px-1 py-0.5 rounded text-amber-300 text-[10px]">gradle/libs.versions.toml</code> and <code className="bg-slate-950 px-1 py-0.5 rounded text-amber-300 text-[10px]">app/build.gradle.kts</code> with the source files shown in the <strong>Code Editor</strong> tab. Click <strong>"Sync Project with Gradle Files"</strong> in the top yellow bar.
+                </p>
+              </div>
 
-          <div>
-            <h3 className="text-base font-bold text-white flex items-center space-x-2">
-              <span className="bg-amber-600 text-white rounded p-1"><Terminal size={15} /></span>
-              <span>3. Implementing the Code Nodes</span>
-            </h3>
-            <p className="text-xs text-slate-400 mt-2 pl-7">
-              Create a package directory in your app structure named <code className="bg-slate-950 px-1 py-0.5 rounded text-sky-400">ui/screens/</code>. Paste each Kotlin Compose file from the editor:
-            </p>
-            <p className="text-xs text-slate-400 mt-1 pl-7">
-              - Copy and replace <code className="bg-slate-950 px-1 py-0.5 rounded text-rose-400 font-mono">MainActivity.kt</code> wholly. Next, copy and create screens: <code className="bg-slate-800 p-0.5 px-1 rounded text-slate-100 font-mono">DashboardScreen.kt</code>, <code className="bg-slate-800 p-0.5 px-1 rounded text-slate-100 font-mono">GuidedBreathingScreen.kt</code>, <code className="bg-slate-800 p-0.5 px-1 rounded text-slate-100 font-mono">GroundingExerciseScreen.kt</code>, and <code className="bg-slate-800 p-0.5 px-1 rounded text-slate-100 font-mono">EmergencyContactsScreen.kt</code> inside the <code className="bg-slate-950 p-0.5 px-1 rounded text-emerald-400 font-mono">ui/screens</code> hierarchy.
-            </p>
+              <div>
+                <span className="text-xs font-bold text-slate-200 block">Step B3. Copy Kotlin Screens</span>
+                <p className="text-xs text-slate-400 mt-1">
+                  Inside your local project, right-click the <code className="bg-slate-950 px-1 py-0.5 rounded text-sky-400">com.mentalhealth.firstaid</code> package, select <strong>New &gt; Package</strong>, and name it <code className="bg-slate-950 px-1 py-0.5 rounded font-mono">ui.screens</code>.
+                  Create empty Kotlin files for each screen inside this directory, and paste the code from our Code Editor:
+                </p>
+                <ul className="list-disc pl-5 text-xs text-slate-400 space-y-1 mt-1.5 font-mono">
+                  <li>MainActivity.kt (Replaces your existing main activity wholly)</li>
+                  <li>ui/screens/DashboardScreen.kt</li>
+                  <li>ui/screens/GuidedBreathingScreen.kt</li>
+                  <li>ui/screens/GroundingExerciseScreen.kt</li>
+                  <li>ui/screens/EmergencyContactsScreen.kt</li>
+                  <li>...and other screens matching our editor tree</li>
+                </ul>
+              </div>
+            </div>
           </div>
 
           <hr className="border-slate-800" />
@@ -193,7 +245,7 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({
                   Create a file named <code className="bg-slate-900 text-[#a8c69f] px-1 py-0.5 rounded font-mono">.github/workflows/build-apk.yml</code> and paste:
                 </p>
                 <pre className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-[10.5px] font-mono text-emerald-300 overflow-x-auto max-h-36 select-all">
-{`name: Compile Safe Space Android APK
+{`name: Compile Mental Health Toolkit Android APK
 on: [push, pull_request]
 jobs:
   build:

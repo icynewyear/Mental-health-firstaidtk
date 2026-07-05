@@ -98,11 +98,11 @@ androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = 
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
-androidx-compose-ui = { group = "androidx.compose", name = "ui" }
-androidx-compose-ui-graphics = { group = "androidx.compose", name = "ui-graphics" }
-androidx-compose-ui-tooling-preview = { group = "androidx.compose", name = "ui-tooling-preview" }
-androidx-compose-material3 = { group = "androidx.compose", name = "material3" }
-androidx-compose-material-icons-extended = { group = "androidx.compose", name = "material-icons-extended" }
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleViewModelCompose" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -148,7 +148,7 @@ import com.mentalhealth.firstaid.ui.theme.MentalHealthFirstAidTheme
 import com.mentalhealth.firstaid.ui.screens.*
 
 class MainActivity : ComponentActivity() {
-    override class onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             MentalHealthFirstAidTheme {
@@ -160,10 +160,9 @@ class MainActivity : ComponentActivity() {
 
 sealed class Screen(val route: String, val title: String, val icon: @Composable () -> Unit) {
     object Dashboard : Screen("dashboard", "Home", { Icon(Icons.Default.Home, contentDescription = "Home") })
-    object Breathing : Screen("breathing", "Breathe", { Icon(Icons.Default.Spa, contentDescription = "Breathe") })
-    object Grounding : Screen("grounding", "Ground", { Icon(Icons.Default.MenuBook, contentDescription = "Ground") })
-    object Relief : Screen("relief", "Coping", { Icon(Icons.Default.Info, contentDescription = "Coping") })
-    object Emergency : Screen("emergency", "Crisis", { Icon(Icons.Default.Phone, contentDescription = "Crisis") })
+    object SomaticHub : Screen("somaticHub", "Body", { Icon(Icons.Default.Spa, contentDescription = "Body") })
+    object CbtHub : Screen("cbtHub", "Mind", { Icon(Icons.Default.MenuBook, contentDescription = "Mind") })
+    object SafetyHub : Screen("safetyHub", "Safety", { Icon(Icons.Default.Phone, contentDescription = "Safety") })
 }
 
 @Composable
@@ -181,10 +180,9 @@ fun MainAppStructure() {
             ) {
                 val screens = listOf(
                     Screen.Dashboard,
-                    Screen.Breathing,
-                    Screen.Grounding,
-                    Screen.Relief,
-                    Screen.Emergency
+                    Screen.SomaticHub,
+                    Screen.CbtHub,
+                    Screen.SafetyHub
                 )
                 screens.forEach { screen ->
                     NavigationBarItem(
@@ -212,25 +210,81 @@ fun MainAppStructure() {
             startDestination = Screen.Dashboard.route,
             modifier = Modifier.padding(innerPadding)
         ) {
+            // Tab 1: Home Dashboard
             composable(Screen.Dashboard.route) {
                 DashboardScreen(
-                    onNavigateToBreathing = { navController.navigate(Screen.Breathing.route) },
-                    onNavigateToGrounding = { navController.navigate(Screen.Grounding.route) },
-                    onNavigateToRelief = { navController.navigate(Screen.Relief.route) },
-                    onNavigateToEmergency = { navController.navigate(Screen.Emergency.route) }
+                    onNavigateToRoute = { route -> navController.navigate(route) }
                 )
             }
-            composable(Screen.Breathing.route) {
-                GuidedBreathingScreen()
+
+            // Tab 2: Body (Somatic) Hub
+            composable(Screen.SomaticHub.route) {
+                SomaticHubScreen(
+                    onNavigateToRoute = { route -> navController.navigate(route) }
+                )
             }
-            composable(Screen.Grounding.route) {
-                GroundingExerciseScreen()
+
+            // Tab 3: Mind (CBT) Hub
+            composable(Screen.CbtHub.route) {
+                CbtHubScreen(
+                    onNavigateToRoute = { route -> navController.navigate(route) }
+                )
             }
-            composable(Screen.Relief.route) {
-                CopingReliefScreen()
+
+            // Tab 4: Safety (Support) Hub
+            composable(Screen.SafetyHub.route) {
+                SafetyHubScreen(
+                    onNavigateToRoute = { route -> navController.navigate(route) }
+                )
             }
-            composable(Screen.Emergency.route) {
-                EmergencyContactsScreen()
+
+            // Sub-destinations / Spoke Screens
+            composable("breathing") {
+                GuidedBreathingScreen(onBackClick = { navController.popBackStack() })
+            }
+            composable("grounding") {
+                GroundingExerciseScreen(onBackClick = { navController.popBackStack() })
+            }
+            composable("vagusHacks") {
+                VagusResetScreen(onBackClick = { navController.popBackStack() })
+            }
+            composable("somatic") {
+                SomaticRelaxationScreen(onBackClick = { navController.popBackStack() })
+            }
+            composable("emdr") {
+                EmdrPacerScreen(onBackClick = { navController.popBackStack() })
+            }
+
+            composable("reframing") {
+                ThoughtReframerScreen(onBackClick = { navController.popBackStack() })
+            }
+            composable("worryBox") {
+                WorryLockboxScreen(onBackClick = { navController.popBackStack() })
+            }
+            composable("emotionWheel") {
+                EmotionWheelScreen(onBackClick = { navController.popBackStack() })
+            }
+            composable("relief") {
+                CopingReliefScreen(onBackClick = { navController.popBackStack() })
+            }
+            composable("gratitude") {
+                GratitudeJarScreen(onBackClick = { navController.popBackStack() })
+            }
+            composable("habit") {
+                NeuroVitalsScreen(onBackClick = { navController.popBackStack() })
+            }
+
+            composable("panicSOS") {
+                PanicRescueScreen(onBackClick = { navController.popBackStack() })
+            }
+            composable("safetyPlan") {
+                StanleyBrownSafetyPlan(onBackClick = { navController.popBackStack() })
+            }
+            composable("emergency") {
+                EmergencyContactsScreen(onBackClick = { navController.popBackStack() })
+            }
+            composable("resources") {
+                SimpleResourcesScreen(onBackClick = { navController.popBackStack() })
             }
         }
     }
@@ -266,6 +320,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Vibration
+import androidx.compose.material.icons.filled.ArrowBack
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -277,7 +332,7 @@ enum class BreathingPhase(val label: String, val color: Color) {
 }
 
 @Composable
-fun GuidedBreathingScreen() {
+fun GuidedBreathingScreen(onBackClick: () -> Unit = {}) {
     var isBoxBreathing by remember { mutableStateOf(true) } // Box Breathing (4s-4s-4s-4s) vs Calm Breathing (4s-7s-8s)
     var isRunning by remember { mutableStateOf(false) }
     var currentPhase by remember { mutableStateOf(BreathingPhase.INHALE) }
@@ -393,6 +448,22 @@ fun GuidedBreathingScreen() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
+        // Top Back Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBackClick) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Back to Somatic Hub",
+                fontSize = 14.sp,
+                color = Color.Gray
+            )
+        }
+
         // Mode Selector Tab
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
@@ -563,7 +634,7 @@ fun GuidedBreathingScreen() {
                         text = "Gentle Haptics",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.DarkGray
+                        color = Color(0xFF333333)
                     )
                 }
                 Switch(
@@ -610,7 +681,7 @@ data class GroundingStep(
 )
 
 @Composable
-fun GroundingExerciseScreen() {
+fun GroundingExerciseScreen(onBackClick: () -> Unit = {}) {
     val steps = remember {
         listOf(
             GroundingStep(5, "See", "Name 5 things you can see around you.", "A clock on the wall, trees, a light...", 5, Color(0xFF3F51B5)),
@@ -635,10 +706,26 @@ fun GroundingExerciseScreen() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
+        // Top Back Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBackClick) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Back to Somatic Hub",
+                fontSize = 14.sp,
+                color = Color.Gray
+            )
+        }
+
         // Step Banner & Progress Index indicators
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+            modifier = Modifier.fillMaxWidth()
         ) {
             Text(
                 "5-4-3-2-1 Grounding Method",
@@ -732,7 +819,7 @@ fun GroundingExerciseScreen() {
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(text = item, color = Color.DarkGray)
+                                Text(text = item, color = Color(0xFF333333))
                             }
                         }
                     }
@@ -885,10 +972,7 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun DashboardScreen(
-    onNavigateToBreathing: () -> Unit,
-    onNavigateToGrounding: () -> Unit,
-    onNavigateToRelief: () -> Unit,
-    onNavigateToEmergency: () -> Unit
+    onNavigateToRoute: (String) -> Unit
 ) {
     var checkInMood by remember { mutableStateOf<String?>(null) }
     var dailyStressValue by remember { mutableFloatStateOf(3f) }
@@ -995,7 +1079,7 @@ fun DashboardScreen(
                     icon = Icons.Default.Spa,
                     backgroundColor = Color(0xFFE8F5E9),
                     accentColor = Color(0xFF2E7D32),
-                    onClick = onNavigateToBreathing
+                    onClick = { onNavigateToRoute("breathing") }
                 )
             }
             item {
@@ -1005,7 +1089,7 @@ fun DashboardScreen(
                     icon = Icons.Default.Fingerprint,
                     backgroundColor = Color(0xFFE8EAF6),
                     accentColor = Color(0xFF3F51B5),
-                    onClick = onNavigateToGrounding
+                    onClick = { onNavigateToRoute("grounding") }
                 )
             }
             item {
@@ -1015,7 +1099,7 @@ fun DashboardScreen(
                     icon = Icons.Default.AutoStories,
                     backgroundColor = Color(0xFFFFF3E0),
                     accentColor = Color(0xFFE65100),
-                    onClick = onNavigateToRelief
+                    onClick = { onNavigateToRoute("relief") }
                 )
             }
             item {
@@ -1025,7 +1109,7 @@ fun DashboardScreen(
                     icon = Icons.Default.PhoneInTalk,
                     backgroundColor = Color(0xFFFFEBEE),
                     accentColor = Color(0xFFC62828),
-                    onClick = onNavigateToEmergency
+                    onClick = { onNavigateToRoute("emergency") }
                 )
             }
         }
@@ -1040,9 +1124,9 @@ fun DashboardScreen(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                "Offline-First Guard Activated. All logs reside locally on your device.",
+                text = "Offline-First Guard Activated. All logs reside locally on your device.",
                 fontSize = 10.sp,
-                color = Color.DarkGray,
+                color = Color(0xFF333333),
                 fontWeight = FontWeight.Medium
             )
         }
@@ -1114,6 +1198,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -1125,7 +1210,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun EmergencyContactsScreen() {
+fun EmergencyContactsScreen(onBackClick: () -> Unit = {}) {
     val context = LocalContext.current
     val sharedPrefs = remember { context.getSharedPreferences("emergency_prefs", Context.MODE_PRIVATE) }
 
@@ -1148,12 +1233,27 @@ fun EmergencyContactsScreen() {
             .background(Color(0xFFFAF9F6))
             .padding(16.dp)
     ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBackClick) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Back to Support Hub",
+                fontSize = 14.sp,
+                color = Color.Gray
+            )
+        }
+
         // Title Screen Help Banner
         Text(
             text = "Emergency & Help Kit",
             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
             color = Color(0xFFC62828),
-            modifier = Modifier.padding(top = 16.dp)
+            modifier = Modifier.padding(top = 8.dp)
         )
         Text(
             text = "Immediate, confidential support channels available 24/7.",
@@ -1364,6 +1464,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -1381,7 +1482,7 @@ data class CopingStatement(
 )
 
 @Composable
-fun CopingReliefScreen() {
+fun CopingReliefScreen(onBackClick: () -> Unit = {}) {
     var statements by remember {
         mutableStateOf(
             listOf(
@@ -1406,13 +1507,28 @@ fun CopingReliefScreen() {
             .background(Color(0xFFFAF9F6))
             .padding(16.dp)
     ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBackClick) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Back to Mind Hub",
+                fontSize = 14.sp,
+                color = Color.Gray
+            )
+        }
+
         // Core header
         Text(
             "Coping Statements",
             fontWeight = FontWeight.Bold,
             fontSize = 22.sp,
             color = Color(0xFF2C3E50),
-            modifier = Modifier.padding(top = 16.dp)
+            modifier = Modifier.padding(top = 8.dp)
         )
         Text(
             "Grounding statements to ease nervous spikes.",
@@ -1461,10 +1577,10 @@ fun CopingReliefScreen() {
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(
-                            "\"\${statement.text}\"",
+                            text = "\"\${statement.text}\"",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color.DarkGray
+                            color = Color(0xFF333333)
                         )
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
@@ -1598,8 +1714,8 @@ fun ThoughtReframerScreen(onBackClick: () -> Unit) {
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(item.distortion, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 11.sp)
-                            Text("Automatic Negative: \${item.negative}", fontSize = 12.sp, color = Color.Gray)
-                            Text("Balanced Strategy: \${item.rational}", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.DarkGray)
+                            Text(text = "Automatic Negative: \${item.negative}", fontSize = 12.sp, color = Color.Gray)
+                            Text(text = "Balanced Strategy: \${item.rational}", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF333333))
                         }
                     }
                 }
@@ -1837,35 +1953,6 @@ fun StanleyBrownSafetyPlan(onBackClick: () -> Unit) {
 }`
   },
   {
-    name: "SoundscapeScreen.kt",
-    path: "app/src/main/java/com/mentalhealth/firstaid/ui/screens/SoundscapeScreen.kt",
-    language: "kotlin",
-    description: "Multi-channel procedural nature synthesizer layout inside Jetpack Compose leveraging custom SoundPool/ExoPlayer layers.",
-    code: `package com.mentalhealth.firstaid.ui.screens
- 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
- 
-@Composable
-fun SoundscapeScreen(onBackClick: () -> Unit) {
-    var isPlaying by remember { mutableStateOf(false) }
-    var masterVolume by remember { mutableFloatStateOf(0.7f) }
- 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Nature sound synthesizer (Offline-First)", fontSize = 18.sp)
-        Button(onClick = { isPlaying = !isPlaying }) {
-            Text(if (isPlaying) "Mute Wave generators" else "Synthesize Live Waves")
-        }
-        Text("Volume Sweep: \${(masterVolume * 100).toInt()}%")
-        Slider(value = masterVolume, onValueChange = { masterVolume = it })
-    }
-}`
-  },
-  {
     name: "WorryLockboxScreen.kt",
     path: "app/src/main/java/com/mentalhealth/firstaid/ui/screens/WorryLockboxScreen.kt",
     language: "kotlin",
@@ -2015,5 +2102,616 @@ fun PanicRescueScreen(onBackClick: () -> Unit) {
         }
     }
 }`
+  },
+  {
+    name: "SomaticHubScreen.kt",
+    path: "app/src/main/java/com/mentalhealth/firstaid/ui/screens/SomaticHubScreen.kt",
+    language: "kotlin",
+    description: "The somatic and body-based relaxation hub interface.",
+    code: `package com.mentalhealth.firstaid.ui.screens
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+@Composable
+fun SomaticHubScreen(onNavigateToRoute: (String) -> Unit) {
+    val tools = remember {
+        listOf(
+            Triple("breathing", "Guided Breathing", "Box and 4-7-8 deep breathing rhythms with peaceful pacing helpers."),
+            Triple("grounding", "Sensory Grounding", "A simple 5-4-3-2-1 sequence and warm check-ins to feel grounded."),
+            Triple("vagusHacks", "Vagus Nerve Resets", "Simple nerve holds, jaw releases, and gentle breath pressures to settle."),
+            Triple("somatic", "Somatic Muscle Relax", "A progressive tension-and-release sequence to ease physical tightness."),
+            Triple("emdr", "EMDR Eye Pacer", "A steady visual pacer to help quiet your thoughts and find steady focus.")
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFAF9F6))
+            .padding(16.dp)
+    ) {
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Restful Regulation",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF4A6741)
+        )
+        Text(
+            text = "Somatic & Body Hub",
+            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+            color = Color(0xFF2C3E50),
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Text(
+            text = "These gentle offline exercises help you connect with your body, pause for a moment, and discover your natural physical center of calm.",
+            fontSize = 12.sp,
+            color = Color.Gray,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.weight(1f)
+        ) {
+            items(tools) { (id, name, desc) ->
+                val icon = when (id) {
+                    "breathing" -> Icons.Default.Spa
+                    "grounding" -> Icons.Default.Info
+                    "vagusHacks" -> Icons.Default.Refresh
+                    "somatic" -> Icons.Default.Favorite
+                    else -> Icons.Default.PlayArrow
+                }
+                val bgColor = when (id) {
+                    "breathing" -> Color(0xFFE8F5E9)
+                    "grounding" -> Color(0xFFE0F2F1)
+                    "vagusHacks" -> Color(0xFFFFF8E1)
+                    "somatic" -> Color(0xFFE8EAF6)
+                    else -> Color(0xFFE1F5FE)
+                }
+                val accentColor = when (id) {
+                    "breathing" -> Color(0xFF2E7D32)
+                    "grounding" -> Color(0xFF00695C)
+                    "vagusHacks" -> Color(0xFFF57F17)
+                    "somatic" -> Color(0xFF283593)
+                    else -> Color(0xFF0277BD)
+                }
+                val tag = when (id) {
+                    "breathing" -> "Breathe"
+                    "grounding" -> "Sensory"
+                    "vagusHacks" -> "Gentle"
+                    "somatic" -> "Body"
+                    else -> "Visual"
+                }
+                
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigateToRoute(id) }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = bgColor,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = name,
+                                    tint = accentColor,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.width(16.dp))
+                        
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = name,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = Color(0xFF2C3E50)
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = bgColor
+                                ) {
+                                    Text(
+                                        text = tag,
+                                        fontSize = 8.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = accentColor,
+                                        modifier = Modifier.padding(horizontal = 6.dp, py = 2.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = desc,
+                                fontSize = 11.sp,
+                                color = Color.Gray,
+                                lineHeight = 14.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}`
+  },
+  {
+    name: "CbtHubScreen.kt",
+    path: "app/src/main/java/com/mentalhealth/firstaid/ui/screens/CbtHubScreen.kt",
+    language: "kotlin",
+    description: "CBT and cognitive-based mind tools hub.",
+    code: `package com.mentalhealth.firstaid.ui.screens
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+@Composable
+fun CbtHubScreen(onNavigateToRoute: (String) -> Unit) {
+    val tools = remember {
+        listOf(
+            Triple("reframing", "Thought Reframer", "A friendly guided space to find perspective and gently ease worrying thoughts."),
+            Triple("worryBox", "Worry Lockbox", "A warm, private space to write down worries and let them rest for later."),
+            Triple("emotionWheel", "Emotion Journal", "Explore and name your feelings step-by-step in a private, gentle journal."),
+            Triple("relief", "Coping Words", "Comforting, reassuring phrases to read and recall whenever you need them."),
+            Triple("gratitude", "Gratitude Jar", "Write down small moments of joy and kindness to look back on."),
+            Triple("habit", "Everyday Basics", "A quick, simple checklist to check in on rest, water, and sunlight.")
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFAF9F6))
+            .padding(16.dp)
+    ) {
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Mind & Thoughts",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF4A6741)
+        )
+        Text(
+            text = "CBT & Mind Hub",
+            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+            color = Color(0xFF2C3E50),
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Text(
+            text = "Thought exercises help you pause spiraling fears, set aside future concerns, and bring your mind back to a place of comfort and clarity.",
+            fontSize = 12.sp,
+            color = Color.Gray,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.weight(1f)
+        ) {
+            items(tools) { (id, name, desc) ->
+                val icon = when (id) {
+                    "reframing" -> Icons.Default.MenuBook
+                    "worryBox" -> Icons.Default.Lock
+                    "emotionWheel" -> Icons.Default.List
+                    "relief" -> Icons.Default.Info
+                    "gratitude" -> Icons.Default.Star
+                    else -> Icons.Default.Check
+                }
+                val bgColor = when (id) {
+                    "reframing" -> Color(0xFFE8F5E9)
+                    "worryBox" -> Color(0xFFFFF8E1)
+                    "emotionWheel" -> Color(0xFFFFEBEE)
+                    "relief" -> Color(0xFFE8F5E9)
+                    "gratitude" -> Color(0xFFE8EAF6)
+                    else -> Color(0xFFE1F5FE)
+                }
+                val accentColor = when (id) {
+                    "reframing" -> Color(0xFF2E7D32)
+                    "worryBox" -> Color(0xFFF57F17)
+                    "emotionWheel" -> Color(0xFFC62828)
+                    "relief" -> Color(0xFF4A6741)
+                    "gratitude" -> Color(0xFF283593)
+                    else -> Color(0xFF0277BD)
+                }
+                val tag = when (id) {
+                    "reframing" -> "CBT"
+                    "worryBox" -> "Lock"
+                    "emotionWheel" -> "Journal"
+                    "relief" -> "Words"
+                    "gratitude" -> "Joy"
+                    else -> "Basics"
+                }
+                
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigateToRoute(id) }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = bgColor,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = name,
+                                    tint = accentColor,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.width(16.dp))
+                        
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = name,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = Color(0xFF2C3E50)
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = bgColor
+                                ) {
+                                    Text(
+                                        text = tag,
+                                        fontSize = 8.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = accentColor,
+                                        modifier = Modifier.padding(horizontal = 6.dp, py = 2.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = desc,
+                                fontSize = 11.sp,
+                                color = Color.Gray,
+                                lineHeight = 14.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+`
+  },
+  {
+    name: "SafetyHubScreen.kt",
+    path: "app/src/main/java/com/mentalhealth/firstaid/ui/screens/SafetyHubScreen.kt",
+    language: "kotlin",
+    description: "Crisis support, safety planning, and direct hotline dials hub.",
+    code: `package com.mentalhealth.firstaid.ui.screens
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+@Composable
+fun SafetyHubScreen(onNavigateToRoute: (String) -> Unit) {
+    val tools = remember {
+        listOf(
+            Triple("panicSOS", "Calm Rescue Space", "A simple, direct pace-helper that provides deep soothing tones and reassuring visual guidance."),
+            Triple("safetyPlan", "Comfort Safety Plan", "A custom safety blueprint based on standard, helpful steps to keep you safe and cared for."),
+            Triple("emergency", "Support & Helpline Contacts", "Immediate, easy access to supportive helplines, text services, and caring peer advocates loaded offline."),
+            Triple("resources", "Mental Health Resource Links", "Direct web access to trusted global mental health organizations, educational guides, and screening tools.")
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFAF9F6))
+            .padding(16.dp)
+    ) {
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Comfort & Support Backup",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF4A6741)
+        )
+        Text(
+            text = "Support Hub",
+            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+            color = Color(0xFF2C3E50),
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Text(
+            text = "These resources are here to support you in difficult moments. If you are feeling overwhelmed, take a slow breath. You are safe here.",
+            fontSize = 12.sp,
+            color = Color.Gray,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.weight(1f)
+        ) {
+            items(tools) { (id, name, desc) ->
+                val icon = when (id) {
+                    "panicSOS" -> Icons.Default.Warning
+                    "safetyPlan" -> Icons.Default.Star
+                    "emergency" -> Icons.Default.Phone
+                    else -> Icons.Default.Info
+                }
+                val bgColor = when (id) {
+                    "panicSOS" -> Color(0xFFFFEBEE)
+                    "safetyPlan" -> Color(0xFFE8F5E9)
+                    "emergency" -> Color(0xFFE8EAF6)
+                    else -> Color(0xFFE1F5FE)
+                }
+                val accentColor = when (id) {
+                    "panicSOS" -> Color(0xFFC62828)
+                    "safetyPlan" -> Color(0xFF2E7D32)
+                    "emergency" -> Color(0xFF283593)
+                    else -> Color(0xFF0277BD)
+                }
+                val tag = when (id) {
+                    "panicSOS" -> "Rescue"
+                    "safetyPlan" -> "Safety"
+                    "emergency" -> "Crisis"
+                    else -> "Web"
+                }
+                
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigateToRoute(id) }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = bgColor,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = name,
+                                    tint = accentColor,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.width(16.dp))
+                        
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = name,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = Color(0xFF2C3E50)
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = bgColor
+                                ) {
+                                    Text(
+                                        text = tag,
+                                        fontSize = 8.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = accentColor,
+                                        modifier = Modifier.padding(horizontal = 6.dp, py = 2.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = desc,
+                                fontSize = 11.sp,
+                                color = Color.Gray,
+                                lineHeight = 14.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+`
+  },
+  {
+    name: "SimpleResourcesScreen.kt",
+    path: "app/src/main/java/com/mentalhealth/firstaid/ui/screens/SimpleResourcesScreen.kt",
+    language: "kotlin",
+    description: "Simple links screen for mental health resource web references.",
+    code: `package com.mentalhealth.firstaid.ui.screens
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+@Composable
+fun SimpleResourcesScreen(onBackClick: () -> Unit) {
+    val resources = listOf(
+        "National Suicide Prevention Lifeline" to "https://988lifeline.org",
+        "Crisis Text Line" to "https://www.crisistextline.org",
+        "The Trevor Project" to "https://www.thetrevorproject.org",
+        "NAMI Support" to "https://nami.org",
+        "Mental Health America" to "https://mhanational.org"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFAF9F6))
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBackClick) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Back to Support Hub",
+                fontSize = 14.sp,
+                color = Color.Gray
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Mental Health Resource Links",
+            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+            color = Color(0xFF2C3E50),
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        Text(
+            text = "Direct web access to trusted global mental health organizations, educational guides, and screening tools.",
+            fontSize = 12.sp,
+            color = Color.Gray,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.weight(1f)
+        ) {
+            items(resources) { (name, url) ->
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = name,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = Color(0xFF2C3E50)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = url,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+`
   }
 ];

@@ -718,7 +718,7 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
       <div className="flex justify-between items-start mt-1.5 mb-4 select-none relative">
         <div className="text-left">
           <span className="text-[8.5px] font-black text-[#4A6741] uppercase tracking-wider bg-[#E1E8E3] px-2.5 py-0.5 rounded-full shadow-2xs">OFFLINE FIRST</span>
-          <h2 className="text-xl font-black text-[#4A6741] tracking-tight mt-1.5 font-sans">Safe Space</h2>
+          <h2 className="text-xl font-black text-[#4A6741] tracking-tight mt-1.5 font-sans">Mental Health Toolkit</h2>
           <p className="text-[11px] font-semibold text-slate-500 mt-0.5 font-sans leading-tight">Take a moment. You are safe, validated, and supported.</p>
         </div>
         {setIsDarkMode && (

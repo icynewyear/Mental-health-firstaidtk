@@ -1,5 +1,5 @@
 {
-  "name": "Mental Health First Aid",
+  "name": "Mental Health Toolkit",
   "description": "An offline-first mental health first aid companion and Android Jetpack Compose code generator with guided breathing, crisis support, and grounding techniques.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

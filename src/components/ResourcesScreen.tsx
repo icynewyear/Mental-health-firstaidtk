@@ -189,7 +189,7 @@ export const SimulatorResources: React.FC<ResourcesProps> = ({ onBack }) => {
         {/* Closing Notice */}
         <div className="bg-slate-50 border border-slate-200/40 p-4 rounded-3xl text-center select-none">
           <p className="text-[9px] text-slate-400 font-medium">
-            Safe Space Studio does not track outbound links. Your clinical resources search remains private and confidential within your local session data at all times.
+            Mental Health Toolkit does not track outbound links. Your clinical resources search remains private and confidential within your local session data at all times.
           </p>
         </div>
 

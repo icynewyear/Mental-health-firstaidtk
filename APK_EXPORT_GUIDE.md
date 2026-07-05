@@ -1,6 +1,6 @@
-# Safe Space Studio — GitHub to Android Test APK Guide
+# Mental Health Toolkit — GitHub to Android Test APK Guide
 
-Welcome to the **Safe Space Studio** development workspace. Since your prototype includes a complete, fully engineered suite of **Jetpack Compose (Kotlin)** screens and architectural configurations, you can easily compile these sources to create a real, fully interactive physical `.apk` file for testing on any Android device.
+Welcome to the **Mental Health Toolkit** development workspace. Since your prototype includes a complete, fully engineered suite of **Jetpack Compose (Kotlin)** screens and architectural configurations, you can easily compile these sources to create a real, fully interactive physical `.apk` file for testing on any Android device.
 
 Follow this step-by-step guide to export your generated code, push it to GitHub, and use an automated **GitHub Actions** pipeline to compile and deliver a downloadable test APK instantly.
 
@@ -27,7 +27,7 @@ First, create a clean Android container shell on your computer to host the gener
     *   Select the **Empty Activity** template (the modern template optimized for Jetpack Compose).
     *   Click **Next**.
 3.  **Specify Project details exactly:**
-    *   **Name:** `Safe Space Studio`
+    *   **Name:** `Mental Health Toolkit`
     *   **Package Name:** `com.mentalhealth.firstaid` *(Make sure this matches the package declarations at the top of the Kotlin files).*
     *   **Language:** `Kotlin`
     *   **Minimum SDK:** `API 26` (Android 8.0 Oreo - matches device capabilities).
@@ -104,7 +104,7 @@ You can build the APK right on your machine instantly, completely offline.
 3. Paste the following automated script into **`build-apk.yml`**:
 
 ```yaml
-name: Compile & Package Safe Space Android APK
+name: Compile & Package Mental Health Toolkit Android APK
 
 on:
   push:
@@ -136,7 +136,7 @@ jobs:
     - name: Upload Compiled Test APK
       uses: actions/upload-artifact@v4
       with:
-        name: safe-space-test-apk
+        name: mental-health-toolkit-test-apk
         path: app/build/outputs/apk/debug/app-debug.apk
         retention-days: 7
 ```
@@ -162,9 +162,9 @@ jobs:
 ### If you used Option B (GitHub Workflow):
 1. Open your repository on **GitHub** in your web browser.
 2. Click on the **Actions** tab at the top.
-3. Select the latest run of the **"Compile & Package Safe Space Android APK"** workflow.
+3. Select the latest run of the **"Compile & Package Mental Health Toolkit Android APK"** workflow.
 4. Scroll down to the bottom of the page to find the **Artifacts** section.
-5. Click on **`safe-space-test-apk`** to download a ZIP archive containing your built **`app-debug.apk`**.
+5. Click on **`mental-health-toolkit-test-apk`** to download a ZIP archive containing your built **`app-debug.apk`**.
 6. Extract the ZIP and install the APK on your device! *(Ensure you have "Install Unknown Apps" enabled in your browser/file explorer settings).*
 
 *You now have a fully responsive, native Material 3 self-care app running on your physical phone!*
