@@ -72,6 +72,9 @@
 .simulator-dark-mode.bg-slate-50\/40, .simulator-dark-mode .bg-slate-50\/40,
 .simulator-dark-mode.bg-slate-50\/50, .simulator-dark-mode .bg-slate-50\/50 { background-color: #0f172a !important; border-color: #334155 !important; color: #cbd5e1 !important; }
 
+.simulator-dark-mode.bg-slate-200, .simulator-dark-mode .bg-slate-200 { background-color: #1e293b !important; border-color: #334155 !important; color: #f1f5f9 !important; }
+.simulator-dark-mode.hover\:bg-slate-300:hover, .simulator-dark-mode .hover\:bg-slate-300:hover { background-color: #334155 !important; }
+
 .simulator-dark-mode.border-slate-100, .simulator-dark-mode .border-slate-100,
 .simulator-dark-mode.border-slate-200, .simulator-dark-mode .border-slate-200,
 .simulator-dark-mode.border-white, .simulator-dark-mode .border-white { border-color: #334155 !important; }

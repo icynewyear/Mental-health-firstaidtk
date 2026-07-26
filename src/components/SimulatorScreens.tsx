@@ -2461,9 +2461,7 @@ export const SimulatorEmergency: React.FC<EmergencyProps> = ({ onNavigate, onBac
     return data ? JSON.parse(data) : null;
   });
 
-  const [simulatedDialOpen, setSimulatedDialOpen] = useState(false);
-  const [dialedNum, setDialedNum] = useState('');
-  const [dialedType, setDialedType] = useState<'phone' | 'sms'>('phone');
+
 
   const handleSaveContact = (e: React.FormEvent) => {
     e.preventDefault();
@@ -2477,9 +2475,6 @@ export const SimulatorEmergency: React.FC<EmergencyProps> = ({ onNavigate, onBac
   };
 
   const handleTriggerDial = (number: string, type: 'phone' | 'sms' = 'phone') => {
-    setDialedNum(number);
-    setDialedType(type);
-    setSimulatedDialOpen(true);
     try {
       if (type === 'sms') {
         window.location.href = `sms:${number}`;
@@ -2673,37 +2668,7 @@ export const SimulatorEmergency: React.FC<EmergencyProps> = ({ onNavigate, onBac
         </div>
       </div>
 
-      {/* Simulated dial overlay popup */}
-      {simulatedDialOpen && (
-        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 rounded-[45px] flex items-center justify-center p-6 animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full p-6 text-center text-white shadow-2xl flex flex-col justify-between h-72">
-            <div>
-              <span className={`text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-full ${dialedType === 'sms' ? 'text-teal-400 bg-teal-950/40' : 'text-emerald-400 bg-emerald-950/40'}`}>
-                {dialedType === 'sms' ? 'SIMULATED SMS INTENT' : 'SIMULATED DIAL INTENT'}
-              </span>
-              <p className="text-xs text-slate-400 mt-4 leading-relaxed">
-                {dialedType === 'sms' 
-                  ? 'App dispatched a mobile SMS text action via system Android intent:' 
-                  : 'App dispatched a mobile dial action via system Android intent:'}
-              </p>
-              <h3 className="text-3xl font-black mt-2 text-[#D9534F] font-mono tracking-widest">{dialedNum}</h3>
-            </div>
 
-            <p className="text-[10px] text-slate-500 max-w-[80%] mx-auto leading-tight italic">
-              {dialedType === 'sms'
-                ? 'On an actual phone, this action safely boots your native messaging application with the contact prefilled.'
-                : 'On an actual phone, this action safely boots your standard Native Dialing screen with the phone number prefilled.'}
-            </p>
-
-            <button
-              onClick={() => setSimulatedDialOpen(false)}
-              className="w-full py-3 bg-slate-800 hover:bg-slate-700 rounded-2xl text-xs font-bold transition-colors border border-slate-700 uppercase tracking-wider cursor-pointer"
-            >
-              {dialedType === 'sms' ? 'Close Text Simulation' : 'Hang Up / Close'}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Disclaimer bottom advice block */}
       <span className="text-[8px] text-slate-500 leading-tight bg-[#E1E8E3]/60 p-2 rounded-xl border border-[#A8C69F]/30 shrink-0 select-none">
