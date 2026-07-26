@@ -190,6 +190,8 @@ interface AndroidMockupProps {
   seedRandomData: () => void;
   isDarkMode: boolean;
   setIsDarkMode: (val: boolean) => void;
+  developerUnlocked?: boolean;
+  setDeveloperUnlocked?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const AndroidMockup: React.FC<AndroidMockupProps> = ({
@@ -207,9 +209,28 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
   seedRandomData,
   isDarkMode,
   setIsDarkMode,
+  developerUnlocked,
+  setDeveloperUnlocked,
 }) => {
   const [timeState, setTimeState] = useState('14:05');
   const [offlinePillClicks, setOfflinePillClicks] = useState(0);
+
+  const handleOfflinePillClick = () => {
+    setOfflinePillClicks(prev => {
+      const next = prev + 1;
+      if (next >= 5) {
+        if (setDeveloperUnlocked) {
+          setDeveloperUnlocked(curr => {
+            const nextState = !curr;
+            localStorage.setItem('safespace_developer_unlocked', String(nextState));
+            return nextState;
+          });
+        }
+        return 0;
+      }
+      return next;
+    });
+  };
 
   // Lock protection & biometric states
   const [unlockRequired, setUnlockRequired] = useState<boolean>(() => {
@@ -266,39 +287,12 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
   const showLockScreen = isGuardedScreen && unlockRequired && !isUnlocked;
 
   return (
-    <div className="relative mx-auto flex flex-col items-center select-none" style={{ width: '310px' }}>
-      {/* Phone side buttons */}
-      <div className="absolute right-[-4px] top-28 w-1 h-14 bg-slate-400 rounded-l-md shadow-inner z-0" />
-      <div className="absolute right-[-4px] top-48 w-1 h-8 bg-slate-300 rounded-l-md shadow-inner z-0" />
-
-      {/* Main High-Fidelity Phone Outer Case */}
-      <div className="relative w-[302px] h-[610px] bg-slate-950 rounded-[46px] p-2.5 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.45)] border-4 border-slate-800 flex flex-col shrink-0 overflow-hidden z-10 hover:border-slate-700 transition">
+    <div className="w-full flex flex-col select-none">
+      {/* Main High-Fidelity Fluid App Container (Completely Frameless) */}
+      <div className={`w-full flex flex-col relative ${isDarkMode ? 'simulator-dark-mode' : ''}`}>
         
-        {/* Dynamic Notch / Punch Hole Speaker */}
-        <div className="absolute top-2.5 left-1/2 transform -translate-x-1/2 w-28 h-5 bg-slate-950 rounded-full flex justify-center items-center z-50">
-          <div className="w-1.5 h-1.5 rounded-full bg-slate-800 mr-2" />
-          <div className="w-14 h-1 bg-slate-900 rounded-full" />
-        </div>
-
-        {/* Screen inner content area */}
-        <div className={`w-full h-full bg-[#F1F5F2] rounded-[38px] overflow-hidden flex flex-col relative transform-gpu transition-colors duration-300 ${isDarkMode ? 'simulator-dark-mode' : ''}`}>
-          
-          {/* Status Bar */}
-          <div className="h-9 bg-[#F1F5F2] px-5 flex items-center justify-between text-slate-700 font-bold text-[10px] select-none shrink-0 pt-1 z-35 relative">
-            <div className="flex items-center space-x-2 relative z-50">
-              <span className="font-sans font-extrabold tracking-tight text-slate-600">{timeState}</span>
-            </div>
-            
-            <div className="flex items-center space-x-1.5 text-slate-600">
-              <span className="text-[8px] font-bold text-[#4A6741] tracking-wider bg-[#E1E8E3] px-1.5 py-0.5 rounded mr-1">Offline</span>
-              <Signal size={10} className="stroke-[2.5]" />
-              <Wifi size={10} className="stroke-[2.5]" />
-              <Battery size={11} className="stroke-[2.5] fill-slate-600 ml-0.5" />
-            </div>
-          </div>
-
           {/* Active View Router */}
-          <div className="flex-1 w-full overflow-hidden relative font-sans">
+          <div className="flex-1 w-full font-sans">
             {showLockScreen ? (
               <PhoneLockScreen
                 pin={unlockPin}
@@ -599,9 +593,6 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
             </div>
           )}
 
-          {/* Android Gesture Pill handle */}
-          <div className="absolute bottom-1.5 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-slate-950/60 rounded-full z-50 pointer-events-none" />
-        </div>
       </div>
     </div>
   );

@@ -34,6 +34,13 @@ export default function App() {
     return saved === 'true';
   });
   
+  // Secret Developer Mode state - hidden by default
+  const [developerUnlocked, setDeveloperUnlocked] = useState<boolean>(() => {
+    return localStorage.getItem('safespace_developer_unlocked') === 'true';
+  });
+  const [logoClicks, setLogoClicks] = useState<number>(0);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
   // Simulated State to persist across tab switches in the phone
   const [showDebugMenu, setShowDebugMenu] = useState<boolean>(false);
   const [stressLevel, setStressLevel] = useState<number>(() => {
@@ -230,6 +237,36 @@ export default function App() {
     localStorage.setItem('safespace_dark_mode', String(isDarkMode));
   }, [isDarkMode]);
 
+  // Automatically clear toast message after 3.5 seconds
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => {
+        setToastMessage(null);
+      }, 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
+
+  const handleLogoClick = () => {
+    setLogoClicks(prev => {
+      const next = prev + 1;
+      if (next >= 5) {
+        setDeveloperUnlocked(curr => {
+          const nextState = !curr;
+          localStorage.setItem('safespace_developer_unlocked', String(nextState));
+          if (nextState) {
+            setToastMessage("Secure Sandbox Environment Activated 🔐");
+          } else {
+            setToastMessage("Private Environment Active 🍃");
+          }
+          return nextState;
+        });
+        return 0;
+      }
+      return next;
+    });
+  };
+
   // Sync today's active values directly from loggedMood & stressLevel
   useEffect(() => {
     const todayIndex = new Date().getDay();
@@ -368,19 +405,29 @@ export default function App() {
       <header className={`w-full sticky top-0 z-50 backdrop-blur-md border-b transition-colors duration-300 ${isDarkMode ? 'bg-[#151c17]/80 border-slate-800/80 text-white' : 'bg-white/60 border-[#E1E8E3]/80'}`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           
-          {/* Logo Brand */}
-          <div className="flex items-center space-x-3 text-left">
+          {/* Logo Brand (Secret tap combo to toggle developer workspace) */}
+          <button
+            onClick={handleLogoClick}
+            className="flex items-center space-x-3 text-left bg-transparent border-0 p-0 focus:outline-none cursor-pointer active:scale-98 transition-transform select-none"
+            title="Mental Health Companion"
+          >
             <div className={`p-2.5 rounded-2xl shadow-sm flex items-center justify-center transition-colors duration-300 ${isDarkMode ? 'bg-[#38563a] text-[#a8c69f]' : 'bg-[#4A6741] text-white'}`}>
               <Leaf size={22} className="stroke-[2.5]" />
             </div>
             <div>
               <h1 className={`text-lg font-black tracking-tight leading-none font-sans transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Mental Health Toolkit</h1>
-              <span className={`text-[10px] uppercase font-extrabold tracking-widest block mt-1 transition-colors duration-300 ${isDarkMode ? 'text-[#a8c69f]' : 'text-[#4A6741]'}`}>Jetpack Compose Kotlin Prototype</span>
+              <span className={`text-[10px] uppercase font-extrabold tracking-widest block mt-1 transition-colors duration-300 ${
+                developerUnlocked 
+                  ? 'text-amber-500 animate-pulse' 
+                  : (isDarkMode ? 'text-[#a8c69f]' : 'text-[#4A6741]')
+              }`}>
+                {developerUnlocked ? '🛠️ Developer Workspace' : '🍃 Interactive Coping Companion'}
+              </span>
             </div>
-          </div>
+          </button>
 
           {/* Quick Stats / Info Row */}
-          <div className="flex items-center space-x-6 text-[10px] font-mono shrink-0 select-none">
+          <div className="flex items-center space-x-4 sm:space-x-6 text-[10px] font-mono shrink-0 select-none">
             <button 
               onClick={() => setIsDarkMode(!isDarkMode)}
               className={`flex items-center justify-center w-8 h-8 active:scale-95 transition rounded-2xl border cursor-pointer ${
@@ -392,30 +439,34 @@ export default function App() {
             >
               <span>{isDarkMode ? '☀️' : '🌙'}</span>
             </button>
-            <button 
-              onClick={() => setShowDebugMenu(!showDebugMenu)}
-              className={`flex items-center space-x-1.5 active:scale-95 transition px-3 py-1.5 rounded-2xl border cursor-pointer ${
-                isDarkMode 
-                  ? 'text-slate-100 bg-[#253229]/80 hover:bg-[#253229] border-emerald-950/60 shadow-md' 
-                  : 'text-slate-600 bg-[#E1E8E3]/60 hover:bg-[#E1E8E3] border-white/40'
-              }`}
-              title="Click to open Developer Sandbox debug menu"
-            >
-              <Milestone size={13} className={isDarkMode ? 'text-[#a8c69f]' : 'text-[#4A6741]'} />
-              <span>Compose 2.0 (Compiler plugin) ⚙️</span>
-            </button>
-            <button 
-              onClick={() => setShowDebugMenu(!showDebugMenu)}
-              className={`flex items-center space-x-1.5 active:scale-95 transition px-3 py-1.5 rounded-2xl border cursor-pointer ${
-                isDarkMode 
-                  ? 'text-slate-100 bg-[#253229]/80 hover:bg-[#253229] border-emerald-950/60 shadow-md' 
-                  : 'text-slate-600 bg-[#E1E8E3]/60 hover:bg-[#E1E8E3] border-white/40'
-              }`}
-              title="Click to open Developer Sandbox debug menu"
-            >
-              <Settings size={13} className={isDarkMode ? 'text-[#a8c69f]' : 'text-[#608271]'} />
-              <span>Offline M3 UI Architecture</span>
-            </button>
+            {developerUnlocked && (
+              <>
+                <button 
+                  onClick={() => setShowDebugMenu(!showDebugMenu)}
+                  className={`flex items-center space-x-1.5 active:scale-95 transition px-3 py-1.5 rounded-2xl border cursor-pointer ${
+                    isDarkMode 
+                      ? 'text-slate-100 bg-[#253229]/80 hover:bg-[#253229] border-emerald-950/60 shadow-md' 
+                      : 'text-slate-600 bg-[#E1E8E3]/60 hover:bg-[#E1E8E3] border-white/40'
+                  }`}
+                  title="Click to open Developer Sandbox debug menu"
+                >
+                  <Milestone size={13} className={isDarkMode ? 'text-[#a8c69f]' : 'text-[#4A6741]'} />
+                  <span>Compose 2.0 (Compiler plugin) ⚙️</span>
+                </button>
+                <button 
+                  onClick={() => setShowDebugMenu(!showDebugMenu)}
+                  className={`flex items-center space-x-1.5 active:scale-95 transition px-3 py-1.5 rounded-2xl border cursor-pointer ${
+                    isDarkMode 
+                      ? 'text-slate-100 bg-[#253229]/80 hover:bg-[#253229] border-emerald-950/60 shadow-md' 
+                      : 'text-slate-600 bg-[#E1E8E3]/60 hover:bg-[#E1E8E3] border-white/40'
+                  }`}
+                  title="Click to open Developer Sandbox debug menu"
+                >
+                  <Settings size={13} className={isDarkMode ? 'text-[#a8c69f]' : 'text-[#608271]'} />
+                  <span>Offline M3 UI Architecture</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -424,39 +475,81 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 flex flex-col space-y-8 z-10">
         
         {/* Dynamic Studio banner */}
-        <section className={`backdrop-blur-md rounded-[32px] p-6 lg:p-8 shadow-[0_8px_32px_rgba(0,0,0,0.03)] text-left flex flex-col md:flex-row items-center md:justify-between gap-6 transition-all duration-300 border ${
-          isDarkMode 
-            ? 'bg-[#151c17]/60 border-slate-800/50 text-slate-100' 
-            : 'bg-white/60 border-white/50'
-        }`}>
-          <div className="max-w-2xl">
-            <h2 className={`text-2xl md:text-3xl font-black tracking-tight font-sans transition-colors duration-300 ${
-              isDarkMode ? 'text-[#a8c69f]' : 'text-[#4A6741]'
-            }`}>Android Kotlin Prototype & Generator</h2>
-            <p className={`text-sm mt-2 leading-relaxed transition-colors duration-300 ${
-              isDarkMode ? 'text-slate-300' : 'text-slate-500'
-            }`}>
-              Experience the interactive web-based mental health companion in the simulated phone, and instantly grab the fully production-ready, modular <strong>Jetpack Compose</strong> code elements matching the active view. Ideal for rapid offline android app developments.
-            </p>
-          </div>
-
-          <div className={`flex shrink-0 items-center space-x-2.5 text-white text-[11px] font-bold px-4.5 py-3 rounded-2xl shadow-sm transition-colors duration-300 ${
-            isDarkMode ? 'bg-[#38563a]' : 'bg-[#4A6741]'
+        {developerUnlocked && (
+          <section className={`backdrop-blur-md rounded-[32px] p-6 lg:p-8 shadow-[0_8px_32px_rgba(0,0,0,0.03)] text-left flex flex-col md:flex-row items-center md:justify-between gap-6 transition-all duration-300 border ${
+            isDarkMode 
+              ? 'bg-[#151c17]/60 border-slate-800/50 text-slate-100' 
+              : 'bg-white/60 border-white/50'
           }`}>
-            <Heart size={16} fill="currentColor" className="text-white" />
-            <span>Responsive & Offline-First Kit</span>
-          </div>
-        </section>
+            <div className="max-w-2xl">
+              <h2 className={`text-2xl md:text-3xl font-black tracking-tight font-sans transition-colors duration-300 ${
+                isDarkMode ? 'text-[#a8c69f]' : 'text-[#4A6741]'
+              }`}>Android Kotlin Prototype & Generator</h2>
+              <p className={`text-sm mt-2 leading-relaxed transition-colors duration-300 ${
+                isDarkMode ? 'text-slate-300' : 'text-slate-500'
+              }`}>
+                Experience the interactive web-based mental health companion, and instantly grab the fully production-ready, modular <strong>Jetpack Compose</strong> code elements matching the active view. Ideal for rapid offline android app developments.
+              </p>
+            </div>
 
-        {/* Double-Pane View Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
-          {/* LEFT COLUMN: Simulated Android Phone (4 columns on lg, 5 on xl) */}
-          <div className="lg:col-span-5 xl:col-span-4 w-full">
-            <div className="sticky top-24">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-3 text-center lg:text-left">
-                📱 Interactive Device Simulator
-              </span>
+            <div className={`flex shrink-0 items-center space-x-2.5 text-white text-[11px] font-bold px-4.5 py-3 rounded-2xl shadow-sm transition-colors duration-300 ${
+              isDarkMode ? 'bg-[#38563a]' : 'bg-[#4A6741]'
+            }`}>
+              <Heart size={16} fill="currentColor" className="text-white" />
+              <span>Responsive & Offline-First Kit</span>
+            </div>
+          </section>
+        )}
+
+        {/* Double-Pane View Section vs Centered View Section */}
+        {developerUnlocked ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            {/* LEFT COLUMN: Fluid Interactive Care Companion */}
+            <div className="lg:col-span-6 xl:col-span-5 w-full">
+              <div className="sticky top-24">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-3 text-center lg:text-left">
+                  🍃 Interactive Care Companion
+                </span>
+                <AndroidMockup
+                  activeScreen={activeScreen}
+                  setActiveScreen={setActiveScreen}
+                  stressLevel={stressLevel}
+                  setStressLevel={setStressLevel}
+                  loggedMood={loggedMood}
+                  setLoggedMood={setLoggedMood}
+                  moodHistory={moodHistory}
+                  showDebugMenu={showDebugMenu}
+                  setShowDebugMenu={setShowDebugMenu}
+                  resetMoodData={resetMoodData}
+                  restoreAllToDefaults={restoreAllToDefaults}
+                  seedRandomData={seedRandomData}
+                  isDarkMode={isDarkMode}
+                  setIsDarkMode={setIsDarkMode}
+                  developerUnlocked={developerUnlocked}
+                  setDeveloperUnlocked={setDeveloperUnlocked}
+                />
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN: Android Studio Developer Suite */}
+            <div className="lg:col-span-6 xl:col-span-7 w-full flex flex-col space-y-4">
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-3 text-left">
+                  💻 Android Studio Code Workspace
+                </span>
+                <CodeViewer
+                  files={androidProjectFiles}
+                  selectedFileIndex={selectedFileIndex}
+                  setSelectedFileIndex={setSelectedFileIndex}
+                  recommendedFileIndex={recommendedFileIndex}
+                />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-4">
+            <div className="w-full relative z-10">
               <AndroidMockup
                 activeScreen={activeScreen}
                 setActiveScreen={setActiveScreen}
@@ -472,65 +565,82 @@ export default function App() {
                 seedRandomData={seedRandomData}
                 isDarkMode={isDarkMode}
                 setIsDarkMode={setIsDarkMode}
+                developerUnlocked={developerUnlocked}
+                setDeveloperUnlocked={setDeveloperUnlocked}
               />
             </div>
+            
+            {/* Elegant secret hint for users */}
+            <p 
+              onClick={handleLogoClick}
+              className={`text-[10.5px] mt-8 select-none font-mono tracking-wide hover:opacity-100 transition-all duration-300 cursor-pointer text-center px-4 py-1.5 rounded-full border shadow-xs ${
+                isDarkMode 
+                  ? 'text-slate-400 hover:text-[#a8c69f] border-slate-800 bg-[#151c17]/30' 
+                  : 'text-slate-500 hover:text-[#4A6741] border-[#E1E8E3] bg-white/40'
+              }`}
+            >
+              🔒 Safe & Private Space
+            </p>
           </div>
-
-          {/* RIGHT COLUMN: Android Studio Developer Suite (7 columns on lg, 8 on xl) */}
-          <div className="lg:col-span-7 xl:col-span-8 w-full flex flex-col space-y-4">
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-3 text-left">
-                💻 Android Studio Code Workspace
-              </span>
-              <CodeViewer
-                files={androidProjectFiles}
-                selectedFileIndex={selectedFileIndex}
-                setSelectedFileIndex={setSelectedFileIndex}
-                recommendedFileIndex={recommendedFileIndex}
-              />
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* Bottom Architectural Guide Cards */}
-        <section className="bg-slate-900 text-slate-100 rounded-[32px] p-6 lg:p-8 border border-slate-800 shadow-xl text-left">
-          <div className="flex items-center space-x-2.5 mb-5 mb-5">
-            <Terminal className="text-emerald-400 shrink-0" size={20} />
-            <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest">Architectural Specifications</span>
-          </div>
-
-          <h3 className="text-xl font-bold tracking-tight text-white mb-2">Modern Android Architectural Best Practices</h3>
-          <p className="text-xs text-slate-400 leading-relaxed mb-6 max-w-3xl">
-            This module has been architecturalized using Google's official <strong>Guide to App Architecture</strong>. Here’s how these components translate cleanly to clean enterprise-grade applications.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 flex flex-col">
-              <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1.5">Unidirectional Data Flow</span>
-              <h4 className="text-sm font-bold text-white mb-2">StateFlow & MVVM</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Kotlin's StateFlow inside ViewModel holds UI state observables. It ensures that standard configurations or orientation changes never destroy transient inputs like active breathing cycles or grounding counts.
-              </p>
+        {developerUnlocked && (
+          <section className="bg-slate-900 text-slate-100 rounded-[32px] p-6 lg:p-8 border border-slate-800 shadow-xl text-left">
+            <div className="flex items-center space-x-2.5 mb-5">
+              <Terminal className="text-emerald-400 shrink-0" size={20} />
+              <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest">Architectural Specifications</span>
             </div>
 
-            <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 flex flex-col">
-              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest mb-1.5">Declarative UI</span>
-              <h4 className="text-sm font-bold text-white mb-2">Material Design 3 Compose</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Material 3 utilizes standard token systems (surfaceVariant, primaryContainer) and animations (`animateFloatAsState`, `tween`) to build smooth, hardware-accelerated breathing rings and dynamic step trackers with zero XML clutter.
-              </p>
-            </div>
+            <h3 className="text-xl font-bold tracking-tight text-white mb-2">Modern Android Architectural Best Practices</h3>
+            <p className="text-xs text-slate-400 leading-relaxed mb-6 max-w-3xl">
+              This module has been architecturalized using Google's official <strong>Guide to App Architecture</strong>. Here’s how these components translate cleanly to clean enterprise-grade applications.
+            </p>
 
-            <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 flex flex-col">
-              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1.5">Local Persistence</span>
-              <h4 className="text-sm font-bold text-white mb-2">SharedPreferences & DataStore</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Critical tools like Personal Support Contacts reside directly on the device using basic Context-level SharedPreferences. This guarantees immediate startup and dials, even without network availability.
-              </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 flex flex-col">
+                <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1.5">Unidirectional Data Flow</span>
+                <h4 className="text-sm font-bold text-white mb-2">StateFlow & MVVM</h4>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Kotlin's StateFlow inside ViewModel holds UI state observables. It ensures that standard configurations or orientation changes never destroy transient inputs like active breathing cycles or grounding counts.
+                </p>
+              </div>
+
+              <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 flex flex-col">
+                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest mb-1.5">Declarative UI</span>
+                <h4 className="text-sm font-bold text-white mb-2">Material Design 3 Compose</h4>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Material 3 utilizes standard token systems (surfaceVariant, primaryContainer) and animations (`animateFloatAsState`, `tween`) to build smooth, hardware-accelerated breathing rings and dynamic step trackers with zero XML clutter.
+                </p>
+              </div>
+
+              <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 flex flex-col">
+                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1.5">Local Persistence</span>
+                <h4 className="text-sm font-bold text-white mb-2">SharedPreferences & DataStore</h4>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Critical tools like Personal Support Contacts reside directly on the device using basic Context-level SharedPreferences. This guarantees immediate startup and dials, even without network availability.
+                </p>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
       </main>
+
+      {/* Floating Elegant Toast System */}
+      {toastMessage && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 md:left-auto md:right-6 md:translate-x-0 z-50 max-w-sm animate-bounce">
+          <div className={`rounded-2xl p-4 shadow-2xl border flex items-center space-x-3 transition-all duration-300 ${
+            isDarkMode 
+              ? 'bg-[#151c17] border-emerald-900/60 text-slate-100' 
+              : 'bg-white border-[#E1E8E3] text-slate-800'
+          }`}>
+            <div className={`p-1.5 rounded-xl ${isDarkMode ? 'bg-[#38563a] text-emerald-400' : 'bg-[#e8f2e9] text-[#4A6741]'}`}>
+              <Leaf size={16} />
+            </div>
+            <p className="text-xs font-black tracking-wide leading-normal pr-1">{toastMessage}</p>
+          </div>
+        </div>
+      )}
 
       {/* Footer credit blocks */}
       <footer className={`py-6 text-center border-t select-none text-[11px] mt-12 z-10 transition-colors duration-300 ${
