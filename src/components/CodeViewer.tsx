@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Copy, Check, FileCode, Folder, FolderOpen, Terminal, BookOpen, AlertCircle } from 'lucide-react';
+import { Copy, Check, FileCode, Folder, FolderOpen, Terminal, BookOpen, AlertCircle, Loader2 } from 'lucide-react';
 import { CodeFile } from '../types';
+import JSZip from 'jszip';
 
 interface CodeViewerProps {
   files: CodeFile[];
@@ -17,6 +18,171 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'editor' | 'setup'>('editor');
+  const [isGeneratingZip, setIsGeneratingZip] = useState(false);
+
+  const handleDownloadZip = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isGeneratingZip) return;
+    setIsGeneratingZip(true);
+    try {
+      const zip = new JSZip();
+
+      // 1. Add all virtual target androidProjectFiles from androidCode.ts
+      files.forEach(file => {
+        zip.file(file.path, file.code);
+      });
+
+      // 2. Add structural Android boilerplate settings & files so Android Studio loads it instantly
+      
+      // build.gradle.kts (Project root)
+      const projectBuildGradle = `// Top-level build file where you can add configuration options common to all sub-projects/modules.
+plugins {
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.kotlin.android) apply false
+    alias(libs.plugins.kotlin.compose) apply false
+}`;
+      zip.file("build.gradle.kts", projectBuildGradle);
+
+      // settings.gradle.kts (Project root)
+      const settingsGradle = `pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = "Mental Health Toolkit"
+include(":app")`;
+      zip.file("settings.gradle.kts", settingsGradle);
+
+      // gradle.properties (Project root)
+      const gradleProperties = `org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+android.useAndroidX=true
+android.nonTransitiveRClass=true
+kotlin.code.style=official`;
+      zip.file("gradle.properties", gradleProperties);
+
+      // gradle-wrapper.properties (gradle/wrapper/)
+      const gradleWrapperProperties = `distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\\://services.gradle.org/distributions/gradle-8.10.2-bin.zip
+networkTimeout=10000
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists`;
+      zip.file("gradle/wrapper/gradle-wrapper.properties", gradleWrapperProperties);
+
+      // AndroidManifest.xml (app/src/main/)
+      const manifestXml = `<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.mentalhealth.firstaid">
+    <application
+        android:allowBackup="true"
+        android:icon="@android:drawable/sym_def_app_icon"
+        android:label="Mental Health Toolkit"
+        android:supportsRtl="true"
+        android:theme="@android:style/Theme.Material.NoActionBar">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Material.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>`;
+      zip.file("app/src/main/AndroidManifest.xml", manifestXml);
+
+      // Color.kt (app/src/main/java/com/mentalhealth/firstaid/ui/theme/)
+      const colorKt = `package com.mentalhealth.firstaid.ui.theme
+
+import androidx.compose.ui.graphics.Color
+
+val SageGreenDark = Color(0xFF334E2B)
+val SageGreenPrimary = Color(0xFF4A6741)
+val SageGreenLight = Color(0xFFE1E8E3)
+val SageGreenBackground = Color(0xFFF1F5F2)
+val SageGreenSecondary = Color(0xFF8E9A8F)
+
+val SageDarkPrimary = Color(0xFF90B486)
+val SageDarkBackground = Color(0xFF1E241E)
+val SageDarkSurface = Color(0xFF252D25)`;
+      zip.file("app/src/main/java/com/mentalhealth/firstaid/ui/theme/Color.kt", colorKt);
+
+      // Theme.kt (app/src/main/java/com/mentalhealth/firstaid/ui/theme/)
+      const themeKt = `package com.mentalhealth.firstaid.ui.theme
+
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+
+private val DarkColorScheme = darkColorScheme(
+    primary = SageDarkPrimary,
+    secondary = SageGreenSecondary,
+    tertiary = SageGreenLight,
+    background = SageDarkBackground,
+    surface = SageDarkSurface,
+    onPrimary = Color(0xFF1C2B19),
+    onSecondary = Color.White,
+    onBackground = Color(0xFFE2EBE2),
+    onSurface = Color(0xFFE2EBE2)
+)
+
+private val LightColorScheme = lightColorScheme(
+    primary = SageGreenPrimary,
+    secondary = SageGreenSecondary,
+    tertiary = SageGreenLight,
+    background = SageGreenBackground,
+    surface = Color.White,
+    onPrimary = Color.White,
+    onSecondary = Color.White,
+    onBackground = Color(0xFF1C1D1C),
+    onSurface = Color(0xFF1C1D1C),
+    surfaceVariant = SageGreenLight,
+    onSurfaceVariant = SageGreenPrimary
+)
+
+@Composable
+fun MentalHealthFirstAidTheme(
+    darkTheme: Boolean = false,
+    dynamicColor: Boolean = false,
+    content: @Composable () -> Unit
+) {
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+
+    MaterialTheme(
+        colorScheme = colorScheme,
+        content = content
+    )
+}`;
+      zip.file("app/src/main/java/com/mentalhealth/firstaid/ui/theme/Theme.kt", themeKt);
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'MentalHealthToolkit_AndroidStudio_Project.zip';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Failed to generate zip file client-side:", err);
+    } finally {
+      setIsGeneratingZip(false);
+    }
+  };
   
   // Highlighting regex for a standard IDE appearance
   const highlightCode = (code: string, lang: string) => {
@@ -94,14 +260,19 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({
 
         {/* Tab switch & ZIP Download buttons */}
         <div className="flex items-center space-x-3">
-          <a
-            href="/api/download-android-zip"
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[10.5px] font-bold bg-[#38563a] hover:bg-[#436746] hover:text-[#e4f3df] text-[#a8c69f] transition active:scale-95 border border-emerald-950/60 shadow-md"
+          <button
+            onClick={handleDownloadZip}
+            disabled={isGeneratingZip}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[10.5px] font-bold bg-[#38563a] hover:bg-[#436746] hover:text-[#e4f3df] text-[#a8c69f] disabled:opacity-75 disabled:cursor-not-allowed transition active:scale-95 border border-emerald-950/60 shadow-md cursor-pointer"
             title="Download full ready-to-use Android Studio project as a .zip"
           >
-            <FolderOpen size={11} className="stroke-[2.5]" />
-            <span>Download ZIP</span>
-          </a>
+            {isGeneratingZip ? (
+              <Loader2 size={11} className="animate-spin text-[#a8c69f]" />
+            ) : (
+              <FolderOpen size={11} className="stroke-[2.5]" />
+            )}
+            <span>{isGeneratingZip ? 'Generating...' : 'Download ZIP'}</span>
+          </button>
 
           <div className="flex bg-slate-900 rounded-lg p-0.5 border border-slate-800">
             <button
@@ -266,6 +437,35 @@ jobs:
                 </pre>
                 <p className="text-slate-400 text-[11px]">
                   Push your repository to GitHub, go to the <strong>Actions</strong> tab, and download your compiled <strong>safe-space-test-apk</strong> ZIP!
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <hr className="border-slate-800" />
+
+          <div>
+            <h3 className="text-base font-bold text-white flex items-center space-x-2">
+              <span className="bg-sky-600 text-white rounded p-1"><Check size={15} /></span>
+              <span>🌐 5. Deploying the Web App as a PWA (GitHub Pages & Actions)</span>
+            </h3>
+            <p className="text-xs text-slate-400 mt-2 pl-7 leading-relaxed">
+              We have configured a fully-automated, offline-capable Progressive Web App (PWA) setup with GitHub Actions deployment in this workspace. Follow these steps to host your interactive simulator live:
+            </p>
+            <div className="mt-3 pl-7 space-y-3">
+              <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2">
+                <span className="font-bold text-sky-400 text-[11px] block">🔗 Setup Automated Build & Deploy Pipeline</span>
+                <ol className="list-decimal pl-5 text-xs text-slate-400 space-y-1.5 leading-relaxed">
+                  <li>Create a new public repository on GitHub (e.g., <code className="bg-slate-900 text-slate-200 px-1 rounded font-mono">mental-health-toolkit</code>).</li>
+                  <li>Extract your downloaded workspace ZIP, open your terminal in that folder, and link it:
+                    <code className="block mt-1 font-mono text-[10px] text-sky-300 bg-slate-900/50 p-1 rounded select-all">git remote add origin https://github.com/your-username/your-repo-name.git && git checkout pwa && git push -u origin pwa</code>
+                  </li>
+                  <li>In your GitHub Repo, go to <strong>Settings</strong> ➡️ <strong>Pages</strong>.</li>
+                  <li>Under <strong>Build and deployment</strong> ➡️ <strong>Source</strong>, switch from "Deploy from a branch" to <strong>GitHub Actions</strong>.</li>
+                  <li>Under <strong>Settings</strong> ➡️ <strong>Actions</strong> ➡️ <strong>General</strong>, ensure <strong>Workflow permissions</strong> is set to <strong>Read and write permissions</strong>, and click <strong>Save</strong>.</li>
+                </ol>
+                <p className="text-emerald-400 text-[10px] font-medium pt-1">
+                  ✨ Done! Pushing any changes to the <code className="bg-slate-900 px-1 rounded font-mono">pwa</code> branch triggers GitHub Actions to build and deploy your site to: <code className="text-slate-300 font-mono">https://your-username.github.io/your-repo-name/</code>
                 </p>
               </div>
             </div>

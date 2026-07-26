@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Soothing Sage Green Background -->
+  <rect width="512" height="512" rx="128" fill="#F1F5F2"/>
+  <circle cx="256" cy="256" r="210" fill="#E1E8E3"/>
+  <circle cx="256" cy="256" r="180" fill="#4A6741"/>
+  
+  <!-- Lotus & Leaf Organic Geometry -->
+  <g transform="translate(256, 260) scale(1.6)">
+    <!-- Central upright petal -->
+    <path d="M 0,-50 C 15,-20 15,10 0,25 C -15,10 -15,-20 0,-50 Z" fill="#F1F5F2"/>
+    
+    <!-- Left petal -->
+    <path d="M -5,-45 C -25,-20 -35,5 -15,20 C 0,10 5,-15 -5,-45 Z" fill="#E1E8E3" opacity="0.9"/>
+    
+    <!-- Right petal -->
+    <path d="M 5,-45 C 25,-20 35,5 15,20 C 0,10 -5,-15 5,-45 Z" fill="#E1E8E3" opacity="0.9"/>
+    
+    <!-- Supporting base / bottom leaves -->
+    <path d="M -40,-10 C -50,15 -10,35 0,35 C 10,35 50,15 40,-10 C 25,5 10,15 0,15 C -10,15 -25,5 -40,-10 Z" fill="#334E2B" opacity="0.75"/>
+  </g>
+</svg>
