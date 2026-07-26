@@ -5,6 +5,7 @@ import { androidProjectFiles } from './androidCode';
 import { ActiveScreen, MoodLogEntry } from './types';
 import { Leaf, Compass, BookOpen, Phone, Terminal, Heart, Settings, Milestone } from 'lucide-react';
 import { ClinicianPortal } from './components/ClinicianPortal';
+import { PwaPrompt } from './components/PwaPrompt';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -692,6 +693,9 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* PWA Prompt / Guide Modal System */}
+      <PwaPrompt isDarkMode={isDarkMode} />
 
       {/* Footer credit blocks */}
       <footer className={`py-6 text-center border-t select-none text-[11px] mt-12 z-10 transition-colors duration-300 ${
