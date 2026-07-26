@@ -35,7 +35,8 @@ import {
   Check,
   Copy,
   FileText,
-  Upload
+  Upload,
+  MessageSquare
 } from 'lucide-react';
 import { ActiveScreen, BreathingType, CopingStatement, GroundingStep, MoodLogEntry } from '../types';
 import { startAmbientSound, stopAmbientSound, setAmbientVolume } from '../utils/audioSynth';
@@ -2462,6 +2463,7 @@ export const SimulatorEmergency: React.FC<EmergencyProps> = ({ onNavigate, onBac
 
   const [simulatedDialOpen, setSimulatedDialOpen] = useState(false);
   const [dialedNum, setDialedNum] = useState('');
+  const [dialedType, setDialedType] = useState<'phone' | 'sms'>('phone');
 
   const handleSaveContact = (e: React.FormEvent) => {
     e.preventDefault();
@@ -2474,9 +2476,19 @@ export const SimulatorEmergency: React.FC<EmergencyProps> = ({ onNavigate, onBac
     setPhone('');
   };
 
-  const handleTriggerDial = (number: string) => {
+  const handleTriggerDial = (number: string, type: 'phone' | 'sms' = 'phone') => {
     setDialedNum(number);
+    setDialedType(type);
     setSimulatedDialOpen(true);
+    try {
+      if (type === 'sms') {
+        window.location.href = `sms:${number}`;
+      } else {
+        window.location.href = `tel:${number}`;
+      }
+    } catch (e) {
+      console.warn("Could not dispatch protocol link directly in this environment:", e);
+    }
   };
 
   const handleDeleteContact = () => {
@@ -2538,13 +2550,23 @@ export const SimulatorEmergency: React.FC<EmergencyProps> = ({ onNavigate, onBac
               <h4 className="text-xs font-bold text-[#D9534F]">988 Suicide & Crisis</h4>
               <p className="text-[10px] text-slate-500 leading-tight mt-0.5">Call/SMS free confidential mental counseling 24/7.</p>
             </div>
-            <button
-              onClick={() => handleTriggerDial('988')}
-              className="bg-[#D9534F] hover:bg-[#C1403E] text-white font-bold text-xs px-3.5 py-2 rounded-xl transition shadow-sm active:scale-95 flex items-center space-x-1"
-            >
-              <Phone size={12} />
-              <span>Dial</span>
-            </button>
+            <div className="flex space-x-1 shrink-0">
+              <button
+                onClick={() => handleTriggerDial('988', 'phone')}
+                className="bg-[#D9534F] hover:bg-[#C1403E] text-white font-bold text-xs px-3 py-2 rounded-xl transition shadow-sm active:scale-95 flex items-center space-x-1"
+                title="Call 988"
+              >
+                <Phone size={11} />
+                <span>Call</span>
+              </button>
+              <button
+                onClick={() => handleTriggerDial('988', 'sms')}
+                className="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs px-3 py-2 rounded-xl transition shadow-sm active:scale-95 flex items-center space-x-1"
+                title="Text 988"
+              >
+                <span>SMS</span>
+              </button>
+            </div>
           </div>
 
           {/* Text Line */}
@@ -2554,7 +2576,7 @@ export const SimulatorEmergency: React.FC<EmergencyProps> = ({ onNavigate, onBac
               <p className="text-[10px] text-slate-500 leading-tight mt-0.5">SMS text HOME to 741741 to connect directly.</p>
             </div>
             <button
-              onClick={() => handleTriggerDial('741741')}
+              onClick={() => handleTriggerDial('741741', 'sms')}
               className="bg-[#608271] hover:bg-[#4A6741] text-white font-bold text-xs px-3.5 py-2 rounded-xl transition shadow-sm active:scale-95"
             >
               SMS
@@ -2569,7 +2591,7 @@ export const SimulatorEmergency: React.FC<EmergencyProps> = ({ onNavigate, onBac
             </div>
             <div className="flex space-x-1 shrink-0">
               <button
-                onClick={() => handleTriggerDial('18664887386')}
+                onClick={() => handleTriggerDial('18664887386', 'phone')}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[10px] px-2.5 py-1.5 rounded-xl transition shadow-xs active:scale-95 flex items-center space-x-0.5"
                 title="Call The Trevor Project"
               >
@@ -2577,7 +2599,7 @@ export const SimulatorEmergency: React.FC<EmergencyProps> = ({ onNavigate, onBac
                 <span>Call</span>
               </button>
               <button
-                onClick={() => handleTriggerDial('678678')}
+                onClick={() => handleTriggerDial('678678', 'sms')}
                 className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold text-[10px] px-2.5 py-1.5 rounded-xl transition shadow-xs active:scale-95"
                 title="Text START to 678-678"
               >
@@ -2599,14 +2621,23 @@ export const SimulatorEmergency: React.FC<EmergencyProps> = ({ onNavigate, onBac
               </div>
               <div className="flex space-x-1">
                 <button
-                  onClick={() => handleTriggerDial(savedContact.phone)}
-                  className="bg-[#4A6741] hover:bg-[#3E5536] text-white font-bold text-xs p-2 rounded-xl transition shadow"
+                  onClick={() => handleTriggerDial(savedContact.phone, 'phone')}
+                  className="bg-[#4A6741] hover:bg-[#3E5536] text-white font-bold text-xs p-2 rounded-xl transition shadow flex items-center justify-center shrink-0"
+                  title="Call Contact"
                 >
                   <Phone size={13} />
                 </button>
                 <button
+                  onClick={() => handleTriggerDial(savedContact.phone, 'sms')}
+                  className="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs p-2 rounded-xl transition shadow flex items-center justify-center shrink-0"
+                  title="Text Contact"
+                >
+                  <MessageSquare size={13} />
+                </button>
+                <button
                   onClick={handleDeleteContact}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-500 p-2 rounded-xl transition"
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-500 p-2 rounded-xl transition flex items-center justify-center shrink-0"
+                  title="Delete Contact"
                 >
                   <Trash2 size={13} />
                 </button>
@@ -2647,24 +2678,28 @@ export const SimulatorEmergency: React.FC<EmergencyProps> = ({ onNavigate, onBac
         <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 rounded-[45px] flex items-center justify-center p-6 animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full p-6 text-center text-white shadow-2xl flex flex-col justify-between h-72">
             <div>
-              <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest bg-emerald-950/40 px-3 py-1 rounded-full">
-                SIMULATED DIAL INTENT
+              <span className={`text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-full ${dialedType === 'sms' ? 'text-teal-400 bg-teal-950/40' : 'text-emerald-400 bg-emerald-950/40'}`}>
+                {dialedType === 'sms' ? 'SIMULATED SMS INTENT' : 'SIMULATED DIAL INTENT'}
               </span>
               <p className="text-xs text-slate-400 mt-4 leading-relaxed">
-                App dispatched a mobile dial action via system Android intent:
+                {dialedType === 'sms' 
+                  ? 'App dispatched a mobile SMS text action via system Android intent:' 
+                  : 'App dispatched a mobile dial action via system Android intent:'}
               </p>
               <h3 className="text-3xl font-black mt-2 text-[#D9534F] font-mono tracking-widest">{dialedNum}</h3>
             </div>
 
             <p className="text-[10px] text-slate-500 max-w-[80%] mx-auto leading-tight italic">
-              On an actual phone, this action safely boots your standard Native Dialing screen with phone number prefilled.
+              {dialedType === 'sms'
+                ? 'On an actual phone, this action safely boots your native messaging application with the contact prefilled.'
+                : 'On an actual phone, this action safely boots your standard Native Dialing screen with the phone number prefilled.'}
             </p>
 
             <button
               onClick={() => setSimulatedDialOpen(false)}
-              className="w-full py-3 bg-slate-800 hover:bg-slate-700 rounded-2xl text-xs font-bold transition-colors border border-slate-700 uppercase tracking-wider"
+              className="w-full py-3 bg-slate-800 hover:bg-slate-700 rounded-2xl text-xs font-bold transition-colors border border-slate-700 uppercase tracking-wider cursor-pointer"
             >
-              Hang Up / Close
+              {dialedType === 'sms' ? 'Close Text Simulation' : 'Hang Up / Close'}
             </button>
           </div>
         </div>

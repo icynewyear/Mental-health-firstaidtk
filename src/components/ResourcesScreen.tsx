@@ -19,10 +19,18 @@ interface ResourcesProps {
 export const SimulatorResources: React.FC<ResourcesProps> = ({ onBack }) => {
   // Safe helper to trigger tel/sms dial in the simulator.
   // It matches the dial format of other screens
-  const handleTriggerDial = (number: string) => {
-    window.parent.postMessage({ type: 'DIAL_NUMBER', number }, '*');
+  const handleTriggerDial = (number: string, type: 'phone' | 'sms' = 'phone') => {
+    window.parent.postMessage({ type: type === 'sms' ? 'SEND_SMS' : 'DIAL_NUMBER', number }, '*');
     // Also trigger standard device window action
-    window.location.href = `tel:${number}`;
+    try {
+      if (type === 'sms') {
+        window.location.href = `sms:${number}`;
+      } else {
+        window.location.href = `tel:${number}`;
+      }
+    } catch (e) {
+      console.warn("Could not dispatch protocol link directly in this environment:", e);
+    }
   };
 
   const categories = [
@@ -167,7 +175,7 @@ export const SimulatorResources: React.FC<ResourcesProps> = ({ onBack }) => {
                     {item.action && (
                       <button
                         type="button"
-                        onClick={() => handleTriggerDial(item.action!.value)}
+                        onClick={() => handleTriggerDial(item.action!.value, item.action!.type as 'phone' | 'sms')}
                         className={`px-3.5 min-h-[34px] font-black text-[10px] rounded-xl flex items-center justify-center space-x-1 transition active:scale-97 border ${
                           item.action.type === 'phone'
                             ? 'bg-rose-50 text-rose-700 border-rose-100 hover:bg-rose-100'
