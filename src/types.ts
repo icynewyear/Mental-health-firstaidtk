@@ -52,6 +52,7 @@ export interface MoodLogEntry {
   moodLabel: string;
   stress: number;
   hasData?: boolean;
+  notes?: string;
 }
 
 export interface ReframedThought {

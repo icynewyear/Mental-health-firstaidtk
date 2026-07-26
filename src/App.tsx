@@ -50,6 +50,21 @@ export default function App() {
   const [loggedMood, setLoggedMood] = useState<string | null>(() => {
     return localStorage.getItem('safespace_logged_mood');
   });
+  const [stressNotes, setStressNotes] = useState<string>(() => {
+    const savedNotes = localStorage.getItem('safespace_stress_notes');
+    if (savedNotes !== null) return savedNotes;
+    try {
+      const savedHist = localStorage.getItem('safespace_mood_history');
+      if (savedHist) {
+        const parsed = JSON.parse(savedHist);
+        const todayIndex = new Date().getDay();
+        const todayAbbr = WEEKDAYS[todayIndex];
+        const todayEntry = parsed.find((item: any) => item.day === todayAbbr);
+        if (todayEntry && todayEntry.notes) return todayEntry.notes;
+      }
+    } catch (e) {}
+    return '';
+  });
 
   const [moodHistory, setMoodHistory] = useState<MoodLogEntry[]>(() => {
     const currentWeekSunday = getStartOfWeekDate();
@@ -210,8 +225,15 @@ export default function App() {
       setMoodHistory(clean);
       setLoggedMood(null);
       setStressLevel(5);
+      setStressNotes('');
+      localStorage.removeItem('safespace_stress_notes');
     }
   }, []);
+
+  // Persist stressNotes to local storage on change
+  useEffect(() => {
+    localStorage.setItem('safespace_stress_notes', stressNotes);
+  }, [stressNotes]);
 
   // Persist stressLevel to local storage on change
   useEffect(() => {
@@ -267,23 +289,25 @@ export default function App() {
     });
   };
 
-  // Sync today's active values directly from loggedMood & stressLevel
+  // Sync today's active values directly from loggedMood, stressLevel, and stressNotes
   useEffect(() => {
     const todayIndex = new Date().getDay();
     const todayAbbr = WEEKDAYS[todayIndex];
     
     setMoodHistory(prev => {
       const todayEntry = prev.find(entry => entry.day === todayAbbr);
-      const hasData = loggedMood !== null;
+      const hasData = loggedMood !== null || stressNotes !== '';
       const targetMoodLabel = loggedMood || 'No Data';
-      const targetStress = hasData ? stressLevel : 5;
-      const targetMoodValue = hasData ? 1 : 0;
+      const targetStress = (loggedMood !== null || stressNotes !== '') ? stressLevel : 5;
+      const targetMoodValue = loggedMood !== null ? 1 : 0;
+      const targetNotes = stressNotes;
       
       if (todayEntry && 
           todayEntry.hasData === hasData && 
           todayEntry.moodLabel === targetMoodLabel && 
           todayEntry.stress === targetStress &&
-          todayEntry.moodValue === targetMoodValue) {
+          todayEntry.moodValue === targetMoodValue &&
+          todayEntry.notes === targetNotes) {
         return prev; // Performance optimization: skip state update if data matches perfectly
       }
       
@@ -294,13 +318,14 @@ export default function App() {
             hasData,
             moodValue: targetMoodValue,
             moodLabel: targetMoodLabel,
-            stress: targetStress
+            stress: targetStress,
+            notes: targetNotes
           };
         }
         return entry;
       });
     });
-  }, [loggedMood, stressLevel]);
+  }, [loggedMood, stressLevel, stressNotes]);
 
   // Sync simulator screens to active Kotlin Files
   useEffect(() => {
@@ -528,6 +553,8 @@ export default function App() {
                   setIsDarkMode={setIsDarkMode}
                   developerUnlocked={developerUnlocked}
                   setDeveloperUnlocked={setDeveloperUnlocked}
+                  stressNotes={stressNotes}
+                  setStressNotes={setStressNotes}
                 />
               </div>
             </div>
@@ -567,6 +594,8 @@ export default function App() {
                 setIsDarkMode={setIsDarkMode}
                 developerUnlocked={developerUnlocked}
                 setDeveloperUnlocked={setDeveloperUnlocked}
+                stressNotes={stressNotes}
+                setStressNotes={setStressNotes}
               />
             </div>
             

@@ -189,6 +189,8 @@ interface DashboardProps {
   setUnlockRequired?: (val: boolean) => void;
   unlockPin?: string;
   setUnlockPin?: (val: string) => void;
+  stressNotes: string;
+  setStressNotes: (notes: string) => void;
 }
 
 export const SimulatorDashboard: React.FC<DashboardProps> = ({
@@ -204,6 +206,8 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
   setUnlockRequired,
   unlockPin = '1234',
   setUnlockPin,
+  stressNotes,
+  setStressNotes,
 }) => {
   const PREDEFINED_EMOJI_SETS = [
     {
@@ -265,6 +269,10 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
   const [currentPinError, setCurrentPinError] = useState<boolean>(false);
   const [confirmPinError, setConfirmPinError] = useState<boolean>(false);
   const [toggleOffBlockedMessage, setToggleOffBlockedMessage] = useState<boolean>(false);
+
+  const [submittedToday, setSubmittedToday] = useState<boolean>(() => {
+    return localStorage.getItem('safespace_submitted_today') === 'true';
+  });
 
   useEffect(() => {
     if (!showSelector) {
@@ -868,10 +876,57 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
           onChange={(e) => setStressLevel(parseInt(e.target.value))}
           className="w-full accent-[#4A6741] h-1 bg-[#E1E8E3] rounded-lg appearance-none cursor-pointer my-2.5"
         />
-        <div className="flex justify-between text-[9px] font-bold text-slate-400">
+        <div className="flex justify-between text-[9px] font-bold text-slate-400 mb-2">
           <span>Peaceful (1)</span>
           <span>Moderate (5)</span>
           <span>Crisis (10)</span>
+        </div>
+
+        {/* Optional notes input */}
+        <div className="mt-2 pt-2 border-t border-[#CBD9CC]/30 flex flex-col space-y-1 text-left">
+          <label className="text-[8.5px] font-black text-slate-400 uppercase tracking-wider flex items-center space-x-1 select-none">
+            <FileText size={9} className="text-[#4A6741]" />
+            <span>Optional Tracker Notes</span>
+          </label>
+          <textarea
+            value={stressNotes}
+            onChange={(e) => setStressNotes(e.target.value)}
+            placeholder="Log triggers, details, physical state..."
+            className="w-full bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:ring-1 focus:ring-[#4A6741] focus:border-[#4A6741] rounded-xl px-2 py-1 text-[10px] text-slate-700 placeholder-slate-400 transition resize-none outline-none"
+            rows={2}
+          />
+        </div>
+
+        {/* Submit Tracker Button */}
+        <div className="mt-3 pt-2.5 border-t border-[#CBD9CC]/30 flex flex-col space-y-1.5">
+          <button
+            onClick={() => {
+              setSubmittedToday(true);
+              localStorage.setItem('safespace_submitted_today', 'true');
+            }}
+            className={`w-full py-2 px-3 rounded-xl font-bold text-[10px] tracking-wider uppercase transition-all duration-200 flex items-center justify-center space-x-1.5 active:scale-[0.98] cursor-pointer shadow-xs ${
+              submittedToday
+                ? 'bg-[#EBF2EC] text-[#4A6741] border border-[#CBD9CC] hover:bg-[#E1E8E3]'
+                : 'bg-[#4A6741] text-white hover:bg-[#3D5535] hover:shadow-sm'
+            }`}
+          >
+            {submittedToday ? (
+              <>
+                <Check size={11} className="stroke-[3]" />
+                <span>Log Submitted Successfully</span>
+              </>
+            ) : (
+              <>
+                <Save size={11} />
+                <span>Submit Today's Log</span>
+              </>
+            )}
+          </button>
+          {submittedToday && (
+            <span className="text-[8.5px] text-[#4A6741]/90 font-medium text-center select-none animate-fade-in block">
+              ✨ Saved securely to your offline health dashboard
+            </span>
+          )}
         </div>
       </div>
 
@@ -2631,6 +2686,12 @@ interface HistoryProps {
   onNavigate: (route: ActiveScreen) => void;
   resetMoodData: () => void;
   seedRandomData: () => void;
+  stressLevel?: number;
+  setStressLevel?: (level: number) => void;
+  loggedMood?: string | null;
+  setLoggedMood?: (mood: string | null) => void;
+  stressNotes?: string;
+  setStressNotes?: (notes: string) => void;
 }
 
 const KEY_GROUPS = {
@@ -2670,9 +2731,31 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
   onNavigate,
   resetMoodData,
   seedRandomData,
+  stressLevel = 5,
+  setStressLevel,
+  loggedMood = null,
+  setLoggedMood,
+  stressNotes = '',
+  setStressNotes,
 }) => {
   const [historyTab, setHistoryTab] = useState<'monthly' | 'weekly'>('monthly');
-  const [selectedMonthIdx, setSelectedMonthIdx] = useState<number>(2); // Default to June
+
+  const MONTHS_CONFIG = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(2026, i, 1);
+    const days = new Date(2026, i + 1, 0).getDate();
+    return {
+      key: String(i + 1).padStart(2, '0'),
+      label: d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+      days,
+      offset: d.getDay(),
+      name: d.toLocaleDateString('en-US', { month: 'long' })
+    };
+  });
+
+  const [selectedMonthIdx, setSelectedMonthIdx] = useState<number>(() => {
+    return new Date().getMonth(); // Dynamic month index (0-11) based on current local time
+  });
+
   const [showExport, setShowExport] = useState(false);
   const [exportRange, setExportRange] = useState<'week' | 'month'>('week');
   const [exportFormat, setExportFormat] = useState<'csv' | 'text'>('text');
@@ -2691,18 +2774,18 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
   const [backupImportSettings, setBackupImportSettings] = useState(true);
   const [importSuccess, setImportSuccess] = useState(false);
 
-  const MONTHS_CONFIG = [
-    { key: '04', label: 'April 2026', days: 30, offset: 3, name: 'April' },
-    { key: '05', label: 'May 2026', days: 31, offset: 5, name: 'May' },
-    { key: '06', label: 'June 2026', days: 30, offset: 1, name: 'June' },
-  ];
-
   const [exportSelectedMonthIdx, setExportSelectedMonthIdx] = useState<number>(selectedMonthIdx);
   const [exportSubMode, setExportSubMode] = useState<'single' | 'range'>('single');
-  const [exportStartMonthIdx, setExportStartMonthIdx] = useState<number>(0);
+  const [exportStartMonthIdx, setExportStartMonthIdx] = useState<number>(() => {
+    return Math.max(0, new Date().getMonth() - 1);
+  });
   const [exportStartDay, setExportStartDay] = useState<number>(1);
-  const [exportEndMonthIdx, setExportEndMonthIdx] = useState<number>(2);
-  const [exportEndDay, setExportEndDay] = useState<number>(30);
+  const [exportEndMonthIdx, setExportEndMonthIdx] = useState<number>(() => {
+    return new Date().getMonth();
+  });
+  const [exportEndDay, setExportEndDay] = useState<number>(() => {
+    return new Date().getDate();
+  });
 
   const updateStartMonth = (idx: number) => {
     setExportStartMonthIdx(idx);
@@ -2750,9 +2833,9 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
       }
     };
 
-    seedForMonth('04', 30); // April
-    seedForMonth('05', 31); // May
-    seedForMonth('06', 30); // June
+    MONTHS_CONFIG.forEach(m => {
+      seedForMonth(m.key, m.days);
+    });
 
     return data;
   };
@@ -2776,8 +2859,10 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
     localStorage.setItem('safespace_monthly_data', JSON.stringify(monthlyData));
   }, [monthlyData]);
 
-  // Selected Day state in the calendar grid (default to 13th)
-  const [selectedDay, setSelectedDay] = useState<number>(13);
+  // Selected Day state in the calendar grid (default to current day)
+  const [selectedDay, setSelectedDay] = useState<number>(() => {
+    return new Date().getDate();
+  });
 
   // Sync date selection safely when cycling months
   const handlePrevMonth = () => {
@@ -2794,21 +2879,26 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
     }
   };
 
-  // Merge check-in data. Sync today's date "June 13" from live props
+  // Merge check-in data. Sync today's date from live props
   const getDayDetails = (monthKey: string, dayNum: number) => {
     const dateKey = `2026-${monthKey}-${dayNum.toString().padStart(2, '0')}`;
     
-    if (monthKey === '06' && dayNum === 13) {
-      const todayIndex = new Date().getDay();
+    const todayObj = new Date();
+    const curMonthKey = String(todayObj.getMonth() + 1).padStart(2, '0');
+    const curDayNum = todayObj.getDate();
+    
+    if (monthKey === curMonthKey && dayNum === curDayNum) {
+      const todayIndex = todayObj.getDay();
       const todayAbbr = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][todayIndex];
-      // Sync June 13 to today's active live log (or Saturday fallback)
-      const todayLog = moodHistory.find(h => h.day === 'Today' || h.day === todayAbbr) || moodHistory.find(h => h.day === 'Sat');
+      // Sync to today's active live log (or fallback)
+      const todayLog = moodHistory.find(h => h.day === 'Today' || h.day === todayAbbr);
       if (todayLog) {
         return {
           hasData: todayLog.hasData,
           moodValue: todayLog.moodValue,
           moodLabel: todayLog.moodLabel,
           stress: todayLog.stress,
+          notes: todayLog.notes,
         };
       }
     }
@@ -2817,7 +2907,7 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
   };
 
   // Mutator to update specific day entries
-  const handleUpdateDay = (dayNum: number, fields: Partial<{ moodValue: number; moodLabel: string; stress: number; hasData: boolean }>) => {
+  const handleUpdateDay = (dayNum: number, fields: Partial<{ moodValue: number; moodLabel: string; stress: number; hasData: boolean; notes?: string }>) => {
     const dateKey = `2026-${currentMonth.key}-${dayNum.toString().padStart(2, '0')}`;
     const current = getDayDetails(currentMonth.key, dayNum);
     const updated = {
@@ -2841,7 +2931,7 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
   const checkInDays = moodHistory.filter(day => day.hasData && day.moodValue > 0);
   const averageStress = checkInDays.length > 0 
     ? (checkInDays.reduce((acc, curr) => acc + curr.stress, 0) / checkInDays.length).toFixed(1)
-    : '5.0';
+    : '--';
 
   const currentMonthCheckInDays = [];
   for (let d = 1; d <= currentMonth.days; d++) {
@@ -2853,7 +2943,7 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
 
   const monthlyAverageStress = currentMonthCheckInDays.length > 0 
     ? (currentMonthCheckInDays.reduce((acc, curr) => acc + curr.stress, 0) / currentMonthCheckInDays.length).toFixed(1)
-    : '5.0';
+    : '--';
 
   const selectableEmojis = (() => {
     const base = ['🍃', '🌊', '⛈️', '😰'];
@@ -2887,6 +2977,7 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
     const dayData = getDayDetails(currentMonth.key, d);
     const hasData = dayData.hasData && dayData.moodValue > 0;
     const isSelected = selectedDay === d;
+    const hasNotes = !!(dayData.notes && dayData.notes.trim());
 
     // Grid cells coloring coded with premium high contrast colors
     let bgClass = 'bg-slate-50 hover:bg-slate-100 border border-slate-100 text-slate-500';
@@ -2908,7 +2999,16 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
           isSelected ? 'ring-2 ring-[#4A6741] ring-offset-1 scale-[1.05] z-10 shadow-sm' : ''
         }`}
       >
-        <span className="text-[9px] font-black leading-none">{d}</span>
+        <div className="flex justify-between items-center w-full">
+          <span className="text-[9px] font-black leading-none">{d}</span>
+          {hasNotes && (
+            <FileText 
+              size={8.5} 
+              className={hasData ? 'text-current opacity-70' : 'text-slate-400'} 
+              title="Has logs/notes" 
+            />
+          )}
+        </div>
         <div className="flex justify-center items-center flex-1">
           {hasData ? (
             <span className="text-[10px] leading-none mb-0.5">{extractEmoji(dayData.moodLabel, dayData.moodValue)}</span>
@@ -3953,7 +4053,7 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
                     key={idx}
                     className="bg-white/80 rounded-2xl p-2.5 border border-white flex justify-between items-center text-left hover:scale-[1.01] transition-transform select-none"
                   >
-                    <div>
+                    <div className="flex-1 min-w-0 pr-3">
                       <div className="flex items-center space-x-1.5">
                         <span className="text-xs font-bold text-slate-700">
                           {item.day === 'Today' || item.day === ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date().getDay()] ? 'Today' : item.day}
@@ -3980,13 +4080,18 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
                                     : 'bg-emerald-400'
                                 : 'bg-slate-200'
                             }`}
-                            style={{ width: `${item.hasData ? item.stress * 10 : 50}%` }}
+                            style={{ width: `${item.hasData ? item.stress * 10 : 0}%` }}
                           />
                         </div>
                         <span className="text-[9px] font-mono font-bold text-slate-500">
-                          Stress: {item.hasData ? `${item.stress}/10` : '— (5/10)'}
+                          Stress: {item.hasData ? `${item.stress}/10` : '—'}
                         </span>
                       </div>
+                      {item.hasData && item.notes && (
+                        <p className="text-[9.5px] text-slate-500 italic mt-1.5 leading-snug border-l-2 border-[#4A6741]/30 pl-2 max-w-full break-words">
+                          {item.notes}
+                        </p>
+                      )}
                     </div>
 
                     <div className="text-right">
@@ -4061,16 +4166,43 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
             </div>
 
             {/* Bottom details card displaying selected day statistics */}
-            <div className="bg-white rounded-2xl p-3 border border-white shadow-xs flex-1 flex flex-col justify-between text-left min-h-[140px] max-h-[165px] select-none">
+            <div className="bg-white rounded-2xl p-3 border border-white shadow-xs flex-1 flex flex-col justify-between text-left min-h-[145px] max-h-[225px] overflow-y-auto no-scrollbar">
               <div>
                 <div className="flex justify-between items-center mb-1.5">
                   <span className="text-[9px] uppercase tracking-widest font-extrabold text-slate-400 leading-none">
-                    {currentMonth.name} {selectedDay}, 2026
+                    {currentMonth.name} {selectedDay}, 2026 {(() => {
+                      const todayObjForHistory = new Date();
+                      const curMonthKeyForHistory = String(todayObjForHistory.getMonth() + 1).padStart(2, '0');
+                      const curDayNumForHistory = todayObjForHistory.getDate();
+                      return currentMonth.key === curMonthKeyForHistory && selectedDay === curDayNumForHistory;
+                    })() && " (Today)"}
                   </span>
                   {selectedDayHasData ? (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-[#EBF2EC] border-[#A8C69F]/40 text-[#4A6741]">
-                      Feel: {extractEmoji(selectedDayData.moodLabel, selectedDayData.moodValue)}
-                    </span>
+                    <div className="flex items-center space-x-1">
+                      {selectableEmojis.map(emoji => (
+                        <button
+                          key={emoji}
+                          onClick={() => {
+                            const todayObjForHistory = new Date();
+                            const curMonthKeyForHistory = String(todayObjForHistory.getMonth() + 1).padStart(2, '0');
+                            const curDayNumForHistory = todayObjForHistory.getDate();
+                            const isToday = currentMonth.key === curMonthKeyForHistory && selectedDay === curDayNumForHistory;
+                            if (isToday) {
+                              setLoggedMood?.(emoji);
+                            }
+                            handleUpdateDay(selectedDay, { moodLabel: emoji });
+                          }}
+                          className={`text-[10px] p-1 rounded-lg transition cursor-pointer border-0 ${
+                            selectedDayData.moodLabel === emoji
+                              ? 'bg-[#EBF2EC] text-[#4A6741] font-bold scale-110'
+                              : 'bg-transparent hover:bg-slate-100 text-slate-400'
+                          }`}
+                          title={`Set mood to ${emoji}`}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
                   ) : (
                     <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border bg-slate-50 border-slate-200 text-slate-400">
                       No Check-In
@@ -4081,31 +4213,86 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
                 {!selectedDayHasData ? (
                   <div className="flex flex-col justify-center flex-1 py-1">
                     <p className="text-[10px] text-slate-500 leading-normal">
-                      No track records logged for this date. Defaulting to standard baseline state.
+                      No track records logged for this date.
                     </p>
                     <div className="flex items-center space-x-1.5 mt-2 bg-slate-50 border border-slate-100 p-2 rounded-xl">
-                      <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-pulse" />
-                      <span className="text-[10px] text-slate-400">Stress Value: <span className="font-bold">5/10</span> (Open Circle)</span>
+                      <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                      <span className="text-[10px] text-slate-400">Stress Value: <span className="font-bold">--</span> (No Record)</span>
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center bg-slate-50 py-1.5 px-2 rounded-xl">
-                      <span className="text-[10px] text-slate-500">Tracked Stress Level</span>
-                      <span className="text-[11px] font-mono font-black text-[#4A6741]">{selectedDayData.stress}/10</span>
-                    </div>
-                    
-                    <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full transition-all duration-500 ${
-                          selectedDayData.stress > 7 
-                            ? 'bg-rose-400' 
-                            : selectedDayData.stress > 4 
-                              ? 'bg-amber-400' 
-                              : 'bg-emerald-400'
-                        }`}
-                        style={{ width: `${selectedDayData.stress * 10}%` }}
+                  <div className="space-y-2.5 pb-1">
+                    {/* Stress slider */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-slate-500 font-bold">Tracked Stress Level</span>
+                        <span className="text-[11px] font-mono font-black text-[#4A6741]">{selectedDayData.stress}/10</span>
+                      </div>
+                      
+                      <input
+                        type="range"
+                        min="1"
+                        max="10"
+                        value={selectedDayData.stress}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          const todayObjForHistory = new Date();
+                          const curMonthKeyForHistory = String(todayObjForHistory.getMonth() + 1).padStart(2, '0');
+                          const curDayNumForHistory = todayObjForHistory.getDate();
+                          const isToday = currentMonth.key === curMonthKeyForHistory && selectedDay === curDayNumForHistory;
+                          if (isToday) {
+                            setStressLevel?.(val);
+                          }
+                          handleUpdateDay(selectedDay, { stress: val });
+                        }}
+                        className="w-full accent-[#4A6741] h-1 bg-[#E1E8E3] rounded-lg appearance-none cursor-pointer"
                       />
+                    </div>
+
+                    {/* Notes Textarea */}
+                    <div className="flex flex-col space-y-1 mt-1.5">
+                      <label className="text-[8.5px] font-black text-slate-400 uppercase tracking-wider flex items-center space-x-1">
+                        <FileText size={9} className="text-[#4A6741]" />
+                        <span>Log Notes</span>
+                      </label>
+                      <textarea
+                        value={selectedDayData.notes || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const todayObjForHistory = new Date();
+                          const curMonthKeyForHistory = String(todayObjForHistory.getMonth() + 1).padStart(2, '0');
+                          const curDayNumForHistory = todayObjForHistory.getDate();
+                          const isToday = currentMonth.key === curMonthKeyForHistory && selectedDay === curDayNumForHistory;
+                          if (isToday) {
+                            setStressNotes?.(val);
+                          }
+                          handleUpdateDay(selectedDay, { notes: val });
+                        }}
+                        placeholder="Triggers, details, state..."
+                        className="w-full bg-slate-50 border border-slate-200/60 focus:bg-white focus:ring-1 focus:ring-[#4A6741] focus:border-[#4A6741] rounded-xl px-2 py-1 text-[10px] text-slate-700 placeholder-slate-400 transition resize-none outline-none"
+                        rows={2}
+                      />
+                    </div>
+
+                    {/* Clear Button */}
+                    <div className="flex justify-end pt-1 border-t border-slate-100/60">
+                      <button
+                        onClick={() => {
+                          const todayObjForHistory = new Date();
+                          const curMonthKeyForHistory = String(todayObjForHistory.getMonth() + 1).padStart(2, '0');
+                          const curDayNumForHistory = todayObjForHistory.getDate();
+                          const isToday = currentMonth.key === curMonthKeyForHistory && selectedDay === curDayNumForHistory;
+                          if (isToday) {
+                            setLoggedMood?.(null);
+                            setStressNotes?.('');
+                          }
+                          handleUpdateDay(selectedDay, { hasData: false });
+                        }}
+                        className="text-[9px] font-bold text-rose-500 hover:text-rose-700 flex items-center space-x-1 cursor-pointer transition border-0 bg-transparent active:scale-95"
+                      >
+                        <Trash2 size={10} />
+                        <span>Clear Log</span>
+                      </button>
                     </div>
                   </div>
                 )}
@@ -4115,7 +4302,18 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
               {!selectedDayHasData && (
                 <div className="mt-2 text-center pt-2 border-t border-slate-100 flex items-center justify-between shrink-0">
                   <button
-                    onClick={() => handleUpdateDay(selectedDay, { hasData: true, moodLabel: '🍃', stress: 5 })}
+                    onClick={() => {
+                      const todayObjForHistory = new Date();
+                      const curMonthKeyForHistory = String(todayObjForHistory.getMonth() + 1).padStart(2, '0');
+                      const curDayNumForHistory = todayObjForHistory.getDate();
+                      const isToday = currentMonth.key === curMonthKeyForHistory && selectedDay === curDayNumForHistory;
+                      if (isToday) {
+                        setLoggedMood?.('🍃');
+                        setStressLevel?.(5);
+                        setStressNotes?.('');
+                      }
+                      handleUpdateDay(selectedDay, { hasData: true, moodLabel: '🍃', stress: 5, notes: '' });
+                    }}
                     className="w-full bg-[#E1E8E3] hover:bg-[#D1DBCF] active:scale-95 text-[#4A6741] font-bold text-[9px] py-1.5 rounded-xl cursor-pointer border-0 transition"
                   >
                     ➕ Record Retrospective Check-In

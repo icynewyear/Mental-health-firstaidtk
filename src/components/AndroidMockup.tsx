@@ -192,6 +192,8 @@ interface AndroidMockupProps {
   setIsDarkMode: (val: boolean) => void;
   developerUnlocked?: boolean;
   setDeveloperUnlocked?: React.Dispatch<React.SetStateAction<boolean>>;
+  stressNotes: string;
+  setStressNotes: (notes: string) => void;
 }
 
 export const AndroidMockup: React.FC<AndroidMockupProps> = ({
@@ -211,6 +213,8 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
   setIsDarkMode,
   developerUnlocked,
   setDeveloperUnlocked,
+  stressNotes,
+  setStressNotes,
 }) => {
   const [timeState, setTimeState] = useState('14:05');
   const [offlinePillClicks, setOfflinePillClicks] = useState(0);
@@ -316,6 +320,8 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
                     setUnlockRequired={setUnlockRequired}
                     unlockPin={unlockPin}
                     setUnlockPin={setUnlockPin}
+                    stressNotes={stressNotes}
+                    setStressNotes={setStressNotes}
                   />
                 )}
                 {activeScreen === 'somaticHub' && (
@@ -360,6 +366,12 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
                     onNavigate={(route) => setActiveScreen(route)}
                     resetMoodData={resetMoodData}
                     seedRandomData={seedRandomData}
+                    stressLevel={stressLevel}
+                    setStressLevel={setStressLevel}
+                    loggedMood={loggedMood}
+                    setLoggedMood={setLoggedMood}
+                    stressNotes={stressNotes}
+                    setStressNotes={setStressNotes}
                   />
                 )}
 
