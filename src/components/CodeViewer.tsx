@@ -447,25 +447,47 @@ jobs:
           <div>
             <h3 className="text-base font-bold text-white flex items-center space-x-2">
               <span className="bg-sky-600 text-white rounded p-1"><Check size={15} /></span>
-              <span>🌐 5. Deploying the Web App as a PWA (GitHub Pages & Actions)</span>
+              <span>🌐 5. Deploying the Web App as a PWA (GitHub Pages or Vercel)</span>
             </h3>
             <p className="text-xs text-slate-400 mt-2 pl-7 leading-relaxed">
-              We have configured a fully-automated, offline-capable Progressive Web App (PWA) setup with GitHub Actions deployment in this workspace. Follow these steps to host your interactive simulator live:
+              We have preconfigured files for both <strong>Vercel</strong> and <strong>GitHub Pages</strong>. Choose whichever host you prefer. Both will listen to your GitHub repository as the single source of truth:
             </p>
-            <div className="mt-3 pl-7 space-y-3">
-              <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2">
-                <span className="font-bold text-sky-400 text-[11px] block">🔗 Setup Automated Build & Deploy Pipeline</span>
-                <ol className="list-decimal pl-5 text-xs text-slate-400 space-y-1.5 leading-relaxed">
-                  <li>Create a new public repository on GitHub (e.g., <code className="bg-slate-900 text-slate-200 px-1 rounded font-mono">mental-health-toolkit</code>).</li>
-                  <li>Extract your downloaded workspace ZIP, open your terminal in that folder, and link it:
-                    <code className="block mt-1 font-mono text-[10px] text-sky-300 bg-slate-900/50 p-1 rounded select-all">git remote add origin https://github.com/your-username/your-repo-name.git && git checkout pwa && git push -u origin pwa</code>
-                  </li>
-                  <li>In your GitHub Repo, go to <strong>Settings</strong> ➡️ <strong>Pages</strong>.</li>
-                  <li>Under <strong>Build and deployment</strong> ➡️ <strong>Source</strong>, switch from "Deploy from a branch" to <strong>GitHub Actions</strong>.</li>
-                  <li>Under <strong>Settings</strong> ➡️ <strong>Actions</strong> ➡️ <strong>General</strong>, ensure <strong>Workflow permissions</strong> is set to <strong>Read and write permissions</strong>, and click <strong>Save</strong>.</li>
-                </ol>
-                <p className="text-emerald-400 text-[10px] font-medium pt-1">
-                  ✨ Done! Pushing any changes to the <code className="bg-slate-900 px-1 rounded font-mono">pwa</code> branch triggers GitHub Actions to build and deploy your site to: <code className="text-slate-300 font-mono">https://your-username.github.io/your-repo-name/</code>
+            <div className="mt-3 pl-7 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Vercel Option */}
+              <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between space-y-2">
+                <div>
+                  <span className="font-bold text-sky-400 text-[11px] block uppercase tracking-wider">⚡ Option A: Vercel (Recommended)</span>
+                  <p className="text-[10.5px] text-slate-400 mt-1 leading-relaxed">
+                    Zero-configuration pipeline that deploys instantly and natively handles clean PWA headers and Service Workers caching.
+                  </p>
+                  <ol className="list-decimal pl-4 text-[10.5px] text-slate-400 space-y-1 mt-2 leading-relaxed">
+                    <li>Push your extracted ZIP folder to your GitHub repo.</li>
+                    <li>Go to <span className="text-slate-200">vercel.com</span> and sign in.</li>
+                    <li>Click <strong>Add New... Project</strong> and import your repository.</li>
+                    <li>Vercel detects <strong>Vite</strong> automatically. Click <strong>Deploy</strong>!</li>
+                  </ol>
+                </div>
+                <p className="text-emerald-400 text-[10px] font-medium pt-1.5 border-t border-slate-900">
+                  ✨ Done! Custom headers inside <code className="bg-slate-900 px-1 rounded text-slate-300 font-mono">vercel.json</code> handle Service Worker caching.
+                </p>
+              </div>
+
+              {/* GitHub Pages Option */}
+              <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between space-y-2">
+                <div>
+                  <span className="font-bold text-sky-400 text-[11px] block uppercase tracking-wider">🔗 Option B: GitHub Pages & Actions</span>
+                  <p className="text-[10.5px] text-slate-400 mt-1 leading-relaxed">
+                    Uses the preconfigured workflow inside the project to build and publish your app entirely within GitHub.
+                  </p>
+                  <ol className="list-decimal pl-4 text-[10.5px] text-slate-400 space-y-1 mt-2 leading-relaxed">
+                    <li>Push your code to the <code className="bg-slate-900 px-1 text-slate-300 rounded font-mono">pwa</code> branch on GitHub.</li>
+                    <li>In GitHub, go to <strong>Settings</strong> ➡️ <strong>Pages</strong>.</li>
+                    <li>Under <strong>Source</strong>, switch to <strong>GitHub Actions</strong>.</li>
+                    <li>Under <strong>Actions</strong> ➡️ <strong>General</strong>, allow <strong>Read and write permissions</strong>.</li>
+                  </ol>
+                </div>
+                <p className="text-emerald-400 text-[10px] font-medium pt-1.5 border-t border-slate-900">
+                  ✨ Done! Pushing triggers the runner to build and publish to <code className="bg-slate-900 px-1 rounded text-slate-300 font-mono">github.io</code>.
                 </p>
               </div>
             </div>
