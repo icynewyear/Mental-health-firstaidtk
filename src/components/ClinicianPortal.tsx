@@ -13,7 +13,11 @@ import {
   ShieldAlert, 
   Clock, 
   CornerDownRight,
-  Smile
+  Smile,
+  Share2,
+  Plus,
+  Smartphone,
+  Monitor
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -388,6 +392,70 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ dataString, on
                 </div>
               ))
             )}
+          </div>
+        </div>
+
+        {/* PWA Installation Instructions for Client/Clinician */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 text-left space-y-4 print:hidden shadow-xs">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div>
+              <h4 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-1.5">
+                📲 Progressive Web App (PWA) Offline Setup
+              </h4>
+              <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                Advise your client to install SafeSpace directly on their home screen for private, instant, and fully offline-enabled therapeutic journaling.
+              </p>
+            </div>
+            <span className="text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-extrabold px-2 py-1 rounded-lg uppercase tracking-wider self-start md:self-center">
+              Offline-Safe Companion
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-1">
+            {/* iOS Safari Column */}
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2 font-extrabold text-slate-700 text-xs">
+                <Smartphone size={15} className="text-[#4A6741]" />
+                <span>iOS Apple Devices (Safari)</span>
+              </div>
+              <ol className="text-[11px] text-slate-500 space-y-1.5 list-decimal list-inside pl-1 leading-relaxed">
+                <li>
+                  Open SafeSpace inside the native <strong className="text-slate-700">Safari</strong> app.
+                </li>
+                <li>
+                  Tap the <strong className="text-slate-700">Share</strong> icon <Share2 size={12} className="inline-block text-sky-500 mx-0.5" /> in Safari's toolbar.
+                </li>
+                <li>
+                  Scroll down the menu and choose <strong className="text-slate-700">Add to Home Screen</strong> <Plus size={12} className="inline-block text-emerald-600 mx-0.5" />.
+                </li>
+              </ol>
+            </div>
+
+            {/* Android / Desktop Column */}
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2 font-extrabold text-slate-700 text-xs">
+                <Monitor size={15} className="text-[#4A6741]" />
+                <span>Android & Desktop (Chrome / Edge)</span>
+              </div>
+              <ol className="text-[11px] text-slate-500 space-y-1.5 list-decimal list-inside pl-1 leading-relaxed">
+                <li>
+                  Open the app in <strong className="text-slate-700">Google Chrome</strong> or <strong className="text-slate-700">Microsoft Edge</strong>.
+                </li>
+                <li>
+                  Tap the <strong className="text-slate-700">Install App</strong> icon (looks like a monitor with an arrow) in the top-right address bar.
+                </li>
+                <li>
+                  Or click the settings menu (three dots) and select <strong className="text-slate-700">Install SafeSpace...</strong>.
+                </li>
+              </ol>
+            </div>
+          </div>
+
+          <div className="bg-[#F1F5F2] border border-[#E1E8E3] rounded-xl p-3 text-[10.5px] text-[#4A6741] flex items-start gap-2.5 leading-relaxed">
+            <span className="font-extrabold shrink-0 bg-[#E1E8E3] px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider mt-0.5">Privacy Notice</span>
+            <p>
+              SafeSpace is an offline-first privacy application. When installed as a PWA, all active journaling records, worries, gratitude lists, and nervous system logs remain local in sandboxed device storage. No remote servers ever cache or log personal data.
+            </p>
           </div>
         </div>
 

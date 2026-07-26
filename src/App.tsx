@@ -3,7 +3,7 @@ import { AndroidMockup } from './components/AndroidMockup';
 import { CodeViewer } from './components/CodeViewer';
 import { androidProjectFiles } from './androidCode';
 import { ActiveScreen, MoodLogEntry } from './types';
-import { Leaf, Compass, BookOpen, Phone, Terminal, Heart, Settings, Milestone } from 'lucide-react';
+import { Leaf, Compass, BookOpen, Phone, Terminal, Heart, Settings, Milestone, Share2, Plus, Smartphone, Monitor } from 'lucide-react';
 import { ClinicianPortal } from './components/ClinicianPortal';
 import { PwaPrompt } from './components/PwaPrompt';
 
@@ -633,6 +633,59 @@ export default function App() {
             >
               🔒 Safe & Private Space
             </p>
+
+            {/* Elegant PWA Install Instructions Card */}
+            <div className={`w-full max-w-2xl mt-12 rounded-[28px] p-6 border transition-all duration-300 ${
+              isDarkMode 
+                ? 'bg-[#151c17]/60 border-emerald-950/50 text-slate-100' 
+                : 'bg-white border-[#E1E8E3] text-slate-800 shadow-sm'
+            }`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
+                <div className="text-left">
+                  <h4 className="text-sm font-black tracking-tight flex items-center gap-1.5">
+                    📲 Install SafeSpace on your Device
+                  </h4>
+                  <p className={`text-[11px] mt-1 leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Add this toolkit directly to your home screen or desktop to unlock quick offline launches and private client-side logs.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new CustomEvent('safespace-pwa-install-request'))}
+                  className="px-4 py-2 rounded-xl bg-[#4A6741] hover:bg-[#3D5535] text-white font-extrabold text-[10px] tracking-widest uppercase transition cursor-pointer shrink-0 border-0 shadow-xs self-start sm:self-center"
+                >
+                  Setup Guide 🔗
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+                {/* iOS Safari */}
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2 font-extrabold text-xs">
+                    <Smartphone size={14} className={isDarkMode ? 'text-emerald-400' : 'text-[#4A6741]'} />
+                    <span>Apple iOS Safari</span>
+                  </div>
+                  <ol className={`text-[11px] space-y-1.5 list-decimal list-inside pl-1 leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <li>Open this site inside the native <strong className={isDarkMode ? 'text-slate-200' : 'text-slate-700'}>Safari</strong> browser.</li>
+                    <li>Tap the <strong className={isDarkMode ? 'text-slate-200' : 'text-slate-700'}>Share</strong> button <Share2 size={11} className="inline-block text-sky-500 mx-0.5" />.</li>
+                    <li>Choose <strong className={isDarkMode ? 'text-slate-200' : 'text-slate-700'}>Add to Home Screen</strong> <Plus size={11} className="inline-block text-emerald-500 mx-0.5" />.</li>
+                  </ol>
+                </div>
+
+                {/* Android & Desktop */}
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2 font-extrabold text-xs">
+                    <Monitor size={14} className={isDarkMode ? 'text-emerald-400' : 'text-[#4A6741]'} />
+                    <span>Android, Chrome & Edge</span>
+                  </div>
+                  <ol className={`text-[11px] space-y-1.5 list-decimal list-inside pl-1 leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <li>Open this site in <strong className={isDarkMode ? 'text-slate-200' : 'text-slate-700'}>Google Chrome</strong> or <strong className={isDarkMode ? 'text-slate-200' : 'text-slate-700'}>Microsoft Edge</strong>.</li>
+                    <li>Click the <strong className={isDarkMode ? 'text-slate-200' : 'text-slate-700'}>Install Icon</strong> in the URL address bar.</li>
+                    <li>Or open browser menu (three dots) & select <strong className={isDarkMode ? 'text-slate-200' : 'text-slate-700'}>Install SafeSpace...</strong>.</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
