@@ -4,6 +4,7 @@ import { CodeViewer } from './components/CodeViewer';
 import { androidProjectFiles } from './androidCode';
 import { ActiveScreen, MoodLogEntry } from './types';
 import { Leaf, Compass, BookOpen, Phone, Terminal, Heart, Settings, Milestone } from 'lucide-react';
+import { ClinicianPortal } from './components/ClinicianPortal';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -40,6 +41,14 @@ export default function App() {
   });
   const [logoClicks, setLogoClicks] = useState<number>(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const [clinicianData, setClinicianData] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('view') === 'clinician') {
+      return params.get('data');
+    }
+    return null;
+  });
 
   // Simulated State to persist across tab switches in the phone
   const [showDebugMenu, setShowDebugMenu] = useState<boolean>(false);
@@ -418,6 +427,19 @@ export default function App() {
   };
 
   const recommendedFileIndex = getRecommendedFileIndex();
+
+  if (clinicianData) {
+    return (
+      <ClinicianPortal 
+        dataString={clinicianData} 
+        onExit={() => {
+          const newUrl = window.location.origin + window.location.pathname;
+          window.history.replaceState({}, document.title, newUrl);
+          setClinicianData(null);
+        }} 
+      />
+    );
+  }
 
   return (
     <div className={`min-h-screen flex flex-col font-sans transition-colors duration-300 ${isDarkMode ? 'bg-[#0f1411] text-slate-100 selection:bg-[#2e4432] selection:text-[#a8c69f]' : 'bg-[#F1F5F2] text-slate-800 selection:bg-[#E1E8E3] selection:text-[#4A6741]'}`}>

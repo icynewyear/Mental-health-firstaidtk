@@ -2762,7 +2762,7 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
   const [copied, setCopied] = useState(false);
 
   // Backup / Import states
-  const [exportTab, setExportTab] = useState<'diary' | 'backup'>('diary');
+  const [exportTab, setExportTab] = useState<'diary' | 'clinician' | 'backup'>('diary');
   const [backupExportLogs, setBackupExportLogs] = useState(true);
   const [backupExportSaved, setBackupExportSaved] = useState(true);
   const [backupExportSettings, setBackupExportSettings] = useState(true);
@@ -2773,6 +2773,11 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
   const [backupImportSaved, setBackupImportSaved] = useState(true);
   const [backupImportSettings, setBackupImportSettings] = useState(true);
   const [importSuccess, setImportSuccess] = useState(false);
+
+  // Clinician export states
+  const [clinicianLinkDays, setClinicianLinkDays] = useState<7 | 30>(7);
+  const [clinicianLinkUrl, setClinicianLinkUrl] = useState<string>('');
+  const [clinicianCopied, setClinicianCopied] = useState<boolean>(false);
 
   const [exportSelectedMonthIdx, setExportSelectedMonthIdx] = useState<number>(selectedMonthIdx);
   const [exportSubMode, setExportSubMode] = useState<'single' | 'range'>('single');
@@ -3068,6 +3073,56 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
       '🚨': 'Overwhelmed'
     };
     return mapping[trimmed] || trimmed;
+  };
+
+  const getPastNDaysData = (n: number) => {
+    const result = [];
+    const today = new Date();
+    for (let i = n - 1; i >= 0; i--) {
+      const targetDate = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
+      const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(targetDate.getDate()).padStart(2, '0');
+      
+      const details = getDayDetails(mm, targetDate.getDate());
+      if (details.hasData) {
+        result.push({
+          d: `${mm}-${dd}`,
+          v: details.moodValue,
+          l: details.moodLabel,
+          s: details.stress,
+          n: details.notes,
+          hasData: true
+        });
+      } else {
+        result.push({
+          d: `${mm}-${dd}`,
+          v: 0,
+          l: '',
+          s: 5,
+          hasData: false
+        });
+      }
+    }
+    return result;
+  };
+
+  const handleGenerateClinicianLink = (days: number) => {
+    try {
+      const data = getPastNDaysData(days);
+      const payload = {
+        period: days,
+        generatedAt: new Date().toISOString().slice(0, 10),
+        logs: data
+      };
+      const jsonStr = JSON.stringify(payload);
+      const utf8Bytes = new TextEncoder().encode(jsonStr);
+      const base64 = btoa(String.fromCharCode(...utf8Bytes));
+      const shareUrl = `${window.location.origin}${window.location.pathname}?view=clinician&data=${encodeURIComponent(base64)}`;
+      setClinicianLinkUrl(shareUrl);
+      setClinicianCopied(false);
+    } catch (e) {
+      console.error("Failed to generate clinician link:", e);
+    }
   };
 
   const generateExportData = () => {
@@ -3444,27 +3499,37 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
             id="tab-btn-diary"
             type="button"
             onClick={() => setExportTab('diary')}
-            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg cursor-pointer transition ${
+            className={`flex-1 py-1 text-[8.5px] font-black uppercase tracking-wider rounded-lg cursor-pointer transition ${
               exportTab === 'diary' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-850'
             }`}
           >
-            📝 Diary Export
+            📝 Diary
+          </button>
+          <button
+            id="tab-btn-clinician"
+            type="button"
+            onClick={() => setExportTab('clinician')}
+            className={`flex-1 py-1 text-[8.5px] font-black uppercase tracking-wider rounded-lg cursor-pointer transition ${
+              exportTab === 'clinician' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-850'
+            }`}
+          >
+            🩺 Clinician
           </button>
           <button
             id="tab-btn-backup"
             type="button"
             onClick={() => setExportTab('backup')}
-            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg cursor-pointer transition ${
+            className={`flex-1 py-1 text-[8.5px] font-black uppercase tracking-wider rounded-lg cursor-pointer transition ${
               exportTab === 'backup' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-850'
             }`}
           >
-            🛡️ Full Backup
+            🛡️ Backup
           </button>
         </div>
 
         {/* Scrollable Container for Config & Preview */}
         <div className="flex-1 overflow-y-auto no-scrollbar pr-0.5 pb-2 min-h-0 space-y-3.5">
-          {exportTab === 'diary' ? (
+          {exportTab === 'diary' && (
             <>
               <p className="text-[10px] text-slate-500 leading-snug">
                 Configure secure, offline records of your nervous system tracking inputs. No external servers or cloud services are contacted.
@@ -3702,7 +3767,98 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
             )}
           </div>
         </>
-      ) : (
+      )}
+
+      {exportTab === 'clinician' && (
+        <div className="space-y-4 text-left font-sans">
+          <p className="text-[10px] text-slate-500 leading-snug">
+            Share a secure summary of your trends and notes with your clinician or therapist. Data is safely encoded directly within the URL, so no server registers your history.
+          </p>
+
+          <div className="bg-white/85 border border-white p-4 rounded-2xl space-y-4 shadow-xs">
+            <span className="text-[9px] font-black text-[#4A6741] uppercase tracking-wider block mb-1">
+              1. Choose Report Period
+            </span>
+            <div className="grid grid-cols-2 gap-2 text-[10px] font-bold">
+              <button
+                type="button"
+                onClick={() => {
+                  setClinicianLinkDays(7);
+                  setClinicianLinkUrl('');
+                }}
+                className={`py-2 rounded-xl transition cursor-pointer border text-center ${
+                  clinicianLinkDays === 7 ? 'bg-[#4A6741] text-white border-transparent' : 'bg-white text-slate-600 hover:text-slate-850 border-slate-200'
+                }`}
+              >
+                📊 Past 7 Days
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setClinicianLinkDays(30);
+                  setClinicianLinkUrl('');
+                }}
+                className={`py-2 rounded-xl transition cursor-pointer border text-center ${
+                  clinicianLinkDays === 30 ? 'bg-[#4A6741] text-white border-transparent' : 'bg-white text-slate-600 hover:text-slate-850 border-slate-200'
+                }`}
+              >
+                🗓️ Past 1 Month
+              </button>
+            </div>
+
+            <div className="pt-2 border-t border-slate-100 flex flex-col space-y-3">
+              <button
+                type="button"
+                onClick={() => handleGenerateClinicianLink(clinicianLinkDays)}
+                className="w-full py-2.5 rounded-xl bg-[#4A6741] hover:bg-[#3D5535] text-white font-extrabold text-[10px] transition cursor-pointer text-center uppercase tracking-widest border-0 shadow-xs"
+              >
+                🔗 Generate Clinician Link
+              </button>
+            </div>
+          </div>
+
+          {clinicianLinkUrl && (
+            <div className="bg-[#E1E8E3]/50 border border-[#A8C69F]/40 p-4 rounded-2xl space-y-3 shadow-xs">
+              <div className="flex items-center justify-between border-b border-[#A8C69F]/35 pb-2">
+                <span className="text-[9.5px] font-black text-[#4A6741] uppercase tracking-wide">
+                  2. Encoded Share Link
+                </span>
+                <span className="text-[8px] bg-[#E1E8E3] text-[#4A6741] font-black px-1.5 py-0.5 rounded uppercase">
+                  Ready to Share
+                </span>
+              </div>
+
+              <p className="text-[9.5px] text-slate-800 leading-relaxed bg-white border border-[#A8C69F]/35 p-2.5 rounded-xl font-mono break-all max-h-24 overflow-y-auto no-scrollbar">
+                {clinicianLinkUrl}
+              </p>
+
+              <div className="grid grid-cols-2 gap-2 text-[10px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(clinicianLinkUrl);
+                    setClinicianCopied(true);
+                    setTimeout(() => setClinicianCopied(false), 2000);
+                  }}
+                  className="py-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 transition cursor-pointer text-center flex items-center justify-center space-x-1"
+                >
+                  <span>{clinicianCopied ? '✓ Copied!' : '📋 Copy Link'}</span>
+                </button>
+                <a
+                  href={clinicianLinkUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="py-2 rounded-xl bg-[#4A6741] hover:bg-[#3D5535] text-white transition text-center flex items-center justify-center space-x-1 border-0 no-underline"
+                >
+                  <span>Launch View 🩺</span>
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {exportTab === 'backup' && (
         <div className="space-y-4 text-left">
           <p className="text-[10px] text-slate-500 leading-snug">
             Consolidate all local SafeSpace data—including nervous system daily logs, active tool data (journal slips, gratitude jar records, worries), and app calibration settings—into a secure JSON file or restore a past backup.
