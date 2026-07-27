@@ -2762,7 +2762,7 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
   const [copied, setCopied] = useState(false);
 
   // Backup / Import states
-  const [exportTab, setExportTab] = useState<'diary' | 'clinician' | 'pwa' | 'backup'>('diary');
+  const [exportTab, setExportTab] = useState<'diary' | 'clinician' | 'backup'>('diary');
   const [backupExportLogs, setBackupExportLogs] = useState(true);
   const [backupExportSaved, setBackupExportSaved] = useState(true);
   const [backupExportSettings, setBackupExportSettings] = useState(true);
@@ -3499,7 +3499,7 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
             id="tab-btn-diary"
             type="button"
             onClick={() => setExportTab('diary')}
-            className={`flex-1 py-1 text-[7.5px] font-black uppercase tracking-wider rounded-lg cursor-pointer transition ${
+            className={`flex-1 py-1 text-[8.5px] font-black uppercase tracking-wider rounded-lg cursor-pointer transition ${
               exportTab === 'diary' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-850'
             }`}
           >
@@ -3509,27 +3509,17 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
             id="tab-btn-clinician"
             type="button"
             onClick={() => setExportTab('clinician')}
-            className={`flex-1 py-1 text-[7.5px] font-black uppercase tracking-wider rounded-lg cursor-pointer transition ${
+            className={`flex-1 py-1 text-[8.5px] font-black uppercase tracking-wider rounded-lg cursor-pointer transition ${
               exportTab === 'clinician' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-850'
             }`}
           >
             🩺 Clinic
           </button>
           <button
-            id="tab-btn-pwa"
-            type="button"
-            onClick={() => setExportTab('pwa')}
-            className={`flex-1 py-1 text-[7.5px] font-black uppercase tracking-wider rounded-lg cursor-pointer transition ${
-              exportTab === 'pwa' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-850'
-            }`}
-          >
-            📲 PWA
-          </button>
-          <button
             id="tab-btn-backup"
             type="button"
             onClick={() => setExportTab('backup')}
-            className={`flex-1 py-1 text-[7.5px] font-black uppercase tracking-wider rounded-lg cursor-pointer transition ${
+            className={`flex-1 py-1 text-[8.5px] font-black uppercase tracking-wider rounded-lg cursor-pointer transition ${
               exportTab === 'backup' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-850'
             }`}
           >
@@ -3865,59 +3855,6 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {exportTab === 'pwa' && (
-        <div className="space-y-4 text-left font-sans">
-          <p className="text-[10px] text-slate-500 leading-snug">
-            Configure the Progressive Web Application (PWA) for immediate standalone access. Runs completely offline on mobile & desktop without web servers or internet dependencies.
-          </p>
-
-          <div className="bg-white/85 border border-white p-4 rounded-2xl space-y-3.5 shadow-xs">
-            <span className="text-[9px] font-black text-[#4A6741] uppercase tracking-wider block">
-              📊 Application PWA Diagnostics
-            </span>
-            
-            <div className="space-y-2 text-[10px]">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                <span className="text-slate-500 font-bold">App Package Version</span>
-                <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-extrabold">v2.1.0-offline</span>
-              </div>
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                <span className="text-slate-500 font-bold">Service Worker Cache</span>
-                <span className="text-[#4A6741] font-black uppercase tracking-wide">✓ ACTIVE (Stale-While-Revalidate)</span>
-              </div>
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                <span className="text-slate-500 font-bold">Local File Sandbox</span>
-                <span className="text-[#4A6741] font-black uppercase tracking-wide">✓ SECURED (Private Client Storage)</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500 font-bold">Standalone Ingress Status</span>
-                <span className="font-mono bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded font-black text-[9px] uppercase tracking-wide">
-                  {window.matchMedia('(display-mode: standalone)').matches ? 'STANDALONE (NATIVE)' : 'DESKTOP WEB SANDBOX'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-[#E1E8E3]/50 border border-[#A8C69F]/40 p-4 rounded-2xl space-y-3 shadow-xs">
-            <span className="text-[9px] font-black text-[#4A6741] uppercase tracking-wider block">
-              ⚡ Launch PWA Setup Assistant
-            </span>
-            <p className="text-[10px] text-slate-600 leading-relaxed">
-              Click below to launch the step-by-step PWA Setup Assistant. It automatically identifies your browser type and guides you through configuring standalone shortcuts.
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent('safespace-pwa-install-request'));
-              }}
-              className="w-full py-2.5 rounded-xl bg-[#4A6741] hover:bg-[#3D5535] text-white font-extrabold text-[10px] transition cursor-pointer text-center uppercase tracking-widest border-0 shadow-xs flex items-center justify-center space-x-1.5"
-            >
-              <span>Launch Installer Assistant 🔗</span>
-            </button>
-          </div>
         </div>
       )}
 

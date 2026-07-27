@@ -403,7 +403,7 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ dataString, on
                 📲 Progressive Web App (PWA) Offline Setup
               </h4>
               <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-                Advise your client to install SafeSpace directly on their home screen for private, instant, and fully offline-enabled therapeutic journaling.
+                Advise your client to install the Mental Health Toolkit directly on their home screen for private, instant, and fully offline-enabled therapeutic journaling.
               </p>
             </div>
             <span className="text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-extrabold px-2 py-1 rounded-lg uppercase tracking-wider self-start md:self-center">
@@ -420,7 +420,7 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ dataString, on
               </div>
               <ol className="text-[11px] text-slate-500 space-y-1.5 list-decimal list-inside pl-1 leading-relaxed">
                 <li>
-                  Open SafeSpace inside the native <strong className="text-slate-700">Safari</strong> app.
+                  Open the Mental Health Toolkit inside the native <strong className="text-slate-700">Safari</strong> app.
                 </li>
                 <li>
                   Tap the <strong className="text-slate-700">Share</strong> icon <Share2 size={12} className="inline-block text-sky-500 mx-0.5" /> in Safari's toolbar.
@@ -445,7 +445,7 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ dataString, on
                   Tap the <strong className="text-slate-700">Install App</strong> icon (looks like a monitor with an arrow) in the top-right address bar.
                 </li>
                 <li>
-                  Or click the settings menu (three dots) and select <strong className="text-slate-700">Install SafeSpace...</strong>.
+                  Or click the settings menu (three dots) and select <strong className="text-slate-700">Install Mental Health Toolkit...</strong>.
                 </li>
               </ol>
             </div>
@@ -454,7 +454,7 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ dataString, on
           <div className="bg-[#F1F5F2] border border-[#E1E8E3] rounded-xl p-3 text-[10.5px] text-[#4A6741] flex items-start gap-2.5 leading-relaxed">
             <span className="font-extrabold shrink-0 bg-[#E1E8E3] px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider mt-0.5">Privacy Notice</span>
             <p>
-              SafeSpace is an offline-first privacy application. When installed as a PWA, all active journaling records, worries, gratitude lists, and nervous system logs remain local in sandboxed device storage. No remote servers ever cache or log personal data.
+              The Mental Health Toolkit is an offline-first privacy application. When installed as a PWA, all active journaling records, worries, gratitude lists, and nervous system logs remain local in sandboxed device storage. No remote servers ever cache or log personal data.
             </p>
           </div>
         </div>

@@ -148,7 +148,7 @@ export const PwaPrompt: React.FC<PwaPromptProps> = ({ isDarkMode }) => {
               <p className={`text-[11px] mt-1 leading-relaxed ${
                 isDarkMode ? 'text-slate-400' : 'text-slate-500'
               }`}>
-                Add SafeSpace Toolkit to your home screen for high-speed offline launches, private client-side logs, and a full standalone app experience.
+                Add the Mental Health Toolkit to your home screen for high-speed offline launches, private client-side logs, and a full standalone app experience.
               </p>
 
               {/* Action Buttons */}
@@ -348,7 +348,7 @@ export const PwaPrompt: React.FC<PwaPromptProps> = ({ isDarkMode }) => {
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-start gap-2 text-[10px] text-slate-400">
                 <Info size={13} className="shrink-0 text-[#4A6741] dark:text-emerald-400 mt-0.5" />
                 <p className="leading-snug">
-                  SafeSpace PWAs run completely client-side in sandboxed security partitions. No external credentials, tracking telemetry, or diagnostic profiles are compiled.
+                  The Mental Health Toolkit PWA runs completely client-side in sandboxed security partitions. No external credentials, tracking telemetry, or diagnostic profiles are compiled.
                 </p>
               </div>
 

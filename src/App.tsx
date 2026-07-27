@@ -643,7 +643,7 @@ export default function App() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
                 <div className="text-left">
                   <h4 className="text-sm font-black tracking-tight flex items-center gap-1.5">
-                    📲 Install SafeSpace on your Device
+                    📲 Install Mental Health Toolkit
                   </h4>
                   <p className={`text-[11px] mt-1 leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                     Add this toolkit directly to your home screen or desktop to unlock quick offline launches and private client-side logs.
@@ -681,7 +681,7 @@ export default function App() {
                   <ol className={`text-[11px] space-y-1.5 list-decimal list-inside pl-1 leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                     <li>Open this site in <strong className={isDarkMode ? 'text-slate-200' : 'text-slate-700'}>Google Chrome</strong> or <strong className={isDarkMode ? 'text-slate-200' : 'text-slate-700'}>Microsoft Edge</strong>.</li>
                     <li>Click the <strong className={isDarkMode ? 'text-slate-200' : 'text-slate-700'}>Install Icon</strong> in the URL address bar.</li>
-                    <li>Or open browser menu (three dots) & select <strong className={isDarkMode ? 'text-slate-200' : 'text-slate-700'}>Install SafeSpace...</strong>.</li>
+                    <li>Or open browser menu (three dots) & select <strong className={isDarkMode ? 'text-slate-200' : 'text-slate-700'}>Install Mental Health Toolkit...</strong>.</li>
                   </ol>
                 </div>
               </div>
