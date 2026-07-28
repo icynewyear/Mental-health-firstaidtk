@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Home, Leaf, Compass, BookOpen, Phone, Wifi, Battery, Signal, Brain, Shield, Lock, Unlock, Fingerprint, Delete } from 'lucide-react';
-import { ActiveScreen, MoodLogEntry } from '../types';
+import { ActiveScreen, MoodLogEntry, CustomScaleConfig } from '../types';
 import {
   SimulatorDashboard,
   SimulatorBreathing,
@@ -194,6 +194,10 @@ interface AndroidMockupProps {
   setDeveloperUnlocked?: React.Dispatch<React.SetStateAction<boolean>>;
   stressNotes: string;
   setStressNotes: (notes: string) => void;
+  customScales?: CustomScaleConfig[];
+  setCustomScales?: React.Dispatch<React.SetStateAction<CustomScaleConfig[]>>;
+  todayCustomScaleValues?: Record<string, number>;
+  setTodayCustomScaleValues?: React.Dispatch<React.SetStateAction<Record<string, number>>>;
 }
 
 export const AndroidMockup: React.FC<AndroidMockupProps> = ({
@@ -215,6 +219,10 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
   setDeveloperUnlocked,
   stressNotes,
   setStressNotes,
+  customScales = [],
+  setCustomScales,
+  todayCustomScaleValues = {},
+  setTodayCustomScaleValues,
 }) => {
   const [timeState, setTimeState] = useState('14:05');
   const [offlinePillClicks, setOfflinePillClicks] = useState(0);
@@ -322,6 +330,10 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
                     setUnlockPin={setUnlockPin}
                     stressNotes={stressNotes}
                     setStressNotes={setStressNotes}
+                    customScales={customScales}
+                    setCustomScales={setCustomScales}
+                    todayCustomScaleValues={todayCustomScaleValues}
+                    setTodayCustomScaleValues={setTodayCustomScaleValues}
                   />
                 )}
                 {activeScreen === 'somaticHub' && (
@@ -372,6 +384,10 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
                     setLoggedMood={setLoggedMood}
                     stressNotes={stressNotes}
                     setStressNotes={setStressNotes}
+                    customScales={customScales}
+                    setCustomScales={setCustomScales}
+                    todayCustomScaleValues={todayCustomScaleValues}
+                    setTodayCustomScaleValues={setTodayCustomScaleValues}
                   />
                 )}
 

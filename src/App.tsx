@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AndroidMockup } from './components/AndroidMockup';
 import { CodeViewer } from './components/CodeViewer';
 import { androidProjectFiles } from './androidCode';
-import { ActiveScreen, MoodLogEntry } from './types';
+import { ActiveScreen, MoodLogEntry, CustomScaleConfig } from './types';
 import { Leaf, Compass, BookOpen, Phone, Terminal, Heart, Settings, Milestone, Share2, Plus, Smartphone, Monitor } from 'lucide-react';
 import { ClinicianPortal } from './components/ClinicianPortal';
 import { PwaPrompt } from './components/PwaPrompt';
@@ -29,6 +29,20 @@ function getDefaultWeekHistory(): MoodLogEntry[] {
 }
 
 export default function App() {
+  // Check daily rollover inline before state initialization so states load clean values
+  const todayStr = new Date().toDateString();
+  const lastActiveDate = localStorage.getItem('safespace_last_active_date');
+  if (lastActiveDate && lastActiveDate !== todayStr) {
+    localStorage.setItem('safespace_last_active_date', todayStr);
+    localStorage.removeItem('safespace_logged_mood');
+    localStorage.setItem('safespace_stress_level', '3'); // default stress level
+    localStorage.removeItem('safespace_stress_notes');
+    localStorage.removeItem('safespace_today_custom_scale_values');
+    localStorage.removeItem('safespace_submitted_today');
+  } else if (!lastActiveDate) {
+    localStorage.setItem('safespace_last_active_date', todayStr);
+  }
+
   const [activeScreen, setActiveScreen] = useState<ActiveScreen>('dashboard');
   const [selectedFileIndex, setSelectedFileIndex] = useState<number>(5); // Defaults to DashboardScreen.kt (index 5)
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -59,6 +73,16 @@ export default function App() {
   });
   const [loggedMood, setLoggedMood] = useState<string | null>(() => {
     return localStorage.getItem('safespace_logged_mood');
+  });
+
+  const [customScales, setCustomScales] = useState<CustomScaleConfig[]>(() => {
+    const saved = localStorage.getItem('safespace_custom_scale_configs');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [todayCustomScaleValues, setTodayCustomScaleValues] = useState<Record<string, number>>(() => {
+    const saved = localStorage.getItem('safespace_today_custom_scale_values');
+    return saved ? JSON.parse(saved) : {};
   });
   const [stressNotes, setStressNotes] = useState<string>(() => {
     const savedNotes = localStorage.getItem('safespace_stress_notes');
@@ -225,19 +249,51 @@ export default function App() {
     window.location.reload();
   };
 
-  // Verify week rollover state on mount
+  // Verify week and daily rollover state on mount & set background checker
   useEffect(() => {
-    const currentWeekSunday = getStartOfWeekDate();
-    const savedWeekSunday = localStorage.getItem('safespace_current_week_sunday');
-    if (savedWeekSunday !== currentWeekSunday) {
-      localStorage.setItem('safespace_current_week_sunday', currentWeekSunday);
-      const clean = getDefaultWeekHistory();
-      setMoodHistory(clean);
-      setLoggedMood(null);
-      setStressLevel(5);
-      setStressNotes('');
-      localStorage.removeItem('safespace_stress_notes');
-    }
+    const checkRollovers = () => {
+      const todayStr = new Date().toDateString();
+      const lastActiveDate = localStorage.getItem('safespace_last_active_date');
+      
+      // Daily Reset
+      if (lastActiveDate && lastActiveDate !== todayStr) {
+        localStorage.setItem('safespace_last_active_date', todayStr);
+        localStorage.removeItem('safespace_logged_mood');
+        localStorage.setItem('safespace_stress_level', '3');
+        localStorage.removeItem('safespace_stress_notes');
+        localStorage.removeItem('safespace_today_custom_scale_values');
+        localStorage.removeItem('safespace_submitted_today');
+        
+        setLoggedMood(null);
+        setStressLevel(3);
+        setStressNotes('');
+        setTodayCustomScaleValues({});
+      } else if (!lastActiveDate) {
+        localStorage.setItem('safespace_last_active_date', todayStr);
+      }
+
+      // Weekly Reset
+      const currentWeekSunday = getStartOfWeekDate();
+      const savedWeekSunday = localStorage.getItem('safespace_current_week_sunday');
+      if (savedWeekSunday !== currentWeekSunday) {
+        localStorage.setItem('safespace_current_week_sunday', currentWeekSunday);
+        const clean = getDefaultWeekHistory();
+        setMoodHistory(clean);
+        setLoggedMood(null);
+        setStressLevel(5);
+        setStressNotes('');
+        setTodayCustomScaleValues({});
+        localStorage.removeItem('safespace_stress_notes');
+        localStorage.removeItem('safespace_today_custom_scale_values');
+      }
+    };
+
+    // Run immediately on mount
+    checkRollovers();
+
+    // Run check every 15 seconds to catch midnight transitions live
+    const interval = setInterval(checkRollovers, 15000);
+    return () => clearInterval(interval);
   }, []);
 
   // Persist stressNotes to local storage on change
@@ -269,6 +325,16 @@ export default function App() {
     localStorage.setItem('safespace_dark_mode', String(isDarkMode));
   }, [isDarkMode]);
 
+  // Persist customScales to local storage on change
+  useEffect(() => {
+    localStorage.setItem('safespace_custom_scale_configs', JSON.stringify(customScales));
+  }, [customScales]);
+
+  // Persist todayCustomScaleValues to local storage on change
+  useEffect(() => {
+    localStorage.setItem('safespace_today_custom_scale_values', JSON.stringify(todayCustomScaleValues));
+  }, [todayCustomScaleValues]);
+
   // Automatically clear toast message after 3.5 seconds
   useEffect(() => {
     if (toastMessage) {
@@ -299,25 +365,28 @@ export default function App() {
     });
   };
 
-  // Sync today's active values directly from loggedMood, stressLevel, and stressNotes
+  // Sync today's active values directly from loggedMood, stressLevel, stressNotes, and todayCustomScaleValues
   useEffect(() => {
     const todayIndex = new Date().getDay();
     const todayAbbr = WEEKDAYS[todayIndex];
     
     setMoodHistory(prev => {
       const todayEntry = prev.find(entry => entry.day === todayAbbr);
-      const hasData = loggedMood !== null || stressNotes !== '';
+      const hasCustomData = Object.keys(todayCustomScaleValues).length > 0;
+      const hasData = loggedMood !== null || stressNotes !== '' || hasCustomData;
       const targetMoodLabel = loggedMood || 'No Data';
-      const targetStress = (loggedMood !== null || stressNotes !== '') ? stressLevel : 5;
+      const targetStress = (loggedMood !== null || stressNotes !== '' || hasCustomData) ? stressLevel : 5;
       const targetMoodValue = loggedMood !== null ? 1 : 0;
       const targetNotes = stressNotes;
+      const targetCustom = todayCustomScaleValues;
       
       if (todayEntry && 
           todayEntry.hasData === hasData && 
           todayEntry.moodLabel === targetMoodLabel && 
           todayEntry.stress === targetStress &&
           todayEntry.moodValue === targetMoodValue &&
-          todayEntry.notes === targetNotes) {
+          todayEntry.notes === targetNotes &&
+          JSON.stringify(todayEntry.customScales || {}) === JSON.stringify(targetCustom)) {
         return prev; // Performance optimization: skip state update if data matches perfectly
       }
       
@@ -329,13 +398,14 @@ export default function App() {
             moodValue: targetMoodValue,
             moodLabel: targetMoodLabel,
             stress: targetStress,
-            notes: targetNotes
+            notes: targetNotes,
+            customScales: targetCustom
           };
         }
         return entry;
       });
     });
-  }, [loggedMood, stressLevel, stressNotes]);
+  }, [loggedMood, stressLevel, stressNotes, todayCustomScaleValues]);
 
   // Sync simulator screens to active Kotlin Files
   useEffect(() => {
@@ -578,6 +648,10 @@ export default function App() {
                   setDeveloperUnlocked={setDeveloperUnlocked}
                   stressNotes={stressNotes}
                   setStressNotes={setStressNotes}
+                  customScales={customScales}
+                  setCustomScales={setCustomScales}
+                  todayCustomScaleValues={todayCustomScaleValues}
+                  setTodayCustomScaleValues={setTodayCustomScaleValues}
                 />
               </div>
             </div>
@@ -619,6 +693,10 @@ export default function App() {
                 setDeveloperUnlocked={setDeveloperUnlocked}
                 stressNotes={stressNotes}
                 setStressNotes={setStressNotes}
+                customScales={customScales}
+                setCustomScales={setCustomScales}
+                todayCustomScaleValues={todayCustomScaleValues}
+                setTodayCustomScaleValues={setTodayCustomScaleValues}
               />
             </div>
             

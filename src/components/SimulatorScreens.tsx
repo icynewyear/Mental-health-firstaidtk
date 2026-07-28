@@ -38,7 +38,7 @@ import {
   Upload,
   MessageSquare
 } from 'lucide-react';
-import { ActiveScreen, BreathingType, CopingStatement, GroundingStep, MoodLogEntry } from '../types';
+import { ActiveScreen, BreathingType, CopingStatement, GroundingStep, MoodLogEntry, CustomScaleConfig } from '../types';
 import { startAmbientSound, stopAmbientSound, setAmbientVolume } from '../utils/audioSynth';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { ALL_TOOLS, getFavoriteToolIds, saveFavoriteToolIds, toggleFavoriteToolId, ToolDef } from '../utils/toolsData';
@@ -192,6 +192,10 @@ interface DashboardProps {
   setUnlockPin?: (val: string) => void;
   stressNotes: string;
   setStressNotes: (notes: string) => void;
+  customScales?: CustomScaleConfig[];
+  setCustomScales?: React.Dispatch<React.SetStateAction<CustomScaleConfig[]>>;
+  todayCustomScaleValues?: Record<string, number>;
+  setTodayCustomScaleValues?: React.Dispatch<React.SetStateAction<Record<string, number>>>;
 }
 
 export const SimulatorDashboard: React.FC<DashboardProps> = ({
@@ -209,6 +213,10 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
   setUnlockPin,
   stressNotes,
   setStressNotes,
+  customScales = [],
+  setCustomScales,
+  todayCustomScaleValues = {},
+  setTodayCustomScaleValues,
 }) => {
   const PREDEFINED_EMOJI_SETS = [
     {
@@ -274,6 +282,36 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
   const [submittedToday, setSubmittedToday] = useState<boolean>(() => {
     return localStorage.getItem('safespace_submitted_today') === 'true';
   });
+
+  const [isAddingScale, setIsAddingScale] = useState(false);
+  const [newScaleName, setNewScaleName] = useState('');
+
+  const handleAddScale = () => {
+    if (!newScaleName.trim()) return;
+    const newId = `scale_${Date.now()}`;
+    const newScale: CustomScaleConfig = {
+      id: newId,
+      name: newScaleName.trim()
+    };
+    setCustomScales?.(prev => [...prev, newScale]);
+    setTodayCustomScaleValues?.(prev => ({
+      ...prev,
+      [newId]: 5
+    }));
+    setIsAddingScale(false);
+    setNewScaleName('');
+    setSubmittedToday(false);
+  };
+
+  const handleDeleteScale = (id: string) => {
+    setCustomScales?.(prev => prev.filter(s => s.id !== id));
+    setTodayCustomScaleValues?.(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setSubmittedToday(false);
+  };
 
   useEffect(() => {
     if (!showSelector) {
@@ -881,6 +919,100 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
           <span>Peaceful (1)</span>
           <span>Moderate (5)</span>
           <span>Crisis (10)</span>
+        </div>
+
+        {/* Custom Daily Scales */}
+        <div className="mt-3 pt-3 border-t border-[#CBD9CC]/30 flex flex-col space-y-2 text-left">
+          <div className="flex justify-between items-center select-none">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Custom Scales</span>
+            <button
+              type="button"
+              onClick={() => setIsAddingScale(true)}
+              className="text-[9px] font-bold text-[#4A6741] hover:text-[#3D5535] flex items-center space-x-0.5 border-0 bg-transparent cursor-pointer"
+            >
+              <Plus size={10} />
+              <span>Add Scale</span>
+            </button>
+          </div>
+
+          {isAddingScale && (
+            <div className="bg-slate-50 border border-slate-200/60 p-2.5 rounded-2xl flex flex-col space-y-1.5 mb-2">
+              <span className="text-[9px] font-bold text-slate-500">Name your 1-10 daily scale:</span>
+              <div className="flex space-x-1.5">
+                <input
+                  type="text"
+                  placeholder="e.g. Anxiety, Energy, Sleep..."
+                  value={newScaleName}
+                  onChange={(e) => setNewScaleName(e.target.value)}
+                  className="flex-1 bg-white border border-slate-200 focus:ring-1 focus:ring-[#4A6741] focus:border-[#4A6741] rounded-xl px-2 py-1 text-[10px] outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleAddScale();
+                  }}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={handleAddScale}
+                  className="px-2.5 py-1 bg-[#4A6741] hover:bg-[#3D5535] text-white text-[9px] font-bold rounded-lg border-0 cursor-pointer"
+                >
+                  Save
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddingScale(false);
+                    setNewScaleName('');
+                  }}
+                  className="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-600 text-[9px] font-bold rounded-lg border-0 cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {customScales.length === 0 ? (
+            <p className="text-[9px] text-slate-400 italic">No custom scales added yet. Track variables like Sleep, Anxiety, or Energy by adding custom 1-10 scales.</p>
+          ) : (
+            <div className="space-y-3">
+              {customScales.map(scale => {
+                const currentVal = todayCustomScaleValues[scale.id] !== undefined ? todayCustomScaleValues[scale.id] : 5;
+                return (
+                  <div key={scale.id} className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-slate-600 font-bold">{scale.name}</span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-[10px] font-black text-[#4A6741]">{currentVal}/10</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteScale(scale.id)}
+                          className="text-rose-400 hover:text-rose-600 border-0 bg-transparent cursor-pointer p-0.5 rounded transition"
+                          title="Delete scale"
+                        >
+                          <Trash2 size={10} />
+                        </button>
+                      </div>
+                    </div>
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      value={currentVal}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        setTodayCustomScaleValues?.(prev => ({
+                          ...prev,
+                          [scale.id]: val
+                        }));
+                        setSubmittedToday(false);
+                      }}
+                      className="w-full accent-[#4A6741] h-1 bg-[#E1E8E3] rounded-lg appearance-none cursor-pointer"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Optional notes input */}
@@ -2692,6 +2824,10 @@ interface HistoryProps {
   setLoggedMood?: (mood: string | null) => void;
   stressNotes?: string;
   setStressNotes?: (notes: string) => void;
+  customScales?: CustomScaleConfig[];
+  setCustomScales?: React.Dispatch<React.SetStateAction<CustomScaleConfig[]>>;
+  todayCustomScaleValues?: Record<string, number>;
+  setTodayCustomScaleValues?: React.Dispatch<React.SetStateAction<Record<string, number>>>;
 }
 
 const KEY_GROUPS = {
@@ -2702,7 +2838,9 @@ const KEY_GROUPS = {
     'safespace_logged_mood',
     'safespace_current_week_sunday',
     'safespace_kb_emoji_val',
-    'safespace_kb_emoji_date'
+    'safespace_kb_emoji_date',
+    'safespace_custom_scale_configs',
+    'safespace_today_custom_scale_values'
   ],
   saved: [
     'safespace_journal_logs',
@@ -2737,6 +2875,10 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
   setLoggedMood,
   stressNotes = '',
   setStressNotes,
+  customScales = [],
+  setCustomScales,
+  todayCustomScaleValues = {},
+  setTodayCustomScaleValues,
 }) => {
   const [historyTab, setHistoryTab] = useState<'monthly' | 'weekly'>('monthly');
 
@@ -2904,15 +3046,17 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
           moodLabel: todayLog.moodLabel,
           stress: todayLog.stress,
           notes: todayLog.notes,
+          customScales: todayLog.customScales,
         };
       }
     }
 
-    return monthlyData[dateKey] || { hasData: false, moodValue: 0, moodLabel: 'No Data', stress: 5 };
+    const savedDay = monthlyData[dateKey];
+    return (savedDay as any) || { hasData: false, moodValue: 0, moodLabel: 'No Data', stress: 5 };
   };
 
   // Mutator to update specific day entries
-  const handleUpdateDay = (dayNum: number, fields: Partial<{ moodValue: number; moodLabel: string; stress: number; hasData: boolean; notes?: string }>) => {
+  const handleUpdateDay = (dayNum: number, fields: Partial<{ moodValue: number; moodLabel: string; stress: number; hasData: boolean; notes?: string; customScales?: Record<string, number> }>) => {
     const dateKey = `2026-${currentMonth.key}-${dayNum.toString().padStart(2, '0')}`;
     const current = getDayDetails(currentMonth.key, dayNum);
     const updated = {
@@ -3128,13 +3272,19 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
   const generateExportData = () => {
     if (exportRange === 'week') {
       if (exportFormat === 'csv') {
-        const headers = 'Date,Day,Feel/Mood,Stress Level (1-10),Status';
+        const scaleHeaders = customScales.map(s => `"${s.name} (1-10)"`).join(',');
+        const headers = `Date,Day,Feel/Mood,Stress Level (1-10),Status${scaleHeaders ? ',' + scaleHeaders : ''}`;
         const rows = moodHistory.map((item, idx) => {
           const dateStr = getDayDateString(idx);
           const feel = item.hasData ? getEmojiName(item.moodLabel) : '—';
           const stressStatus = item.hasData ? item.stress : '—';
           const status = item.hasData ? 'Logged' : 'No Check-In';
-          return `"${dateStr}","${item.day}","${feel}",${stressStatus},"${status}"`;
+          const scaleValues = customScales.map(s => {
+            if (!item.hasData) return '—';
+            const saved = item.customScales || {};
+            return saved[s.id] !== undefined ? saved[s.id] : '—';
+          }).join(',');
+          return `"${dateStr}","${item.day}","${feel}",${stressStatus},"${status}"${scaleValues ? ',' + scaleValues : ''}`;
         });
         return [headers, ...rows].join('\n');
       } else {
@@ -3162,6 +3312,13 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
             txt += `• ${item.day} (${dateStr}):\n`;
             txt += `  - Mood state: ${getEmojiName(item.moodLabel)} (${item.moodLabel})\n`;
             txt += `  - Stress level: ${item.stress}/10\n`;
+            if (customScales.length > 0) {
+              customScales.forEach(s => {
+                const saved = item.customScales || {};
+                const scaleValue = saved[s.id] !== undefined ? `${saved[s.id]}/10` : '—';
+                txt += `  - ${s.name}: ${scaleValue}\n`;
+              });
+            }
           } else {
             txt += `• ${item.day} (${dateStr}): — No entry recorded\n`;
           }
@@ -3192,7 +3349,8 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
           : '5.0';
 
         if (exportFormat === 'csv') {
-          const headers = 'Date,Feel/Mood,Stress Level (1-10),Status';
+          const scaleHeaders = customScales.map(s => `"${s.name} (1-10)"`).join(',');
+          const headers = `Date,Feel/Mood,Stress Level (1-10),Status${scaleHeaders ? ',' + scaleHeaders : ''}`;
           const rows = [];
           for (let d = 1; d <= daysCount; d++) {
             const dateStr = `2026-${monthKey}-${d.toString().padStart(2, '0')}`;
@@ -3200,7 +3358,12 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
             const feel = dayData.hasData ? getEmojiName(dayData.moodLabel) : '—';
             const stressStatus = dayData.hasData ? dayData.stress : '—';
             const status = dayData.hasData ? 'Logged' : 'No Check-In';
-            rows.push(`"${dateStr}","${feel}",${stressStatus},"${status}"`);
+            const scaleValues = customScales.map(s => {
+              if (!dayData.hasData) return '—';
+              const saved = (dayData as any).customScales || {};
+              return saved[s.id] !== undefined ? saved[s.id] : '—';
+            }).join(',');
+            rows.push(`"${dateStr}","${feel}",${stressStatus},"${status}"${scaleValues ? ',' + scaleValues : ''}`);
           }
           return [headers, ...rows].join('\n');
         } else {
@@ -3228,6 +3391,13 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
               txt += `• ${dateStr}:\n`;
               txt += `  - Mood state: ${getEmojiName(dayData.moodLabel)} (${dayData.moodLabel})\n`;
               txt += `  - Stress level: ${dayData.stress}/10\n`;
+              if (customScales.length > 0) {
+                customScales.forEach(s => {
+                  const saved = (dayData as any).customScales || {};
+                  const scaleValue = saved[s.id] !== undefined ? `${saved[s.id]}/10` : '—';
+                  txt += `  - ${s.name}: ${scaleValue}\n`;
+                });
+              }
             } else {
               txt += `• ${dateStr}: — No entry recorded\n`;
             }
@@ -3272,13 +3442,19 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
         const periodLabel = `${startLabel} – ${endLabel}, 2026`;
 
         if (exportFormat === 'csv') {
-          const headers = 'Date,Feel/Mood,Stress Level (1-10),Status';
+          const scaleHeaders = customScales.map(s => `"${s.name} (1-10)"`).join(',');
+          const headers = `Date,Feel/Mood,Stress Level (1-10),Status${scaleHeaders ? ',' + scaleHeaders : ''}`;
           const rows = slicedDays.map(day => {
             const dayData = getDayDetails(day.monthKey, day.day);
             const feel = dayData.hasData ? getEmojiName(dayData.moodLabel) : '—';
             const stressStatus = dayData.hasData ? dayData.stress : '—';
             const status = dayData.hasData ? 'Logged' : 'No Check-In';
-            return `"${day.dateStr}","${feel}",${stressStatus},"${status}"`;
+            const scaleValues = customScales.map(s => {
+              if (!dayData.hasData) return '—';
+              const saved = (dayData as any).customScales || {};
+              return saved[s.id] !== undefined ? saved[s.id] : '—';
+            }).join(',');
+            return `"${day.dateStr}","${feel}",${stressStatus},"${status}"${scaleValues ? ',' + scaleValues : ''}`;
           });
           return [headers, ...rows].join('\n');
         } else {
@@ -3312,6 +3488,13 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
               txt += `• ${d.dateStr}:\n`;
               txt += `  - Mood state: ${getEmojiName(d.dayData.moodLabel)} (${d.dayData.moodLabel})\n`;
               txt += `  - Stress level: ${d.dayData.stress}/10\n`;
+              if (customScales.length > 0) {
+                customScales.forEach(s => {
+                  const saved = (d.dayData as any).customScales || {};
+                  const scaleValue = saved[s.id] !== undefined ? `${saved[s.id]}/10` : '—';
+                  txt += `  - ${s.name}: ${scaleValue}\n`;
+                });
+              }
             } else {
               txt += `• ${d.dateStr}: — No entry recorded\n`;
             }
@@ -4404,6 +4587,50 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
                         className="w-full accent-[#4A6741] h-1 bg-[#E1E8E3] rounded-lg appearance-none cursor-pointer"
                       />
                     </div>
+
+                    {/* Custom Daily Scales */}
+                    {customScales.length > 0 && (
+                      <div className="space-y-2 pt-1 border-t border-[#CBD9CC]/30">
+                        <span className="text-[8.5px] font-black text-slate-400 uppercase tracking-wider block mb-1">Custom Scales</span>
+                        {customScales.map(scale => {
+                          const savedScales = (selectedDayData as any).customScales || {};
+                          const scaleValue = savedScales[scale.id] !== undefined ? savedScales[scale.id] : 5;
+                          return (
+                            <div key={scale.id} className="space-y-0.5">
+                              <div className="flex justify-between items-center">
+                                <span className="text-[9px] text-slate-500 font-bold">{scale.name}</span>
+                                <span className="text-[9px] font-mono font-black text-[#4A6741]">{scaleValue}/10</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="1"
+                                max="10"
+                                value={scaleValue}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value);
+                                  const updatedScales = {
+                                    ...savedScales,
+                                    [scale.id]: val
+                                  };
+                                  const todayObjForHistory = new Date();
+                                  const curMonthKeyForHistory = String(todayObjForHistory.getMonth() + 1).padStart(2, '0');
+                                  const curDayNumForHistory = todayObjForHistory.getDate();
+                                  const isToday = currentMonth.key === curMonthKeyForHistory && selectedDay === curDayNumForHistory;
+                                  if (isToday) {
+                                    setTodayCustomScaleValues?.(prev => ({
+                                      ...prev,
+                                      [scale.id]: val
+                                    }));
+                                  }
+                                  handleUpdateDay(selectedDay, { customScales: updatedScales });
+                                }}
+                                className="w-full accent-[#4A6741] h-1 bg-[#E1E8E3] rounded-lg appearance-none cursor-pointer"
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
 
                     {/* Notes Textarea */}
                     <div className="flex flex-col space-y-1 mt-1.5">

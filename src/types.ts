@@ -46,6 +46,11 @@ export type ActiveScreen =
 
 export type BreathingType = 'box' | 'calm' | 'coherent'; // Box: 4-4-4-4, Calm (4-7-8), Coherent (5-5)
 
+export interface CustomScaleConfig {
+  id: string;
+  name: string;
+}
+
 export interface MoodLogEntry {
   day: string;
   moodValue: number; // 4: Calm, 3: Steady, 2: Anxious, 1: Panic
@@ -53,6 +58,7 @@ export interface MoodLogEntry {
   stress: number;
   hasData?: boolean;
   notes?: string;
+  customScales?: Record<string, number>;
 }
 
 export interface ReframedThought {
