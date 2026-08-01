@@ -7,6 +7,44 @@ import { Leaf, Compass, BookOpen, Phone, Terminal, Heart, Settings, Milestone, S
 import { ClinicianPortal } from './components/ClinicianPortal';
 import { PwaPrompt } from './components/PwaPrompt';
 
+// Redefine Date globally to support time-travel and daily rollover testing
+const OriginalDate = window.Date;
+class MockedDate extends OriginalDate {
+  constructor(...args: any[]) {
+    if (args.length === 0) {
+      const offsetDays = parseInt(localStorage.getItem('safespace_time_offset_days') || '0', 10);
+      if (offsetDays !== 0) {
+        super(OriginalDate.now() + offsetDays * 24 * 60 * 60 * 1000);
+      } else {
+        super();
+      }
+    } else {
+      // @ts-ignore
+      super(...args);
+    }
+  }
+}
+MockedDate.now = () => {
+  const offsetDays = parseInt(localStorage.getItem('safespace_time_offset_days') || '0', 10);
+  return OriginalDate.now() + offsetDays * 24 * 60 * 60 * 1000;
+};
+MockedDate.parse = OriginalDate.parse;
+MockedDate.UTC = OriginalDate.UTC;
+
+const dateFunctionWrapper = function(...args: any[]) {
+  if (!(this instanceof dateFunctionWrapper)) {
+    const offsetDays = parseInt(localStorage.getItem('safespace_time_offset_days') || '0', 10);
+    return new OriginalDate(OriginalDate.now() + offsetDays * 24 * 60 * 60 * 1000).toString();
+  }
+  return new (MockedDate as any)(...args);
+};
+dateFunctionWrapper.prototype = OriginalDate.prototype;
+dateFunctionWrapper.now = MockedDate.now;
+dateFunctionWrapper.parse = MockedDate.parse;
+dateFunctionWrapper.UTC = MockedDate.UTC;
+
+window.Date = dateFunctionWrapper as any;
+
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 // Helper to calculate the Sunday date string ('YYYY-MM-DD') of the current calendar week
@@ -98,6 +136,19 @@ export default function App() {
       }
     } catch (e) {}
     return '';
+  });
+
+  const [submittedToday, setSubmittedToday] = useState<boolean>(() => {
+    return localStorage.getItem('safespace_submitted_today') === 'true';
+  });
+
+  const [keyboardCustomEmoji, setKeyboardCustomEmoji] = useState<string | null>(() => {
+    const savedDate = localStorage.getItem('safespace_kb_emoji_date');
+    const todayStr = new Date().toDateString();
+    if (savedDate === todayStr) {
+      return localStorage.getItem('safespace_kb_emoji_val') || null;
+    }
+    return null;
   });
 
   const [moodHistory, setMoodHistory] = useState<MoodLogEntry[]>(() => {
@@ -263,11 +314,15 @@ export default function App() {
         localStorage.removeItem('safespace_stress_notes');
         localStorage.removeItem('safespace_today_custom_scale_values');
         localStorage.removeItem('safespace_submitted_today');
+        localStorage.removeItem('safespace_kb_emoji_val');
+        localStorage.removeItem('safespace_kb_emoji_date');
         
         setLoggedMood(null);
         setStressLevel(3);
         setStressNotes('');
         setTodayCustomScaleValues({});
+        setSubmittedToday(false);
+        setKeyboardCustomEmoji(null);
       } else if (!lastActiveDate) {
         localStorage.setItem('safespace_last_active_date', todayStr);
       }
@@ -283,8 +338,13 @@ export default function App() {
         setStressLevel(5);
         setStressNotes('');
         setTodayCustomScaleValues({});
+        setSubmittedToday(false);
+        setKeyboardCustomEmoji(null);
         localStorage.removeItem('safespace_stress_notes');
         localStorage.removeItem('safespace_today_custom_scale_values');
+        localStorage.removeItem('safespace_submitted_today');
+        localStorage.removeItem('safespace_kb_emoji_val');
+        localStorage.removeItem('safespace_kb_emoji_date');
       }
     };
 
@@ -295,6 +355,45 @@ export default function App() {
     const interval = setInterval(checkRollovers, 15000);
     return () => clearInterval(interval);
   }, []);
+
+  const timeTravelNextDay = () => {
+    // Increment simulated time travel offset
+    const currentOffset = parseInt(localStorage.getItem('safespace_time_offset_days') || '0', 10);
+    const nextOffset = currentOffset + 1;
+    localStorage.setItem('safespace_time_offset_days', String(nextOffset));
+
+    // Get today's updated simulated string using our newly mocked Date constructor
+    const newTodayStr = new Date().toDateString();
+
+    // Wipe daily inputs cleanly from storage
+    localStorage.setItem('safespace_last_active_date', newTodayStr);
+    localStorage.removeItem('safespace_logged_mood');
+    localStorage.setItem('safespace_stress_level', '3');
+    localStorage.removeItem('safespace_stress_notes');
+    localStorage.removeItem('safespace_today_custom_scale_values');
+    localStorage.removeItem('safespace_submitted_today');
+    localStorage.removeItem('safespace_kb_emoji_val');
+    localStorage.removeItem('safespace_kb_emoji_date');
+
+    // Reset state values
+    setLoggedMood(null);
+    setStressLevel(3);
+    setStressNotes('');
+    setTodayCustomScaleValues({});
+    setSubmittedToday(false);
+    setKeyboardCustomEmoji(null);
+
+    // If weekly boundary crossed, do a weekly reset too
+    const currentWeekSunday = getStartOfWeekDate();
+    const savedWeekSunday = localStorage.getItem('safespace_current_week_sunday');
+    if (savedWeekSunday !== currentWeekSunday) {
+      localStorage.setItem('safespace_current_week_sunday', currentWeekSunday);
+      const clean = getDefaultWeekHistory();
+      setMoodHistory(clean);
+    }
+
+    setToastMessage(`Simulated midnight rollover! Welcome to ${newTodayStr}.`);
+  };
 
   // Persist stressNotes to local storage on change
   useEffect(() => {
@@ -652,6 +751,11 @@ export default function App() {
                   setCustomScales={setCustomScales}
                   todayCustomScaleValues={todayCustomScaleValues}
                   setTodayCustomScaleValues={setTodayCustomScaleValues}
+                  submittedToday={submittedToday}
+                  setSubmittedToday={setSubmittedToday}
+                  keyboardCustomEmoji={keyboardCustomEmoji}
+                  setKeyboardCustomEmoji={setKeyboardCustomEmoji}
+                  timeTravelNextDay={timeTravelNextDay}
                 />
               </div>
             </div>
@@ -697,6 +801,11 @@ export default function App() {
                 setCustomScales={setCustomScales}
                 todayCustomScaleValues={todayCustomScaleValues}
                 setTodayCustomScaleValues={setTodayCustomScaleValues}
+                submittedToday={submittedToday}
+                setSubmittedToday={setSubmittedToday}
+                keyboardCustomEmoji={keyboardCustomEmoji}
+                setKeyboardCustomEmoji={setKeyboardCustomEmoji}
+                timeTravelNextDay={timeTravelNextDay}
               />
             </div>
             

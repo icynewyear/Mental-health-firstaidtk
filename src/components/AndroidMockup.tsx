@@ -198,6 +198,11 @@ interface AndroidMockupProps {
   setCustomScales?: React.Dispatch<React.SetStateAction<CustomScaleConfig[]>>;
   todayCustomScaleValues?: Record<string, number>;
   setTodayCustomScaleValues?: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  submittedToday: boolean;
+  setSubmittedToday: (val: boolean) => void;
+  keyboardCustomEmoji: string | null;
+  setKeyboardCustomEmoji: (val: string | null) => void;
+  timeTravelNextDay?: () => void;
 }
 
 export const AndroidMockup: React.FC<AndroidMockupProps> = ({
@@ -223,6 +228,11 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
   setCustomScales,
   todayCustomScaleValues = {},
   setTodayCustomScaleValues,
+  submittedToday,
+  setSubmittedToday,
+  keyboardCustomEmoji,
+  setKeyboardCustomEmoji,
+  timeTravelNextDay,
 }) => {
   const [timeState, setTimeState] = useState('14:05');
   const [offlinePillClicks, setOfflinePillClicks] = useState(0);
@@ -334,6 +344,10 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
                     setCustomScales={setCustomScales}
                     todayCustomScaleValues={todayCustomScaleValues}
                     setTodayCustomScaleValues={setTodayCustomScaleValues}
+                    submittedToday={submittedToday}
+                    setSubmittedToday={setSubmittedToday}
+                    keyboardCustomEmoji={keyboardCustomEmoji}
+                    setKeyboardCustomEmoji={setKeyboardCustomEmoji}
                   />
                 )}
                 {activeScreen === 'somaticHub' && (
@@ -551,6 +565,30 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
                       }`}>Mocks random mood & stress trends</span>
                     </div>
                   </button>
+
+                  {timeTravelNextDay && (
+                    <button
+                      onClick={() => {
+                        timeTravelNextDay();
+                      }}
+                      className={`w-full flex items-center justify-between active:scale-98 transition rounded-2xl p-3 text-left cursor-pointer border ${
+                        isDarkMode 
+                          ? 'bg-[#4A6741]/20 hover:bg-[#4A6741]/35 border-[#4A6741]/30' 
+                          : 'bg-[#E1E8E3] hover:bg-[#D1DBCF] border-[#CBD9CC]'
+                      }`}
+                    >
+                      <div className="flex flex-col">
+                        <span className={`text-[11px] font-bold leading-tight ${
+                          isDarkMode ? 'text-[#a8c69f]' : 'text-[#4A6741]'
+                        }`}>
+                          📅 Jump to Next Day (Time-Travel)
+                        </span>
+                        <span className={`text-[9px] mt-0.5 font-sans leading-none ${
+                          isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                        }`}>Simulates a midnight rollover, resetting logs & input fields cleanly</span>
+                      </div>
+                    </button>
+                  )}
 
                   <button
                     onClick={() => {

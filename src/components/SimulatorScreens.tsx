@@ -196,6 +196,10 @@ interface DashboardProps {
   setCustomScales?: React.Dispatch<React.SetStateAction<CustomScaleConfig[]>>;
   todayCustomScaleValues?: Record<string, number>;
   setTodayCustomScaleValues?: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  submittedToday: boolean;
+  setSubmittedToday: (val: boolean) => void;
+  keyboardCustomEmoji: string | null;
+  setKeyboardCustomEmoji: (val: string | null) => void;
 }
 
 export const SimulatorDashboard: React.FC<DashboardProps> = ({
@@ -217,6 +221,10 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
   setCustomScales,
   todayCustomScaleValues = {},
   setTodayCustomScaleValues,
+  submittedToday,
+  setSubmittedToday,
+  keyboardCustomEmoji,
+  setKeyboardCustomEmoji,
 }) => {
   const PREDEFINED_EMOJI_SETS = [
     {
@@ -258,16 +266,6 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
   });
   const [newCustomInput, setNewCustomInput] = useState<string>('');
 
-  // 5th custom keyboard emoji state with "until next day" detection
-  const [keyboardCustomEmoji, setKeyboardCustomEmoji] = useState<string | null>(() => {
-    const savedDate = localStorage.getItem('safespace_kb_emoji_date');
-    const todayStr = new Date().toDateString();
-    if (savedDate === todayStr) {
-      return localStorage.getItem('safespace_kb_emoji_val') || null;
-    }
-    return null;
-  });
-
   const [showKeyboardInput, setShowKeyboardInput] = useState<boolean>(false);
   const [phoneKeyboardInput, setPhoneKeyboardInput] = useState<string>('');
 
@@ -278,10 +276,6 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
   const [currentPinError, setCurrentPinError] = useState<boolean>(false);
   const [confirmPinError, setConfirmPinError] = useState<boolean>(false);
   const [toggleOffBlockedMessage, setToggleOffBlockedMessage] = useState<boolean>(false);
-
-  const [submittedToday, setSubmittedToday] = useState<boolean>(() => {
-    return localStorage.getItem('safespace_submitted_today') === 'true';
-  });
 
   const [isAddingScale, setIsAddingScale] = useState(false);
   const [newScaleName, setNewScaleName] = useState('');
