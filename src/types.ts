@@ -40,6 +40,7 @@ export type ActiveScreen =
   | 'vagusHacks'
   | 'panicSOS'
   | 'resources'
+  | 'dbt'
   | 'somaticHub'
   | 'cbtHub'
   | 'safetyHub';

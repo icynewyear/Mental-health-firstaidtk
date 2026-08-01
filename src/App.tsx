@@ -561,6 +561,9 @@ export default function App() {
       case 'panicSOS':
         setSelectedFileIndex(17); // PanicRescueScreen.kt
         break;
+      case 'dbt':
+        setSelectedFileIndex(22); // DbtCalmScreen.kt
+        break;
       case 'resources':
         setSelectedFileIndex(21); // SimpleResourcesScreen.kt
         break;
@@ -591,6 +594,7 @@ export default function App() {
       case 'emotionWheel': return 15;
       case 'vagusHacks': return 16;
       case 'panicSOS': return 17;
+      case 'dbt': return 22;
       case 'resources': return 21;
       default: return 5;
     }

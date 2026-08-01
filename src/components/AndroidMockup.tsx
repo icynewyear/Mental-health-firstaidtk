@@ -29,6 +29,7 @@ import {
   SimulatorSafetyHub
 } from './HubScreens';
 import { SimulatorResources } from './ResourcesScreen';
+import { SimulatorDBT } from './DbtScreen';
 
 interface PhoneLockScreenProps {
   pin: string;
@@ -434,6 +435,9 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
                 )}
                 {activeScreen === 'panicSOS' && (
                   <SimulatorPanicSOS onBack={() => setActiveScreen('safetyHub')} />
+                )}
+                {activeScreen === 'dbt' && (
+                  <SimulatorDBT onBack={() => setActiveScreen('cbtHub')} />
                 )}
                 {activeScreen === 'resources' && (
                   <SimulatorResources onBack={() => setActiveScreen('safetyHub')} />

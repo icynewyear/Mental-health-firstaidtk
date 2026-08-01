@@ -163,6 +163,14 @@ export const SimulatorCbtHub: React.FC<HubProps> = ({ onNavigate, onBack }) => {
 
   const tools = [
     {
+      id: 'dbt' as ActiveScreen,
+      name: 'Interactive DBT Skills',
+      desc: 'Quick, high-comfort Dialectical Behavior Therapy skills built to help you when emotionally activated.',
+      icon: <Sparkles size={16} className="text-purple-700" />,
+      bg: 'bg-purple-50/70 border-purple-100 hover:bg-purple-100/50',
+      tag: 'DBT Crisis Aid',
+    },
+    {
       id: 'reframing' as ActiveScreen,
       name: 'Thought Reframer',
       desc: 'A friendly guided space to find perspective and gently ease worrying thoughts.',

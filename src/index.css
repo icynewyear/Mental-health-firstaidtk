@@ -109,6 +109,14 @@
 .simulator-dark-mode.text-blue-800, .simulator-dark-mode .text-blue-800 { color: #93c5fd !important; }
 .simulator-dark-mode.text-purple-800, .simulator-dark-mode .text-purple-800 { color: #ddd6fe !important; }
 .simulator-dark-mode.text-rose-800, .simulator-dark-mode .text-rose-800 { color: #fda4af !important; }
+.simulator-dark-mode.text-rose-700, .simulator-dark-mode .text-rose-700 { color: #fecdd3 !important; }
+.simulator-dark-mode.text-blue-700, .simulator-dark-mode .text-blue-700 { color: #93c5fd !important; }
+.simulator-dark-mode.text-purple-700, .simulator-dark-mode .text-purple-700 { color: #ddd6fe !important; }
+.simulator-dark-mode.bg-purple-100, .simulator-dark-mode .bg-purple-100 { background-color: #231b30 !important; border-color: #4c1d95 !important; }
+.simulator-dark-mode.border-purple-200, .simulator-dark-mode .border-purple-200 { border-color: #4c1d95 !important; }
+.simulator-dark-mode.bg-purple-50\/70, .simulator-dark-mode .bg-purple-50\/70 { background-color: #231b30 !important; border-color: #403259 !important; }
+.simulator-dark-mode.hover\:bg-purple-100\/50:hover, .simulator-dark-mode .hover\:bg-purple-100\/50:hover { background-color: #2e243e !important; }
+.simulator-dark-mode.border-amber-300, .simulator-dark-mode .border-amber-300 { border-color: #78350f !important; }
 
 /* Inactive Star style rules */
 .simulator-dark-mode.text-slate-300, .simulator-dark-mode .text-slate-300,
