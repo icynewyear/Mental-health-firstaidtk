@@ -46,7 +46,7 @@ interface ClinicianPortalProps {
 
 export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ dataString, onExit }) => {
   const [reportData, setReportData] = useState<{
-    period: number;
+    period: number | string;
     generatedAt: string;
     logs: ClinicianLogEntry[];
   } | null>(() => {
@@ -183,7 +183,9 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ dataString, on
             <p className="text-sm text-slate-500 mt-1 flex items-center gap-1.5 flex-wrap">
               <span>Client Progress Report</span>
               <span className="w-1 h-1 rounded-full bg-slate-300" />
-              <span className="font-medium text-slate-700">{period}-Day View</span>
+              <span className="font-medium text-slate-700">
+                {typeof period === 'number' ? `${period}-Day View` : period}
+              </span>
               <span className="w-1 h-1 rounded-full bg-slate-300" />
               <span>Generated on: <strong className="text-slate-700 font-mono">{generatedAt}</strong></span>
             </p>

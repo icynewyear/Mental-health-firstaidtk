@@ -30,6 +30,7 @@ import {
 } from './HubScreens';
 import { SimulatorResources } from './ResourcesScreen';
 import { SimulatorDBT } from './DbtScreen';
+import { OnboardingWalkthrough } from './OnboardingWalkthrough';
 
 interface PhoneLockScreenProps {
   pin: string;
@@ -264,6 +265,22 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
   });
   const [isUnlocked, setIsUnlocked] = useState<boolean>(false);
 
+  // Onboarding walkthrough overlay state
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
+    return localStorage.getItem('safespace_has_seen_onboarding') !== 'true';
+  });
+
+  // Listen for global re-trigger events
+  useEffect(() => {
+    const handleTriggerOnboarding = () => {
+      setShowOnboarding(true);
+    };
+    window.addEventListener('safespace_trigger_onboarding', handleTriggerOnboarding);
+    return () => {
+      window.removeEventListener('safespace_trigger_onboarding', handleTriggerOnboarding);
+    };
+  }, []);
+
   // Lock when returning to dashboard or non-guarded screens
   useEffect(() => {
     if (activeScreen === 'dashboard' || activeScreen === 'somaticHub' || activeScreen === 'cbtHub' || activeScreen === 'safetyHub') {
@@ -403,6 +420,7 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
                     setCustomScales={setCustomScales}
                     todayCustomScaleValues={todayCustomScaleValues}
                     setTodayCustomScaleValues={setTodayCustomScaleValues}
+                    isDarkMode={isDarkMode}
                   />
                 )}
 
@@ -661,6 +679,14 @@ export const AndroidMockup: React.FC<AndroidMockupProps> = ({
                 </button>
               </div>
             </div>
+          )}
+
+          {/* Onboarding walkthrough guide overlay */}
+          {showOnboarding && (
+            <OnboardingWalkthrough 
+              onClose={() => setShowOnboarding(false)} 
+              isDarkMode={isDarkMode} 
+            />
           )}
 
       </div>

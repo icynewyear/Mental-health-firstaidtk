@@ -750,6 +750,29 @@ export const SimulatorDashboard: React.FC<DashboardProps> = ({
                   )}
                 </div>
               )}
+
+              {/* 🧭 Walkthrough Guide Trigger */}
+              <hr className="border-slate-100/70" />
+              <div className="space-y-2 py-2 bg-[#FAFBF9] p-3 rounded-2xl border border-slate-150">
+                <div className="flex flex-col text-left">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider leading-none mb-1">Interactive Walkthrough Guide</span>
+                  <span className="text-[10px] font-bold text-slate-700 leading-tight">Replay Onboarding Guide</span>
+                  <span className="text-[8px] text-slate-400 mt-1 leading-normal">
+                    Review the complete interactive guide of the Mental Health Toolkit (Stress tracker logging, custom scale calibration, coping tools, and clinician exports).
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.dispatchEvent(new Event('safespace_trigger_onboarding'));
+                    setShowSelector(false);
+                  }}
+                  className="w-full text-center bg-[#E1E8E3] hover:bg-[#CBD9CC] text-[#4A6741] font-black text-[9px] py-2 rounded-xl transition cursor-pointer border-0 uppercase tracking-wider mt-1 animate-pulse"
+                >
+                  Start Walkthrough 🧭
+                </button>
+              </div>
+
             </div>
           </div>
         </div>
@@ -2822,6 +2845,7 @@ interface HistoryProps {
   setCustomScales?: React.Dispatch<React.SetStateAction<CustomScaleConfig[]>>;
   todayCustomScaleValues?: Record<string, number>;
   setTodayCustomScaleValues?: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  isDarkMode?: boolean;
 }
 
 const KEY_GROUPS = {
@@ -2873,6 +2897,7 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
   setCustomScales,
   todayCustomScaleValues = {},
   setTodayCustomScaleValues,
+  isDarkMode = false,
 }) => {
   const [historyTab, setHistoryTab] = useState<'monthly' | 'weekly'>('monthly');
 
@@ -2914,6 +2939,33 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
   const [clinicianLinkDays, setClinicianLinkDays] = useState<7 | 30>(7);
   const [clinicianLinkUrl, setClinicianLinkUrl] = useState<string>('');
   const [clinicianCopied, setClinicianCopied] = useState<boolean>(false);
+  const [clinicianRangeMode, setClinicianRangeMode] = useState<'preset' | 'custom'>('preset');
+  const [clinicianStartMonthIdx, setClinicianStartMonthIdx] = useState<number>(() => {
+    return Math.max(0, new Date().getMonth() - 1);
+  });
+  const [clinicianStartDay, setClinicianStartDay] = useState<number>(1);
+  const [clinicianEndMonthIdx, setClinicianEndMonthIdx] = useState<number>(() => {
+    return new Date().getMonth();
+  });
+  const [clinicianEndDay, setClinicianEndDay] = useState<number>(() => {
+    return new Date().getDate();
+  });
+
+  const updateClinicianStartMonth = (idx: number) => {
+    setClinicianStartMonthIdx(idx);
+    const maxDays = MONTHS_CONFIG[idx].days;
+    if (clinicianStartDay > maxDays) {
+      setClinicianStartDay(maxDays);
+    }
+  };
+
+  const updateClinicianEndMonth = (idx: number) => {
+    setClinicianEndMonthIdx(idx);
+    const maxDays = MONTHS_CONFIG[idx].days;
+    if (clinicianEndDay > maxDays) {
+      setClinicianEndDay(maxDays);
+    }
+  };
 
   const [exportSelectedMonthIdx, setExportSelectedMonthIdx] = useState<number>(selectedMonthIdx);
   const [exportSubMode, setExportSubMode] = useState<'single' | 'range'>('single');
@@ -3244,11 +3296,80 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
     return result;
   };
 
-  const handleGenerateClinicianLink = (days: number) => {
+  const getCustomRangeData = (
+    startMonthIdx: number,
+    startDay: number,
+    endMonthIdx: number,
+    endDay: number
+  ) => {
+    const allDays: { monthKey: string; monthName: string; day: number; dateStr: string }[] = [];
+    MONTHS_CONFIG.forEach(m => {
+      for (let d = 1; d <= m.days; d++) {
+        allDays.push({
+          monthKey: m.key,
+          monthName: m.name,
+          day: d,
+          dateStr: `2026-${m.key}-${d.toString().padStart(2, '0')}`
+        });
+      }
+    });
+
+    const startDateKey = `2026-${MONTHS_CONFIG[startMonthIdx].key}-${startDay.toString().padStart(2, '0')}`;
+    const endDateKey = `2026-${MONTHS_CONFIG[endMonthIdx].key}-${endDay.toString().padStart(2, '0')}`;
+
+    const startIndex = allDays.findIndex(x => x.dateStr === startDateKey);
+    const endIndex = allDays.findIndex(x => x.dateStr === endDateKey);
+
+    let startIdx = startIndex !== -1 ? startIndex : 0;
+    let endIdx = endIndex !== -1 ? endIndex : allDays.length - 1;
+    if (startIdx > endIdx) {
+      const tmp = startIdx;
+      startIdx = endIdx;
+      endIdx = tmp;
+    }
+    const slicedDays = allDays.slice(startIdx, endIdx + 1);
+
+    return slicedDays.map(day => {
+      const details = getDayDetails(day.monthKey, day.day);
+      const mm = day.monthKey;
+      const dd = day.day.toString().padStart(2, '0');
+      if (details.hasData) {
+        return {
+          d: `${mm}-${dd}`,
+          v: details.moodValue,
+          l: details.moodLabel,
+          s: details.stress,
+          n: details.notes,
+          hasData: true
+        };
+      } else {
+        return {
+          d: `${mm}-${dd}`,
+          v: 0,
+          l: '',
+          s: 5,
+          hasData: false
+        };
+      }
+    });
+  };
+
+  const handleGenerateClinicianLink = () => {
     try {
-      const data = getPastNDaysData(days);
+      let data;
+      let periodVal: number | string;
+      if (clinicianRangeMode === 'custom') {
+        data = getCustomRangeData(clinicianStartMonthIdx, clinicianStartDay, clinicianEndMonthIdx, clinicianEndDay);
+        const startLabel = `${MONTHS_CONFIG[clinicianStartMonthIdx].name.slice(0, 3)} ${clinicianStartDay}`;
+        const endLabel = `${MONTHS_CONFIG[clinicianEndMonthIdx].name.slice(0, 3)} ${clinicianEndDay}`;
+        periodVal = `${startLabel} – ${endLabel}`;
+      } else {
+        data = getPastNDaysData(clinicianLinkDays);
+        periodVal = clinicianLinkDays;
+      }
+
       const payload = {
-        period: days,
+        period: periodVal,
         generatedAt: new Date().toISOString().slice(0, 10),
         logs: data
       };
@@ -3952,42 +4073,146 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
             Share a secure summary of your trends and notes with your clinician or therapist. Data is safely encoded directly within the URL, so no server registers your history.
           </p>
 
-          <div className="bg-white/85 border border-white p-4 rounded-2xl space-y-4 shadow-xs">
-            <span className="text-[9px] font-black text-[#4A6741] uppercase tracking-wider block mb-1">
+          <div className={`${isDarkMode ? 'bg-slate-800 border-slate-700/80 text-white' : 'bg-white border-slate-200 text-slate-800'} border p-4 rounded-2xl space-y-4 shadow-xs`}>
+            <span className={`text-[9px] font-black ${isDarkMode ? 'text-[#a8c69f]' : 'text-[#4A6741]'} uppercase tracking-wider block mb-1`}>
               1. Choose Report Period
             </span>
-            <div className="grid grid-cols-2 gap-2 text-[10px] font-bold">
+
+            <div className={`flex ${isDarkMode ? 'bg-slate-900/60' : 'bg-slate-100/80'} p-0.5 rounded-xl text-[9px] font-bold select-none`}>
               <button
                 type="button"
                 onClick={() => {
-                  setClinicianLinkDays(7);
+                  setClinicianRangeMode('preset');
                   setClinicianLinkUrl('');
                 }}
-                className={`py-2 rounded-xl transition cursor-pointer border text-center ${
-                  clinicianLinkDays === 7 ? 'bg-[#4A6741] text-white border-transparent' : 'bg-white text-slate-600 hover:text-slate-850 border-slate-200'
+                className={`flex-1 py-1 rounded-lg transition cursor-pointer text-center border-0 ${
+                  clinicianRangeMode === 'preset'
+                    ? (isDarkMode ? 'bg-slate-800 shadow-xs text-slate-100 font-extrabold' : 'bg-white shadow-xs text-slate-850 font-extrabold')
+                    : (isDarkMode ? 'bg-transparent text-slate-400 hover:text-slate-200' : 'bg-transparent text-slate-500 hover:text-slate-850')
                 }`}
               >
-                📊 Past 7 Days
+                📊 Preset Periods
               </button>
               <button
                 type="button"
                 onClick={() => {
-                  setClinicianLinkDays(30);
+                  setClinicianRangeMode('custom');
                   setClinicianLinkUrl('');
                 }}
-                className={`py-2 rounded-xl transition cursor-pointer border text-center ${
-                  clinicianLinkDays === 30 ? 'bg-[#4A6741] text-white border-transparent' : 'bg-white text-slate-600 hover:text-slate-850 border-slate-200'
+                className={`flex-1 py-1 rounded-lg transition cursor-pointer text-center border-0 ${
+                  clinicianRangeMode === 'custom'
+                    ? (isDarkMode ? 'bg-slate-800 shadow-xs text-slate-100 font-extrabold' : 'bg-white shadow-xs text-slate-850 font-extrabold')
+                    : (isDarkMode ? 'bg-transparent text-slate-400 hover:text-slate-200' : 'bg-transparent text-slate-500 hover:text-slate-850')
                 }`}
               >
-                🗓️ Past 1 Month
+                🗓️ Custom Date Range
               </button>
             </div>
 
-            <div className="pt-2 border-t border-slate-100 flex flex-col space-y-3">
+            {clinicianRangeMode === 'preset' ? (
+              <div className="grid grid-cols-2 gap-2 text-[10px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setClinicianLinkDays(7);
+                    setClinicianLinkUrl('');
+                  }}
+                  className={`py-2 rounded-xl transition cursor-pointer border text-center ${
+                    clinicianLinkDays === 7
+                      ? 'bg-[#4A6741] text-white border-transparent'
+                      : (isDarkMode ? 'bg-slate-900/40 text-slate-300 hover:text-slate-100 border-slate-700/60' : 'bg-white text-slate-600 hover:text-slate-850 border-slate-200')
+                  }`}
+                >
+                  📊 Past 7 Days
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setClinicianLinkDays(30);
+                    setClinicianLinkUrl('');
+                  }}
+                  className={`py-2 rounded-xl transition cursor-pointer border text-center ${
+                    clinicianLinkDays === 30
+                      ? 'bg-[#4A6741] text-white border-transparent'
+                      : (isDarkMode ? 'bg-slate-900/40 text-slate-300 hover:text-slate-100 border-slate-700/60' : 'bg-white text-slate-600 hover:text-slate-850 border-slate-200')
+                  }`}
+                >
+                  🗓️ Past 1 Month
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2 text-[10px] font-bold">
+                <div className="grid grid-cols-2 gap-2">
+                  {/* From selectors */}
+                  <div className="space-y-0.5">
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">From:</span>
+                    <div className="flex space-x-1">
+                      <select
+                        value={clinicianStartMonthIdx}
+                        onChange={(e) => {
+                          updateClinicianStartMonth(Number(e.target.value));
+                          setClinicianLinkUrl('');
+                        }}
+                        className={`flex-1 ${isDarkMode ? 'bg-slate-900 text-slate-200 border-slate-700/80' : 'bg-white text-slate-700 border-slate-200'} border text-[10px] font-extrabold rounded-lg p-1 focus:outline-none focus:ring-1 focus:ring-[#4A6741]`}
+                      >
+                        {MONTHS_CONFIG.map((m, idx) => (
+                          <option key={m.key} value={idx} className={isDarkMode ? 'bg-slate-800 text-slate-200' : ''}>{m.name}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={clinicianStartDay}
+                        onChange={(e) => {
+                          setClinicianStartDay(Number(e.target.value));
+                          setClinicianLinkUrl('');
+                        }}
+                        className={`w-12 ${isDarkMode ? 'bg-slate-900 text-slate-200 border-slate-700/80' : 'bg-white text-slate-700 border-slate-200'} border text-[10px] font-extrabold rounded-lg p-1 focus:outline-none focus:ring-1 focus:ring-[#4A6741]`}
+                      >
+                        {Array.from({ length: MONTHS_CONFIG[clinicianStartMonthIdx].days }, (_, i) => i + 1).map(dayNum => (
+                          <option key={dayNum} value={dayNum} className={isDarkMode ? 'bg-slate-800 text-slate-200' : ''}>{dayNum}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* To selectors */}
+                  <div className="space-y-0.5">
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">To:</span>
+                    <div className="flex space-x-1">
+                      <select
+                        value={clinicianEndMonthIdx}
+                        onChange={(e) => {
+                          updateClinicianEndMonth(Number(e.target.value));
+                          setClinicianLinkUrl('');
+                        }}
+                        className={`flex-1 ${isDarkMode ? 'bg-slate-900 text-slate-200 border-slate-700/80' : 'bg-white text-slate-700 border-slate-200'} border text-[10px] font-extrabold rounded-lg p-1 focus:outline-none focus:ring-1 focus:ring-[#4A6741]`}
+                      >
+                        {MONTHS_CONFIG.map((m, idx) => (
+                          <option key={m.key} value={idx} className={isDarkMode ? 'bg-slate-800 text-slate-200' : ''}>{m.name}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={clinicianEndDay}
+                        onChange={(e) => {
+                          setClinicianEndDay(Number(e.target.value));
+                          setClinicianLinkUrl('');
+                        }}
+                        className={`w-12 ${isDarkMode ? 'bg-slate-900 text-slate-200 border-slate-700/80' : 'bg-white text-slate-700 border-slate-200'} border text-[10px] font-extrabold rounded-lg p-1 focus:outline-none focus:ring-1 focus:ring-[#4A6741]`}
+                      >
+                        {Array.from({ length: MONTHS_CONFIG[clinicianEndMonthIdx].days }, (_, i) => i + 1).map(dayNum => (
+                          <option key={dayNum} value={dayNum} className={isDarkMode ? 'bg-slate-800 text-slate-200' : ''}>{dayNum}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className={`pt-2 border-t ${isDarkMode ? 'border-slate-700/60' : 'border-slate-100'} flex flex-col space-y-3`}>
               <button
                 type="button"
-                onClick={() => handleGenerateClinicianLink(clinicianLinkDays)}
-                className="w-full py-2.5 rounded-xl bg-[#4A6741] hover:bg-[#3D5535] text-white font-extrabold text-[10px] transition cursor-pointer text-center uppercase tracking-widest border-0 shadow-xs"
+                onClick={handleGenerateClinicianLink}
+                className={`w-full py-2.5 rounded-xl ${isDarkMode ? 'bg-[#4A6741] hover:bg-[#58794f]' : 'bg-[#4A6741] hover:bg-[#3D5535]'} text-white font-extrabold text-[10px] transition cursor-pointer text-center uppercase tracking-widest border-0 shadow-xs`}
               >
                 🔗 Generate Clinician Link
               </button>
@@ -3995,17 +4220,17 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
           </div>
 
           {clinicianLinkUrl && (
-            <div className="bg-[#E1E8E3]/50 border border-[#A8C69F]/40 p-4 rounded-2xl space-y-3 shadow-xs">
-              <div className="flex items-center justify-between border-b border-[#A8C69F]/35 pb-2">
-                <span className="text-[9.5px] font-black text-[#4A6741] uppercase tracking-wide">
+            <div className={`${isDarkMode ? 'bg-[#4A6741]/20 border-[#A8C69F]/30 text-white' : 'bg-[#E1E8E3]/50 border-[#A8C69F]/40 text-slate-800'} border p-4 rounded-2xl space-y-3 shadow-xs`}>
+              <div className={`flex items-center justify-between border-b ${isDarkMode ? 'border-slate-700/80 pb-2' : 'border-[#A8C69F]/35 pb-2'}`}>
+                <span className={`text-[9.5px] font-black ${isDarkMode ? 'text-[#a8c69f]' : 'text-[#4A6741]'} uppercase tracking-wide`}>
                   2. Encoded Share Link
                 </span>
-                <span className="text-[8px] bg-[#E1E8E3] text-[#4A6741] font-black px-1.5 py-0.5 rounded uppercase">
+                <span className={`text-[8px] ${isDarkMode ? 'bg-[#4A6741]/40 text-emerald-300' : 'bg-[#E1E8E3] text-[#4A6741]'} font-black px-1.5 py-0.5 rounded uppercase`}>
                   Ready to Share
                 </span>
               </div>
 
-              <p className="text-[9.5px] text-slate-800 leading-relaxed bg-white border border-[#A8C69F]/35 p-2.5 rounded-xl font-mono break-all max-h-24 overflow-y-auto no-scrollbar">
+              <p className={`text-[9.5px] ${isDarkMode ? 'text-slate-200 bg-slate-900 border-slate-700/80' : 'text-slate-800 bg-white border-[#A8C69F]/35'} leading-relaxed p-2.5 rounded-xl font-mono break-all max-h-24 overflow-y-auto no-scrollbar border`}>
                 {clinicianLinkUrl}
               </p>
 
@@ -4017,7 +4242,9 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
                     setClinicianCopied(true);
                     setTimeout(() => setClinicianCopied(false), 2000);
                   }}
-                  className="py-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 transition cursor-pointer text-center flex items-center justify-center space-x-1"
+                  className={`py-2 rounded-xl transition cursor-pointer border text-center flex items-center justify-center space-x-1 ${
+                    isDarkMode ? 'bg-slate-900 text-slate-200 hover:bg-slate-800 border-slate-700' : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-700'
+                  }`}
                 >
                   <span>{clinicianCopied ? '✓ Copied!' : '📋 Copy Link'}</span>
                 </button>
@@ -4025,11 +4252,32 @@ export const SimulatorHistory: React.FC<HistoryProps> = ({
                   href={clinicianLinkUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="py-2 rounded-xl bg-[#4A6741] hover:bg-[#3D5535] text-white transition text-center flex items-center justify-center space-x-1 border-0 no-underline"
+                  className={`py-2 rounded-xl ${isDarkMode ? 'bg-[#4A6741] hover:bg-[#58794f]' : 'bg-[#4A6741] hover:bg-[#3D5535]'} text-white transition text-center flex items-center justify-center space-x-1 border-0 no-underline`}
                 >
                   <span>Launch View 🩺</span>
                 </a>
               </div>
+              {/* 🧭 Walkthrough Guide Trigger */}
+              <hr className={isDarkMode ? 'border-slate-700/80' : 'border-slate-100/70'} />
+              <div className={`space-y-2 py-2 ${isDarkMode ? 'bg-slate-900/40 border-slate-700/80' : 'bg-[#FAFBF9] border-slate-150'} p-3 rounded-2xl border`}>
+                <div className="flex flex-col text-left">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider leading-none mb-1">Interactive Walkthrough Guide</span>
+                  <span className={`text-[10px] font-bold ${isDarkMode ? 'text-slate-200' : 'text-slate-700'} leading-tight`}>Replay Onboarding Guide</span>
+                  <span className="text-[8px] text-slate-400 mt-1 leading-normal">
+                    Review the complete interactive guide of the Mental Health Toolkit (Stress tracker logging, custom scale calibration, coping tools, and clinician exports).
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.dispatchEvent(new Event('safespace_trigger_onboarding'));
+                  }}
+                  className={`w-full text-center ${isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-[#a8c69f]' : 'bg-[#E1E8E3] hover:bg-[#CBD9CC] text-[#4A6741]'} font-black text-[9px] py-2 rounded-xl transition cursor-pointer border-0 uppercase tracking-wider mt-1`}
+                >
+                  Start Walkthrough 🧭
+                </button>
+              </div>
+
             </div>
           )}
         </div>
