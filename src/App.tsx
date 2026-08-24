@@ -105,8 +105,24 @@ export default function App() {
   const [backupUser, setBackupUser] = useState<import('firebase/auth').User | null>(null);
   const [backupBusy, setBackupBusy] = useState(false);
   const [backupMessage, setBackupMessage] = useState<string | null>(null);
+  const [autoBackupEnabled, setAutoBackupEnabled] = useState<boolean>(() => localStorage.getItem('safespace_auto_backup') === 'true');
 
   useEffect(() => onAuthStateChanged(auth, setBackupUser), []);
+
+  useEffect(() => {
+    localStorage.setItem('safespace_auto_backup', String(autoBackupEnabled));
+    if (!backupUser || !autoBackupEnabled) return;
+
+    const saveAutomaticBackup = () => {
+      backupToolkit(backupUser.uid).catch((error) => {
+        console.warn('Automatic toolkit backup failed:', error);
+      });
+    };
+
+    saveAutomaticBackup();
+    const intervalId = window.setInterval(saveAutomaticBackup, 5 * 60 * 1000);
+    return () => window.clearInterval(intervalId);
+  }, [autoBackupEnabled, backupUser]);
 
   const handleGoogleBackupSignIn = async () => {
     try {
@@ -132,6 +148,22 @@ export default function App() {
       setBackupMessage(error?.message || 'Could not save the toolkit backup.');
     } finally {
       setBackupBusy(false);
+    }
+  };
+
+  const handleAutoBackupToggle = async () => {
+    const nextEnabled = !autoBackupEnabled;
+    setAutoBackupEnabled(nextEnabled);
+    if (nextEnabled && backupUser) {
+      setBackupMessage('Automatic backups enabled. Saving your current toolkit state...');
+      try {
+        await backupToolkit(backupUser.uid);
+        setBackupMessage('Automatic backups enabled. Your local toolkit state is saved every 5 minutes.');
+      } catch (error: any) {
+        setBackupMessage(error?.message || 'Automatic backup could not start. Manual backups remain available.');
+      }
+    } else {
+      setBackupMessage('Automatic backups disabled. Manual backups remain available.');
     }
   };
 
@@ -730,6 +762,18 @@ export default function App() {
                     title="Restore the last voluntary Firestore backup"
                   >
                     Restore
+                  </button>
+                  <button
+                    onClick={handleAutoBackupToggle}
+                    disabled={backupBusy}
+                    className={`px-3 py-1.5 rounded-2xl border cursor-pointer transition ${
+                      autoBackupEnabled
+                        ? 'text-emerald-700 bg-emerald-100/70 border-emerald-200 dark:text-emerald-200 dark:bg-emerald-950/50 dark:border-emerald-900/60'
+                        : 'text-slate-600 bg-[#E1E8E3]/60 border-white/40 dark:text-slate-300 dark:bg-[#253229]/80 dark:border-emerald-950/60'
+                    } disabled:opacity-50`}
+                    title={autoBackupEnabled ? 'Turn off automatic Firestore backups' : 'Turn on automatic Firestore backups'}
+                  >
+                    Auto {autoBackupEnabled ? 'On' : 'Off'}
                   </button>
                   <button
                     onClick={() => signOut(auth)}
