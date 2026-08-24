@@ -6,6 +6,14 @@ import { ActiveScreen, MoodLogEntry, CustomScaleConfig } from './types';
 import { Leaf, Compass, BookOpen, Phone, Terminal, Heart, Settings, Milestone, Share2, Plus, Smartphone, Monitor } from 'lucide-react';
 import { ClinicianPortal } from './components/ClinicianPortal';
 import { PwaPrompt } from './components/PwaPrompt';
+import {
+  auth,
+  backupToolkit,
+  onAuthStateChanged,
+  restoreToolkitBackup,
+  signInWithGoogle,
+  signOut,
+} from './lib/firebase';
 
 // Redefine Date globally to support time-travel and daily rollover testing
 const OriginalDate = window.Date;
@@ -94,6 +102,52 @@ export default function App() {
   });
   const [logoClicks, setLogoClicks] = useState<number>(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [backupUser, setBackupUser] = useState<import('firebase/auth').User | null>(null);
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [backupMessage, setBackupMessage] = useState<string | null>(null);
+
+  useEffect(() => onAuthStateChanged(auth, setBackupUser), []);
+
+  const handleGoogleBackupSignIn = async () => {
+    try {
+      setBackupBusy(true);
+      setBackupMessage(null);
+      const user = await signInWithGoogle();
+      setBackupUser(user);
+      setBackupMessage('Google account connected. Your toolkit remains local until you choose a backup action.');
+    } catch (error: any) {
+      setBackupMessage(error?.message || 'Google sign-in was not completed.');
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
+  const handleBackup = async () => {
+    if (!backupUser) return;
+    try {
+      setBackupBusy(true);
+      await backupToolkit(backupUser.uid);
+      setBackupMessage('Toolkit backup saved to your private Firestore account.');
+    } catch (error: any) {
+      setBackupMessage(error?.message || 'Could not save the toolkit backup.');
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!backupUser || !window.confirm('Restore your last toolkit backup? This will replace local toolkit settings and history.')) return;
+    try {
+      setBackupBusy(true);
+      const restored = await restoreToolkitBackup(backupUser.uid);
+      setBackupMessage(restored ? 'Backup restored. Reloading the toolkit...' : 'No Firestore backup was found for this account.');
+      if (restored) window.setTimeout(() => window.location.reload(), 700);
+    } catch (error: any) {
+      setBackupMessage(error?.message || 'Could not restore the toolkit backup.');
+    } finally {
+      setBackupBusy(false);
+    }
+  };
 
   const [clinicianData, setClinicianData] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -649,6 +703,63 @@ export default function App() {
 
           {/* Quick Stats / Info Row */}
           <div className="flex items-center space-x-4 sm:space-x-6 text-[10px] font-mono shrink-0 select-none">
+            <div className="relative flex items-center gap-2">
+              {backupUser ? (
+                <>
+                  <button
+                    onClick={handleBackup}
+                    disabled={backupBusy}
+                    className={`px-3 py-1.5 rounded-2xl border cursor-pointer transition ${
+                      isDarkMode
+                        ? 'text-[#d5e7d0] bg-[#253229]/80 hover:bg-[#253229] border-emerald-950/60'
+                        : 'text-[#4A6741] bg-[#E1E8E3]/60 hover:bg-[#E1E8E3] border-white/40'
+                    } disabled:opacity-50`}
+                    title="Save a voluntary backup of local toolkit data to Firestore"
+                  >
+                    <Share2 size={13} className="inline mr-1" />
+                    {backupBusy ? 'Saving...' : 'Backup'}
+                  </button>
+                  <button
+                    onClick={handleRestore}
+                    disabled={backupBusy}
+                    className={`px-3 py-1.5 rounded-2xl border cursor-pointer transition ${
+                      isDarkMode
+                        ? 'text-slate-100 bg-[#253229]/80 hover:bg-[#253229] border-emerald-950/60'
+                        : 'text-slate-600 bg-[#E1E8E3]/60 hover:bg-[#E1E8E3] border-white/40'
+                    } disabled:opacity-50`}
+                    title="Restore the last voluntary Firestore backup"
+                  >
+                    Restore
+                  </button>
+                  <button
+                    onClick={() => signOut(auth)}
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                    title={`Connected as ${backupUser.email || 'Google account'}; sign out`}
+                  >
+                    {backupUser.email || 'Connected'}
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleGoogleBackupSignIn}
+                  disabled={backupBusy}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-2xl border cursor-pointer transition ${
+                    isDarkMode
+                      ? 'text-slate-100 bg-[#253229]/80 hover:bg-[#253229] border-emerald-950/60'
+                      : 'text-slate-600 bg-[#E1E8E3]/60 hover:bg-[#E1E8E3] border-white/40'
+                  } disabled:opacity-50`}
+                  title="Optional Google sign-in for Firestore backup"
+                >
+                  <Share2 size={13} />
+                  {backupBusy ? 'Connecting...' : 'Backup with Google'}
+                </button>
+              )}
+              {backupMessage && (
+                <span className="absolute top-full right-0 mt-2 z-50 w-64 rounded-xl bg-slate-900 px-3 py-2 text-left text-[10px] leading-relaxed text-slate-100 shadow-xl">
+                  {backupMessage}
+                </span>
+              )}
+            </div>
             <button 
               onClick={() => setIsDarkMode(!isDarkMode)}
               className={`flex items-center justify-center w-8 h-8 active:scale-95 transition rounded-2xl border cursor-pointer ${
